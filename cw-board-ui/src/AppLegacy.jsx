@@ -526,7 +526,7 @@ function WorkspaceMenu({ disabled, onSoftReset, onReset, onPing }) {
               run(() => {
                 if (
                   window.confirm(
-                    "Reset the workspace?\n\nThis clears the evaluation in focus and everything on screen. Data saved on the server is not deleted."
+                    "Reset the workspace?\n\nThis closes the open evaluation and clears everything on screen. Data saved on the server is not deleted."
                   )
                 ) {
                   onReset();
@@ -535,7 +535,7 @@ function WorkspaceMenu({ disabled, onSoftReset, onReset, onPing }) {
             }
           >
             <div style={{ fontWeight: 800 }}>Reset workspace…</div>
-            <div style={{ fontSize: 12, color: "#64748B" }}>Clear the evaluation in focus and start over.</div>
+            <div style={{ fontSize: 12, color: "#64748B" }}>Close the open evaluation and start over.</div>
           </button>
           {onPing ? (
             <button
@@ -889,6 +889,10 @@ export default function AppLegacy() {
       return "";
     }
   });
+
+  // "Open" = make this the current evaluation, then go to its next step once its progress is known
+  const [progressLoadedFor, setProgressLoadedFor] = useState("");
+  const [openRequest, setOpenRequest] = useState("");
 
   useEffect(() => {
     try {
@@ -1371,6 +1375,7 @@ function renderNextActionBar(opts = {}) {
       } catch {
         /* keep zeros */
       }
+      if (!cancelled) setProgressLoadedFor(id);
     })();
 
     return () => {
@@ -2286,6 +2291,51 @@ function getWorkflowProgress() {
 
   const hasFocus = !!String(evalId || "").trim();
   const progress = getWorkflowProgress();
+
+  function openEvaluation(ev) {
+    const id = String(ev?.evaluation_id || ev?.id || "");
+    if (!id) return;
+    // Opening a different (or re-opened) evaluation must wait for its own progress, not stale values
+    if (id !== evalId) setProgressLoadedFor("");
+    setEvalId(id);
+    setOpenRequest(id);
+  }
+
+  function closeEvaluation() {
+    setProgressLoadedFor("");
+    setEvalId("");
+    setSelectedTemplate("");
+    setSelectedVersion("");
+    setTemplateCode("");
+    setVersion("");
+    navigate("/consultant/evaluations");
+  }
+
+  const nextStepPath = progress.allDone
+    ? TASK_TO_PATH.generate_report
+    : TASK_TO_PATH[progress.next.toTask] || "/consultant/evaluations";
+  const openReady =
+    !!openRequest &&
+    openRequest === evalId &&
+    progressLoadedFor === evalId &&
+    questionnaireSavedForEvalId === evalId;
+
+  useEffect(() => {
+    if (!openReady) return;
+    setOpenRequest("");
+    navigate(nextStepPath);
+  }, [openReady, nextStepPath, navigate]);
+
+  // Safety net: if loading stalls, still take the user in after a few seconds
+  useEffect(() => {
+    if (!openRequest) return;
+    const t = setTimeout(() => {
+      setOpenRequest("");
+      navigate(nextStepPath);
+    }, 4000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openRequest]);
   const progressByKey = Object.fromEntries(progress.steps.map((x) => [x.key, x]));
 
   // The evaluation in focus is shown once, in the top bar; pages no longer render their own panel
@@ -2440,6 +2490,28 @@ function getWorkflowProgress() {
                   </b>
                   <span aria-hidden style={{ color: "#64748B" }}>▾</span>
                 </button>
+                {evalId ? (
+                  <button
+                    type="button"
+                    onClick={closeEvaluation}
+                    aria-label="Close evaluation"
+                    title="Close evaluation"
+                    style={{
+                      width: 28,
+                      height: 28,
+                      marginLeft: -4,
+                      borderRadius: radius.pill,
+                      border: `1px solid ${color.border}`,
+                      background: color.surface,
+                      color: color.textMuted,
+                      fontSize: 16,
+                      lineHeight: 1,
+                      cursor: "pointer",
+                    }}
+                  >
+                    ×
+                  </button>
+                ) : null}
                 {selectedTemplate ? (
                   <span style={{ fontSize: 13, color: "#64748B" }}>
                     Questionnaire: {selectedTemplate} v{selectedVersion || "1"}
@@ -2514,14 +2586,8 @@ function getWorkflowProgress() {
                     // example: after choosing eval, go to questionnaire select
                     // navigate("/consultant/questionnaire/select");
                   }}
-                  clearFocus={() => {
-                    // Un-focus only; nothing on the server changes
-                    setEvalId("");
-                    setSelectedTemplate("");
-                    setSelectedVersion("");
-                    setTemplateCode("");
-                    setVersion("");
-                  }}
+                  openEvaluation={openEvaluation}
+                  openingId={openRequest}
                   lockReason={lockReason}
                   formatDateMaybe={formatDateMaybe}
                   tableWrapStyle={tableWrapStyle}
