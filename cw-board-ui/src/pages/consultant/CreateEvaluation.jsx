@@ -141,7 +141,7 @@ export default function CreateEvaluationPage({
 
       {/* Status */}
       <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-        <Badge tone="gray">Evaluation in focus: {effectiveEvalId || "—"}</Badge>
+        <Badge tone="gray">Open evaluation: {effectiveEvalId || "—"}</Badge>
         {lastCreatedEvalId ? <Badge tone="green">Created: {lastCreatedEvalId}</Badge> : null}
       </div>
 

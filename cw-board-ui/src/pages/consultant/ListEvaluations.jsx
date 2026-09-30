@@ -1,54 +1,6 @@
 import React, { useEffect } from "react";
 
 /**
- * On/off switch for the evaluation in focus. Only one row can be on; turning it off clears the focus.
- */
-function FocusSwitch({ on, disabled, label, onToggle }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      aria-label={label}
-      title={on ? "Stop working on this evaluation" : "Work on this evaluation"}
-      disabled={disabled}
-      onClick={(e) => {
-        e.stopPropagation(); // don't also trigger the row's click
-        onToggle();
-      }}
-      style={{
-        position: "relative",
-        width: 40,
-        height: 22,
-        padding: 0,
-        borderRadius: 999,
-        border: `1px solid ${on ? "#1D4ED8" : "#94A3B8"}`,
-        background: on ? "#2563EB" : "#E2E8F0",
-        cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.6 : 1,
-        transition: "background 120ms",
-        verticalAlign: "middle",
-      }}
-    >
-      <span
-        aria-hidden
-        style={{
-          position: "absolute",
-          top: 2,
-          left: on ? 20 : 2,
-          width: 16,
-          height: 16,
-          borderRadius: "50%",
-          background: "white",
-          boxShadow: "0 1px 2px rgba(0,0,0,0.3)",
-          transition: "left 120ms",
-        }}
-      />
-    </button>
-  );
-}
-
-/**
  * List Evaluations page (router-based)
  */
 export default function ListEvaluationsPage({
@@ -64,8 +16,8 @@ export default function ListEvaluationsPage({
 
   // actions
   listEvaluations,
-  setFocusFromEvaluationRow,
-  clearFocus,
+  openEvaluation,
+  openingId,
 
   // router nav
   go, // ✅ required: go("/consultant/...")
@@ -112,7 +64,7 @@ export default function ListEvaluationsPage({
   return (
     <Card
       title="Evaluations"
-      subtitle="Select the evaluation you want to work on. The sidebar then shows your progress and the next step."
+      subtitle="Open an evaluation to work on it. The sidebar shows its progress and the next step."
       right={
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <Button onClick={listEvaluations} disabled={busy} variant="secondary">
@@ -129,7 +81,7 @@ export default function ListEvaluationsPage({
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead style={{ background: "#F8FAFC" }}>
               <tr>
-                {["Evaluation", "Client", "Sector", "Year", "Regulators", "Created", "In focus"].map((h) => (
+                {["Evaluation", "Client", "Sector", "Year", "Regulators", "Created", ""].map((h) => (
                   <th
                     key={h}
                     style={{
@@ -141,7 +93,11 @@ export default function ListEvaluationsPage({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {h}
+                    {h || (
+                      <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
+                        Actions
+                      </span>
+                    )}
                   </th>
                 ))}
               </tr>
@@ -172,14 +128,14 @@ export default function ListEvaluationsPage({
                         background: isFocused ? "#EEF2FF" : "transparent",
                         ...rowHoverStyle(),
                       }}
-                      onClick={() => setFocusFromEvaluationRow?.(ev)}
+                      onClick={() => openEvaluation?.(ev)}
                       onMouseEnter={(e) => {
                         if (!isFocused) e.currentTarget.style.background = "#F8FAFC";
                       }}
                       onMouseLeave={(e) => {
                         if (!isFocused) e.currentTarget.style.background = "transparent";
                       }}
-                      title="Click to work on this evaluation"
+                      title="Open this evaluation"
                     >
                       <td style={tdStyle()}>
                         <div style={{ fontWeight: 900, color: "#0F172A" }}>{ev.evaluation_id}</div>
@@ -193,12 +149,19 @@ export default function ListEvaluationsPage({
                       </td>
                       <td style={tdStyle()}>{formatDateMaybe?.(ev.created_at)}</td>
                       <td style={{ ...tdStyle(), textAlign: "right", whiteSpace: "nowrap" }}>
-                        <FocusSwitch
-                          on={isFocused}
-                          disabled={busy}
-                          label={`In focus: ${ev.evaluation_id}`}
-                          onToggle={() => (isFocused ? clearFocus?.() : setFocusFromEvaluationRow?.(ev))}
-                        />
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+                          {isFocused ? <Badge tone="blue">Current</Badge> : null}
+                          <Button
+                            variant={isFocused ? "primary" : "secondary"}
+                            disabled={busy || !!openingId}
+                            onClick={(e) => {
+                              e.stopPropagation(); // the row click would open it a second time
+                              openEvaluation?.(ev);
+                            }}
+                          >
+                            {openingId === ev.evaluation_id ? "Opening…" : isFocused ? "Continue" : "Open"}
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );

@@ -86,7 +86,7 @@ export default function ListQuestionsPage({
             onClick: listQuestionsTask,
             disabled: busy || !!reasonLoad,
             variant: "primary",
-            title: reasonLoad || "Load questions for the focused evaluation",
+            title: reasonLoad || "Load questions for the open evaluation",
           },
         ],
         meta: (
