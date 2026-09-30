@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 
 /**
  * List Evaluations page (router-based)
@@ -36,6 +36,12 @@ export default function ListEvaluationsPage({
   renderFlowBar,
 }) {
   const { Card, Badge, Button } = ui || {};
+
+  // Load the list when the page opens
+  useEffect(() => {
+    if (typeof listEvaluations === "function") listEvaluations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // guards
   const missing = [];
@@ -158,7 +164,13 @@ export default function ListEvaluationsPage({
               {count === 0 ? (
                 <tr>
                   <td style={{ padding: 14, color: "#64748B" }} colSpan={6}>
-                    No evaluations loaded yet. Click <b>Refresh Evaluations</b>.
+                    {!evalsLoadedAt ? (
+                      "Loading evaluations…"
+                    ) : (
+                      <>
+                        No evaluations yet. Click <b>Create New</b> to set one up.
+                      </>
+                    )}
                   </td>
                 </tr>
               ) : (

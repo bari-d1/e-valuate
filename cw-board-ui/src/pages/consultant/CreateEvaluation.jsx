@@ -88,6 +88,7 @@ export default function CreateEvaluationPage({
           <input
             value={newEvalId}
             onChange={(e) => setNewEvalId(e.target.value)}
+            placeholder="Leave blank to auto-generate"
             style={inputStyle()}
             autoComplete="off"
             spellCheck={false}
@@ -107,6 +108,7 @@ export default function CreateEvaluationPage({
           <input
             value={tenantName}
             onChange={(e) => setTenantName(e.target.value)}
+            placeholder="e.g. Acme Insurance Plc"
             style={inputStyle()}
             autoComplete="off"
             spellCheck={false}
@@ -117,6 +119,7 @@ export default function CreateEvaluationPage({
           <input
             value={sector}
             onChange={(e) => setSector(e.target.value)}
+            placeholder="e.g. insurance"
             style={inputStyle()}
             autoComplete="off"
             spellCheck={false}
@@ -128,6 +131,7 @@ export default function CreateEvaluationPage({
             <input
               value={regulatorsText}
               onChange={(e) => setRegulatorsText(e.target.value)}
+              placeholder="e.g. NAICOM, FRC"
               style={inputStyle()}
               autoComplete="off"
               spellCheck={false}

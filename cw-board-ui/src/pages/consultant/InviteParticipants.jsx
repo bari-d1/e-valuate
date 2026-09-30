@@ -157,6 +157,7 @@ export default function InviteParticipantsPage({
           <textarea
             value={inviteText}
             onChange={(e) => setInviteText(e.target.value)}
+            placeholder={"jane.doe@example.com,Jane Doe,INED\njohn.smith@example.com,John Smith,ED"}
             style={textareaStyle(160)}
             spellCheck={false}
           />

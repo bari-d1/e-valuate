@@ -56,6 +56,7 @@ import { saveBlobAsFile } from "./api/blobDownload.js";
 import { getConsultantHeaders } from "./api/consultantAuth.js";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
+const FOCUS_STORAGE_KEY = "consultant.focusEvalId";
 
 
 /* --------------------------
@@ -85,8 +86,9 @@ function stepIndexFromPath(pathname) {
   if (p.includes("/consultant/evaluations")) return 0;
   if (p.includes("/consultant/questionnaire")) return 1;
   if (p.includes("/consultant/participants")) return 2;
-  if (p.includes("/consultant/tracks")) return 3;
-  if (p.includes("/consultant/questions")) return 4;
+  // Order must match the STEPS array in renderWorkflowBar
+  if (p.includes("/consultant/questions")) return 3;
+  if (p.includes("/consultant/tracks")) return 4;
   if (p.includes("/consultant/analysis")) return 5;
 
   return 0;
@@ -441,6 +443,114 @@ function Button({ children, onClick, disabled, variant = "primary", title }) {
   );
 }
 
+function WorkspaceMenu({ disabled, onSoftReset, onReset }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const itemStyle = (danger) => ({
+    display: "block",
+    width: "100%",
+    textAlign: "left",
+    padding: "10px 12px",
+    border: 0,
+    borderRadius: 8,
+    background: "transparent",
+    color: danger ? "#991B1B" : "#0F172A",
+    cursor: "pointer",
+  });
+
+  function run(action) {
+    setOpen(false);
+    action();
+  }
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        type="button"
+        aria-label="Workspace options"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        disabled={disabled}
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          padding: "6px 12px",
+          borderRadius: 10,
+          border: "1px solid #E2E8F0",
+          background: "#F8FAFC",
+          color: "#0F172A",
+          fontWeight: 900,
+          fontSize: 18,
+          lineHeight: 1,
+          cursor: disabled ? "not-allowed" : "pointer",
+        }}
+      >
+        ⋯
+      </button>
+
+      {open ? (
+        <div
+          role="menu"
+          style={{
+            position: "absolute",
+            right: 0,
+            top: "calc(100% + 6px)",
+            zIndex: 20,
+            width: 280,
+            padding: 6,
+            background: "white",
+            border: "1px solid #E2E8F0",
+            borderRadius: 12,
+            boxShadow: "0 10px 30px rgba(15,23,42,0.12)",
+          }}
+        >
+          <button type="button" role="menuitem" style={itemStyle(false)} onClick={() => run(onSoftReset)}>
+            <div style={{ fontWeight: 800 }}>Soft reset</div>
+            <div style={{ fontSize: 12, color: "#64748B" }}>
+              Keep the evaluation and questionnaire; clear progress on screen.
+            </div>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            style={itemStyle(true)}
+            onClick={() =>
+              run(() => {
+                if (
+                  window.confirm(
+                    "Reset the workspace?\n\nThis clears the evaluation in focus and everything on screen. Data saved on the server is not deleted."
+                  )
+                ) {
+                  onReset();
+                }
+              })
+            }
+          >
+            <div style={{ fontWeight: 800 }}>Reset workspace…</div>
+            <div style={{ fontSize: 12, color: "#64748B" }}>Clear the evaluation in focus and start over.</div>
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function Field({ label, children, hint }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -785,12 +895,27 @@ export default function AppLegacy() {
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
 
-  // Evaluation in focus
-  const [evalId, setEvalId] = useState("eval-002");
+  // Evaluation in focus (remembered across reloads)
+  const [evalId, setEvalId] = useState(() => {
+    try {
+      return localStorage.getItem(FOCUS_STORAGE_KEY) || "";
+    } catch {
+      return "";
+    }
+  });
 
-  // ✅ Questionnaire selection (persisted on evaluation)
-  const [selectedTemplate, setSelectedTemplate] = useState("DEFAULT");
-  const [selectedVersion, setSelectedVersion] = useState("1");
+  useEffect(() => {
+    try {
+      if (evalId) localStorage.setItem(FOCUS_STORAGE_KEY, evalId);
+      else localStorage.removeItem(FOCUS_STORAGE_KEY);
+    } catch {
+      /* storage unavailable — focus just won't persist */
+    }
+  }, [evalId]);
+
+  // ✅ Questionnaire selection (loaded from the evaluation in focus)
+  const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [selectedVersion, setSelectedVersion] = useState("");
   const [questionnaireLoadedAt, setQuestionnaireLoadedAt] = useState("");
 
   // List evaluations state
@@ -798,20 +923,18 @@ export default function AppLegacy() {
   const [evalsLoadedAt, setEvalsLoadedAt] = useState("");
 
   // Create Evaluation form
-  const [newEvalId, setNewEvalId] = useState("eval-002");
-  const [tenantName, setTenantName] = useState("EMOK Express");
-  const [sector, setSector] = useState("insurance");
-  const [year, setYear] = useState("2025");
-  const [regulatorsText, setRegulatorsText] = useState("NAICOM, FRC");
+  const [newEvalId, setNewEvalId] = useState("");
+  const [tenantName, setTenantName] = useState("");
+  const [sector, setSector] = useState("");
+  const [year, setYear] = useState(() => String(new Date().getFullYear()));
+  const [regulatorsText, setRegulatorsText] = useState("");
 
   // Invite Participants form
-  const [inviteText, setInviteText] = useState(
-    "board_member_13@demo-client.test,Board Member 13,INED\nboard_member_14@demo-client.test,Board Member 14,ED"
-  );
+  const [inviteText, setInviteText] = useState("");
 
   // Legacy fields kept in sync (so your existing endpoints keep working)
-  const [templateCode, setTemplateCode] = useState("DEFAULT");
-  const [version, setVersion] = useState("1");
+  const [templateCode, setTemplateCode] = useState("");
+  const [version, setVersion] = useState("");
 
   // Manual questions state
   const [questions, setQuestions] = useState([]);
@@ -1042,6 +1165,12 @@ setQuestionnaireSavedForEvalId("");
       { headers: getConsultantHeaders({ Accept: "application/json" }) }
     );
 
+    // Remembered focus points at an evaluation that no longer exists — drop it quietly
+    if (res.status === 404) {
+      setEvalId("");
+      return;
+    }
+
     const data = await safeJsonOrText(res);
     if (!res.ok) throw new Error(typeof data === "string" ? data : pretty(data));
 
@@ -1160,7 +1289,6 @@ function flowTone(stepKey) {
 function stepStatus(stepIndex, currentIndex, done) {
   if (done) return "done";
   if (stepIndex === currentIndex) return "current";
-  if (stepIndex < currentIndex) return "done"; // task moved ahead even if not strictly "done"
   return "todo";
 }
 
@@ -1168,8 +1296,7 @@ function stepStatus(stepIndex, currentIndex, done) {
 function computeNextActionKey() {
   const hasEval = !!String(evalId || "").trim();
 
-  const hasQuestionnaire =
-    !!String(selectedTemplate || "").trim() && !!String(selectedVersion || "").trim();
+  const hasQuestionnaire = hasEval && questionnaireSavedForEvalId === String(evalId).trim();
 
   //const participantsCount =
     //(typeof wfParticipantsCount === "number" ? wfParticipantsCount : 0) ||
@@ -2155,8 +2282,8 @@ function renderWorkflowBar() {
       // ---- Core prerequisites
       const hasEval = !!String(evalId || "").trim();
 
-      const hasQuestionnaire =
-        !!String(selectedTemplate || "").trim() && !!String(selectedVersion || "").trim();
+      // Done only once the questionnaire has been loaded/saved for the evaluation in focus
+      const hasQuestionnaire = hasEval && questionnaireSavedForEvalId === String(evalId).trim();
 
       // ---- Smarter progress (prefer cached workflow state, fallback to current result/arrays)
 
@@ -2485,6 +2612,11 @@ function renderWorkflowBar() {
 
   const focus = renderFocusHeader();
 
+  // Every consultant page except the evaluation list/create works on the evaluation in focus
+  const needsFocus =
+    !String(evalId || "").trim() &&
+    !/^\/consultant\/?$|^\/consultant\/evaluations(\/|$)/.test(location.pathname);
+
   //Here is where we actually build the page with sidebar and the main bar(page)
 
 
@@ -2547,31 +2679,13 @@ function renderWorkflowBar() {
                 <div style={{ fontSize: 18, fontWeight: 900, color: "#0F172A" }}>Consultant Workspace</div>
                 <Badge tone="gray">Evaluation in focus: {evalId || "—"}</Badge>
                 <Badge tone="gray">
-                  Questionnaire: {String(selectedTemplate || "DEFAULT")} v{String(selectedVersion || "1")}
+                  Questionnaire: {selectedTemplate ? `${selectedTemplate} v${selectedVersion || "1"}` : "—"}
                 </Badge>
                 <Badge tone="blue">{routeLabel}</Badge>
               </div>
 
               {/* RIGHT */}
-                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                      <Button
-                        variant="soft"
-                        disabled={busy}
-                        title="Keep Evaluation + Questionnaire, clear participants/questions/report progress"
-                        onClick={softResetWorkspace}
-                      >
-                        Soft reset
-                      </Button>
-
-                      <Button
-                        variant="danger"
-                        disabled={busy}
-                        title="Clear everything and restart from Evaluations"
-                        onClick={resetWorkspace}
-                      >
-                        Reset workspace
-                      </Button>
-                </div>
+                <WorkspaceMenu disabled={busy} onSoftReset={softResetWorkspace} onReset={resetWorkspace} />
 
             </div>
           </div>
@@ -2585,6 +2699,19 @@ function renderWorkflowBar() {
         ) : null}
 
         <div style={{ marginTop: 14 }}>
+          {needsFocus ? (
+            <Card
+              title="Choose an evaluation first"
+              subtitle="This page works on one evaluation at a time. Pick one from the list, or create a new one."
+            >
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <Button onClick={() => navigate("/consultant/evaluations")}>Go to evaluations</Button>
+                <Button variant="secondary" onClick={() => navigate("/consultant/evaluations/create")}>
+                  Create evaluation
+                </Button>
+              </div>
+            </Card>
+          ) : (
           <Routes>
             {/* default inside consultant */}
             <Route path="/" element={<Navigate to="evaluations" replace />} />
@@ -2923,6 +3050,7 @@ function renderWorkflowBar() {
             {/* Consultant unknown paths */}
             <Route path="*" element={<Navigate to="evaluations" replace />} />
           </Routes>
+          )}
         </div>
       </main>
     </div>
