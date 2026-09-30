@@ -1,0 +1,7 @@
+Alembic is configured for this project. See `alembic/env.py` (uses `DATABASE_URL` like the app) and `versions/README.md` for how to create migrations.
+
+Commands:
+
+- `alembic revision --autogenerate -m "message"` — generate a migration from model drift
+- `alembic upgrade head` — apply pending migrations
+- `alembic current` — show current revision

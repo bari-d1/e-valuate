@@ -1,0 +1,18 @@
+# Runtime (pin versions in production as needed)
+fastapi
+python-multipart
+uvicorn[standard]
+sqlalchemy>=2.0
+psycopg[binary]
+python-dotenv
+pydantic
+openpyxl
+python-docx
+langchain
+langchain-core
+langchain-openai
+httpx
+
+# Dev / migrations / tests
+alembic
+pytest

@@ -1,0 +1,22 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv*/
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+
+# Generated reports
+cw_board_evaluation/outputs/
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
