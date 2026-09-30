@@ -63,7 +63,7 @@ export default function ListEvaluationsPage({
   return (
     <Card
       title="Evaluations"
-      subtitle="Select the evaluation you want to work on. The workflow above then guides you through it."
+      subtitle="Select the evaluation you want to work on. The sidebar then shows your progress and the next step."
       right={
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <Button onClick={listEvaluations} disabled={busy} variant="secondary">
