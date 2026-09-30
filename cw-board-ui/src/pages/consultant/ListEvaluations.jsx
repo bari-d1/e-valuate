@@ -1,6 +1,54 @@
 import React, { useEffect } from "react";
 
 /**
+ * On/off switch for the evaluation in focus. Only one row can be on; turning it off clears the focus.
+ */
+function FocusSwitch({ on, disabled, label, onToggle }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      title={on ? "Stop working on this evaluation" : "Work on this evaluation"}
+      disabled={disabled}
+      onClick={(e) => {
+        e.stopPropagation(); // don't also trigger the row's click
+        onToggle();
+      }}
+      style={{
+        position: "relative",
+        width: 40,
+        height: 22,
+        padding: 0,
+        borderRadius: 999,
+        border: `1px solid ${on ? "#1D4ED8" : "#94A3B8"}`,
+        background: on ? "#2563EB" : "#E2E8F0",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.6 : 1,
+        transition: "background 120ms",
+        verticalAlign: "middle",
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          position: "absolute",
+          top: 2,
+          left: on ? 20 : 2,
+          width: 16,
+          height: 16,
+          borderRadius: "50%",
+          background: "white",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.3)",
+          transition: "left 120ms",
+        }}
+      />
+    </button>
+  );
+}
+
+/**
  * List Evaluations page (router-based)
  */
 export default function ListEvaluationsPage({
@@ -17,6 +65,7 @@ export default function ListEvaluationsPage({
   // actions
   listEvaluations,
   setFocusFromEvaluationRow,
+  clearFocus,
 
   // router nav
   go, // ✅ required: go("/consultant/...")
@@ -80,7 +129,7 @@ export default function ListEvaluationsPage({
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead style={{ background: "#F8FAFC" }}>
               <tr>
-                {["Evaluation", "Client", "Sector", "Year", "Regulators", "Created", ""].map((h) => (
+                {["Evaluation", "Client", "Sector", "Year", "Regulators", "Created", "In focus"].map((h) => (
                   <th
                     key={h}
                     style={{
@@ -92,11 +141,7 @@ export default function ListEvaluationsPage({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {h || (
-                      <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
-                        Actions
-                      </span>
-                    )}
+                    {h}
                   </th>
                 ))}
               </tr>
@@ -148,20 +193,12 @@ export default function ListEvaluationsPage({
                       </td>
                       <td style={tdStyle()}>{formatDateMaybe?.(ev.created_at)}</td>
                       <td style={{ ...tdStyle(), textAlign: "right", whiteSpace: "nowrap" }}>
-                        {isFocused ? (
-                          <Badge tone="blue">In focus</Badge>
-                        ) : (
-                          <Button
-                            variant="secondary"
-                            disabled={busy}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setFocusFromEvaluationRow?.(ev);
-                            }}
-                          >
-                            Select
-                          </Button>
-                        )}
+                        <FocusSwitch
+                          on={isFocused}
+                          disabled={busy}
+                          label={`In focus: ${ev.evaluation_id}`}
+                          onToggle={() => (isFocused ? clearFocus?.() : setFocusFromEvaluationRow?.(ev))}
+                        />
                       </td>
                     </tr>
                   );

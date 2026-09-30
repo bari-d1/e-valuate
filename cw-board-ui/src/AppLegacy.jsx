@@ -2514,6 +2514,14 @@ function getWorkflowProgress() {
                     // example: after choosing eval, go to questionnaire select
                     // navigate("/consultant/questionnaire/select");
                   }}
+                  clearFocus={() => {
+                    // Un-focus only; nothing on the server changes
+                    setEvalId("");
+                    setSelectedTemplate("");
+                    setSelectedVersion("");
+                    setTemplateCode("");
+                    setVersion("");
+                  }}
                   lockReason={lockReason}
                   formatDateMaybe={formatDateMaybe}
                   tableWrapStyle={tableWrapStyle}
