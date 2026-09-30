@@ -58,6 +58,29 @@ import { getConsultantHeaders } from "./api/consultantAuth.js";
 const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 const FOCUS_STORAGE_KEY = "consultant.focusEvalId";
 
+// Demo/test tools (seed demo responses, LLM ping) — set VITE_SHOW_DEV_TOOLS=true to show them
+const SHOW_DEV_TOOLS = import.meta.env.VITE_SHOW_DEV_TOOLS === "true";
+
+// Related pages grouped under one sidebar entry and shown as tabs
+const SECTION_TABS = [
+  {
+    base: "/consultant/participants",
+    tabs: [
+      { to: "/consultant/participants", label: "Roster", end: true },
+      { to: "/consultant/participants/invite", label: "Invite" },
+    ],
+  },
+  {
+    base: "/consultant/questions",
+    tabs: [
+      { to: "/consultant/questions", label: "All questions", end: true },
+      { to: "/consultant/questions/edit", label: "Add / edit" },
+      { to: "/consultant/questions/seed", label: "Default set" },
+      { to: "/consultant/questions/ai", label: "Generate with AI" },
+    ],
+  },
+];
+
 
 /* --------------------------
    Stable constants
@@ -443,7 +466,7 @@ function Button({ children, onClick, disabled, variant = "primary", title }) {
   );
 }
 
-function WorkspaceMenu({ disabled, onSoftReset, onReset }) {
+function WorkspaceMenu({ disabled, onSoftReset, onReset, onPing }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -545,6 +568,21 @@ function WorkspaceMenu({ disabled, onSoftReset, onReset }) {
             <div style={{ fontWeight: 800 }}>Reset workspace…</div>
             <div style={{ fontSize: 12, color: "#64748B" }}>Clear the evaluation in focus and start over.</div>
           </button>
+          {onPing ? (
+            <button
+              type="button"
+              role="menuitem"
+              style={{ ...itemStyle(false), borderTop: "1px solid #F1F5F9", borderRadius: 0 }}
+              onClick={() =>
+                run(async () => {
+                  if (await onPing()) window.alert("AI connection OK.");
+                })
+              }
+            >
+              <div style={{ fontWeight: 800 }}>Test AI connection</div>
+              <div style={{ fontSize: 12, color: "#64748B" }}>Developer tool: pings the LLM endpoint.</div>
+            </button>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -605,101 +643,39 @@ function subNavItemStyle(active) {
   return {
     width: "100%",
     textAlign: "left",
-    padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(255,255,255,0.08)",
-    background: active ? "rgba(37,99,235,0.22)" : "rgba(255,255,255,0.03)",
-    color: active ? "white" : "rgba(255,255,255,0.9)",
-    fontWeight: active ? 900 : 700,
+    padding: "8px 12px",
+    borderRadius: 8,
+    background: active ? "rgba(59,130,246,0.25)" : "transparent",
+    color: active ? "white" : "rgba(255,255,255,0.82)",
+    fontSize: 14,
+    fontWeight: active ? 800 : 600,
     cursor: "pointer",
-    marginBottom: 8,
+    marginBottom: 2,
   };
 }
 
-
-function groupTone(group) {
-  const g = String(group || "").toLowerCase();
-
-  // Slightly stronger separation + consistent alpha ramps
-  if (g.includes("evaluation")) {
-    return {
-      bg: "rgba(59,130,246,0.18)",
-      fg: "rgba(219,234,254,1)",
-      bd: "rgba(59,130,246,0.30)",
-      accent: "rgba(59,130,246,0.85)",
-    }; // blue
-  }
-  if (g.includes("questionnaire")) {
-    return {
-      bg: "rgba(168,85,247,0.18)",
-      fg: "rgba(243,232,255,1)",
-      bd: "rgba(168,85,247,0.30)",
-      accent: "rgba(168,85,247,0.85)",
-    }; // purple
-  }
-  if (g.includes("track") || g.includes("assessment")) {
-    return {
-      bg: "rgba(16,185,129,0.18)",
-      fg: "rgba(209,250,229,1)",
-      bd: "rgba(16,185,129,0.30)",
-      accent: "rgba(16,185,129,0.85)",
-    }; // emerald (tracks)
-  }
-  if (g.includes("participant")) {
-    return {
-      bg: "rgba(34,197,94,0.16)",
-      fg: "rgba(220,252,231,1)",
-      bd: "rgba(34,197,94,0.28)",
-      accent: "rgba(34,197,94,0.85)",
-    }; // green
-  }
-  if (g === "questions") {
-    return {
-      bg: "rgba(99,102,241,0.18)",
-      fg: "rgba(224,231,255,1)",
-      bd: "rgba(99,102,241,0.30)",
-      accent: "rgba(99,102,241,0.85)",
-    }; // indigo (question bank / authoring)
-  }
-  if (g.includes("analysis")) {
-    return {
-      bg: "rgba(245,158,11,0.16)",
-      fg: "rgba(255,237,213,1)",
-      bd: "rgba(245,158,11,0.28)",
-      accent: "rgba(245,158,11,0.85)",
-    }; // amber
-  }
-
+// Plain section label — deliberately not button-like so it doesn't look clickable
+function navGroupHeadingStyle() {
   return {
-    bg: "rgba(255,255,255,0.06)",
-    fg: "rgba(255,255,255,0.80)",
-    bd: "rgba(255,255,255,0.14)",
-    accent: "rgba(255,255,255,0.55)",
-  };
-}
-
-function groupHeaderStyleTone(group) {
-  const t = groupTone(group);
-
-  return {
-    margin: "12px 8px 10px",
-    padding: "8px 10px 8px 12px",
-    borderRadius: 10,
-    fontSize: 12,
-    fontWeight: 900,
-    letterSpacing: 0.6,
+    padding: "0 12px",
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: 0.8,
     textTransform: "uppercase",
+    color: "rgba(255,255,255,0.55)",
+  };
+}
 
-    // main styling
-    background: t.bg,
-    color: t.fg,
-    border: `1px solid ${t.bd}`,
-
-    // ✅ new: left accent bar (fast cognitive grouping)
-    borderLeft: `6px solid ${t.accent}`,
-
-    // ✅ new: subtle depth (doesn't fight the buttons)
-    boxShadow: "0 1px 0 rgba(0,0,0,0.25)",
+function tabLinkStyle(active) {
+  return {
+    padding: "8px 14px",
+    borderRadius: 8,
+    textDecoration: "none",
+    fontSize: 14,
+    fontWeight: active ? 800 : 600,
+    color: active ? "#1D4ED8" : "#475569",
+    background: active ? "#EFF6FF" : "transparent",
+    border: `1px solid ${active ? "#BFDBFE" : "transparent"}`,
   };
 }
 
@@ -916,7 +892,7 @@ export default function AppLegacy() {
   // ✅ Questionnaire selection (loaded from the evaluation in focus)
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [selectedVersion, setSelectedVersion] = useState("");
-  const [questionnaireLoadedAt, setQuestionnaireLoadedAt] = useState("");
+  const [, setQuestionnaireLoadedAt] = useState("");
 
   // List evaluations state
   const [evaluations, setEvaluations] = useState([]);
@@ -1293,103 +1269,15 @@ function stepStatus(stepIndex, currentIndex, done) {
 }
 
 
-function computeNextActionKey() {
-  const hasEval = !!String(evalId || "").trim();
-
-  const hasQuestionnaire = hasEval && questionnaireSavedForEvalId === String(evalId).trim();
-
-  //const participantsCount =
-    //(typeof wfParticipantsCount === "number" ? wfParticipantsCount : 0) ||
-    //(result?.action === "list_participants" ? Number(result?.data?.count || 0) : 0) ||
-    //(result?.action === "invite_participants" ? 1 : 0);
-
-  const participantsCount =
-  (typeof wfParticipantsCount === "number" ? wfParticipantsCount : 0) ||
-  (result?.action === "list_participants" ? Number(result?.data?.count || 0) : 0);
-
-
-  const hasParticipants = participantsCount > 0;
-
-  const hasTracksReady =
-    (typeof wfTracksMetrics?.assignmentsCount === "number" && wfTracksMetrics.assignmentsCount > 0) ||
-    false;
-
-  const questionsCount =
-    (typeof wfQuestionsCount === "number" ? wfQuestionsCount : 0) ||
-    (Array.isArray(questions) ? questions.length : 0);
-
-  const hasQuestions = questionsCount > 0;
-
-  const hasReport =
-    (typeof wfReportReady === "boolean" ? wfReportReady : false) ||
-    result?.action === "generate_then_get_latest" ||
-    result?.action === "get_latest_report" ||
-    result?.action === "generate_report" ||
-    !!latestSummary?.exec;
-
-  if (!hasEval) return "list_evaluations";
-  if (!hasQuestionnaire) return "select_questionnaire";
-  if (!hasParticipants) return "invite_participants";
-  if (!hasQuestions) return "list_questions";
-  if (!hasTracksReady) return "assessment_tracks";
-  if (!hasReport) return "generate_report";
-  return "generate_report"; // end state
-}
-
-function nextActionMeta() {
-  const key = computeNextActionKey();
-  const map = {
-    list_evaluations: { label: "Next: Choose Evaluation →", toTask: "list_evaluations", tone: "primary" },
-    select_questionnaire: { label: "Next: Select Questionnaire →", toTask: "select_questionnaire", tone: "primary" },
-    invite_participants: { label: "Next: Invite Participants →", toTask: "invite_participants", tone: "primary" },
-    assessment_tracks: { label: "Next: Assessment tracks →", toTask: "assessment_tracks", tone: "primary" },
-    list_questions: { label: "Next: Add / View Questions →", toTask: "list_questions", tone: "primary" },
-    generate_report: { label: "Next: Generate Report →", toTask: "generate_report", tone: "primary" },
-  };
-  return map[key] || map.list_evaluations;
-}
+// Page-level secondary actions. Step-to-step navigation lives in the workflow bar only.
 function renderNextActionBar(opts = {}) {
-  const meta = nextActionMeta();
-
-  // Next button label + destination
-  const label = opts.nextLabel || opts.label || meta.label;
-  const toTask = opts.toTask || meta.toTask;
-
-  // Optional lock reasons (empty string means “no lock”)
-  const nextReason = opts.nextReason || "";
   const refreshReason = opts.refreshReason || "";
-  const backReason = opts.backReason || "";
-
-  const hasEval = !!String(evalId || "").trim();
-
-  // Keep your existing rule, but allow lockReason to add extra gating
-  const nextDisabled =
-    busy ||
-    !!nextReason ||
-    (toTask !== "list_evaluations" && !hasEval) ||
-    !!opts.nextDisabled; // optional manual override
-
   const refreshDisabled = busy || !!refreshReason || !!opts.refreshDisabled;
-  const backDisabled = busy || !!backReason || !!opts.backDisabled;
 
-  // Support custom Next behavior
-  const handleNext = () => {
-    if (typeof opts.onNext === "function") return opts.onNext();
-    return navigate(TASK_TO_PATH[toTask] || "/consultant/evaluations");
-
-  };
+  if (!opts.onRefresh && !opts.extra) return null;
 
   return (
     <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-      <Button
-        onClick={handleNext}
-        disabled={nextDisabled}
-        title={nextReason || label}
-        variant="primary"
-      >
-        {label}
-      </Button>
-
       {opts.onRefresh ? (
         <Button
           onClick={opts.onRefresh}
@@ -1401,24 +1289,21 @@ function renderNextActionBar(opts = {}) {
         </Button>
       ) : null}
 
-      {opts.backTo ? (
-        <Button
-          onClick={() => navigate(TASK_TO_PATH[opts.backTo] || "/consultant/evaluations")}
-
-          disabled={backDisabled}
-          title={backReason || "Back"}
-          variant="secondary"
-        >
-          Back
-        </Button>
-      ) : null}
-
       {opts.extra ? opts.extra : null}
     </div>
   );
 }
 
 
+
+  // Load the evaluation list once in the background so the top bar can show the client name on any page
+  useEffect(() => {
+    apiGet("/api/v1/evaluations")
+      .then((data) => {
+        if (Array.isArray(data?.items)) setEvaluations(data.items);
+      })
+      .catch(() => {});
+  }, []);
 
   // ✅ Auto-load questionnaire whenever evalId changes
   useEffect(() => {
@@ -1599,8 +1484,10 @@ function renderNextActionBar(opts = {}) {
       if (!res.ok) throw new Error(await res.text());
       const json = await res.json();
       setResult({ action: "ping", data: json });
+      return true;
     } catch (e) {
       setError(e?.message || String(e));
+      return false;
     } finally {
       setBusy(false);
     }
@@ -2223,58 +2110,6 @@ function parseHintsCsv(hints) {
   // ✅ DROP-IN: Collapsible renderFocusHeader()
 
 
-function renderFocusHeader() {
-  return (
-    <details
-      style={{
-        border: "1px solid #E5E7EB",
-        background: "white",
-        borderRadius: 14,
-        padding: 12,
-        boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-      }}
-    >
-      {/* ✅ Collapsed header line (always visible) */}
-      <summary
-        style={{
-          cursor: "pointer",
-          listStyle: "none",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 10,
-          flexWrap: "wrap",
-          userSelect: "none",
-        }}
-      >
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <div style={{ fontWeight: 900, color: "#0F172A" }}>Focus</div>
-
-          <Badge tone="gray">Eval: {evalId || "—"}</Badge>
-
-          <Badge tone="gray">
-            Q: {String(selectedTemplate || "DEFAULT")} v{String(selectedVersion || "1")}
-          </Badge>
-
-          {questionnaireLoadedAt ? (
-            <Badge tone="gray">Loaded: {questionnaireLoadedAt}</Badge>
-          ) : null}
-        </div>
-
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <Button onClick={handlePing} disabled={busy} variant="soft">
-            {busy ? "Working..." : "Ping LLM"}
-          </Button>
-
-        </div>
-      </summary>
-
-
-    </details>
-  );
-}
-
-
 function renderWorkflowBar() {
       const currentIndex = stepIndexFromPath(location.pathname);
 
@@ -2554,63 +2389,39 @@ function renderWorkflowBar() {
   // -----------------------------------------
   const CONSULTANT_NAV_GROUPS = [
     {
-      group: "Evaluations",
+      group: "Setup",
       items: [
-        { to: "/consultant/evaluations", label: "List Evaluations" },
-        { to: "/consultant/evaluations/create", label: "Create Evaluation" },
+        { to: "/consultant/evaluations", label: "Evaluations" },
+        { to: "/consultant/questionnaire/select", label: "Questionnaire" },
+        { to: "/consultant/participants", label: "Participants" },
+        { to: "/consultant/questions", label: "Questions" },
+        { to: "/consultant/tracks", label: "Tracks & assignments" },
       ],
     },
     {
-      group: "Questionnaire",
-      items: [{ to: "/consultant/questionnaire/select", label: "Select Questionnaire" }],
-    },
-    {
-      group: "Participants",
-      items: [
-        { to: "/consultant/participants/invite", label: "Invite Participants" },
-        { to: "/consultant/participants", label: "View Participants" },
-      ],
-    },
-    {
-      group: "Questions",
-      items: [
-        { to: "/consultant/questions", label: "View Questions" },
-        { to: "/consultant/questions/edit", label: "Add / Edit Questions" },
-        { to: "/consultant/questions/seed", label: "Seed Default Questionnaire" },
-        { to: "/consultant/questions/ai", label: "Generate Questions (AI)" },
-      ],
-    },
-    {
-      group: "Assessment tracks",
-      items: [{ to: "/consultant/tracks", label: "Tracks & assignments" }],
-    },
-    {
-      group: "Analysis",
+      group: "Results",
       items: [
         { to: "/consultant/analysis/responses", label: "Responses & export" },
-        { to: "/consultant/analysis/seed-demo", label: "Seed Demo Responses" },
-        { to: "/consultant/analysis/report", label: "Generate Report" },
+        { to: "/consultant/analysis/report", label: "Report" },
       ],
     },
+    ...(SHOW_DEV_TOOLS
+      ? [
+          {
+            group: "Developer tools",
+            items: [{ to: "/consultant/analysis/seed-demo", label: "Seed demo responses" }],
+          },
+        ]
+      : []),
   ];
 
-  //End of renderConsultantTask function
-
-  // ✅ derive a label from pathname (replaces taskLabel)
-  const routeLabel = useMemo(() => {
-    const p = location.pathname;
-    for (const g of CONSULTANT_NAV_GROUPS) {
-      const found = g.items.find((x) => p.startsWith(x.to));
-      if (found) return found.label;
-    }
-    // fallback for base
-    if (p === "/consultant" || p === "/consultant/") return "List Evaluations";
-    return "Consultant";
-  }, [location.pathname]);
+  // Sections with several related pages show them as tabs instead of separate sidebar links
+  const activeTabs = SECTION_TABS.find((s) => location.pathname.startsWith(s.base))?.tabs || null;
 
 
 
-  const focus = renderFocusHeader();
+  // The evaluation in focus is shown once, in the top bar; pages no longer render their own panel
+  const focus = null;
 
   // Every consultant page except the evaluation list/create works on the evaluation in focus
   const needsFocus =
@@ -2627,23 +2438,16 @@ function renderWorkflowBar() {
     <div style={pageShellStyle()}>
       {/* Sidebar */}
       <aside style={sidebarStyle()}>
-        <div style={{ padding: "18px 16px" }}>
-          <div style={{ fontSize: 14, fontWeight: 900, color: "white" }}>C&amp;W Board Eval</div>
-          <div style={{ marginTop: 4, fontSize: 12, color: "rgba(255,255,255,0.75)" }}>
-            React UI • Phase 1 (Consultant)
-          </div>
+        <div style={{ padding: "20px 18px 8px" }}>
+          <div style={{ fontSize: 15, fontWeight: 900, color: "white" }}>C&amp;W Board Eval</div>
         </div>
 
-        <div style={{ padding: "0 10px 16px" }}>
-          <div style={{ margin: "8px 8px 10px", fontSize: 12, fontWeight: 900, color: "rgba(255,255,255,0.75)" }}>
-            Consultant tasks
-          </div>
-
+        <nav aria-label="Consultant" style={{ padding: "0 10px 16px" }}>
           {CONSULTANT_NAV_GROUPS.map((grp) => (
-            <div key={grp.group} style={{ marginBottom: 10 }}>
-              <div style={groupHeaderStyleTone(grp.group)}>{grp.group}</div>
+            <div key={grp.group} style={{ marginTop: 16 }}>
+              <div style={navGroupHeadingStyle()}>{grp.group}</div>
 
-              <div style={{ marginTop: 8 }}>
+              <div style={{ marginTop: 6 }}>
                 {grp.items.map((it) => (
                   <NavLink
                     key={it.to}
@@ -2660,14 +2464,7 @@ function renderWorkflowBar() {
               </div>
             </div>
           ))}
-        </div>
-
-        <div style={{ marginTop: "auto", padding: 14 }}>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)" }}>API</div>
-          <div style={{ fontSize: 12, color: "white", fontWeight: 800, wordBreak: "break-all" }}>
-            {API_BASE}
-          </div>
-        </div>
+        </nav>
       </aside>
 
       {/* Main */}
@@ -2677,15 +2474,47 @@ function renderWorkflowBar() {
               {/* LEFT */}
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 <div style={{ fontSize: 18, fontWeight: 900, color: "#0F172A" }}>Consultant Workspace</div>
-                <Badge tone="gray">Evaluation in focus: {evalId || "—"}</Badge>
-                <Badge tone="gray">
-                  Questionnaire: {selectedTemplate ? `${selectedTemplate} v${selectedVersion || "1"}` : "—"}
-                </Badge>
-                <Badge tone="blue">{routeLabel}</Badge>
+                <button
+                  type="button"
+                  onClick={() => navigate("/consultant/evaluations")}
+                  title="Change the evaluation you're working on"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "6px 12px",
+                    borderRadius: 999,
+                    border: "1px solid #CBD5E1",
+                    background: evalId ? "#FFFFFF" : "#FFFBEB",
+                    color: "#0F172A",
+                    fontSize: 13,
+                    cursor: "pointer",
+                  }}
+                >
+                  <span style={{ color: "#64748B" }}>Evaluation:</span>
+                  <b>
+                    {evalId
+                      ? [evalId, evaluations.find((e) => e.evaluation_id === evalId)?.tenant_name]
+                          .filter(Boolean)
+                          .join(" · ")
+                      : "None selected"}
+                  </b>
+                  <span aria-hidden style={{ color: "#64748B" }}>▾</span>
+                </button>
+                {selectedTemplate ? (
+                  <span style={{ fontSize: 13, color: "#64748B" }}>
+                    Questionnaire: {selectedTemplate} v{selectedVersion || "1"}
+                  </span>
+                ) : null}
               </div>
 
               {/* RIGHT */}
-                <WorkspaceMenu disabled={busy} onSoftReset={softResetWorkspace} onReset={resetWorkspace} />
+                <WorkspaceMenu
+                  disabled={busy}
+                  onSoftReset={softResetWorkspace}
+                  onReset={resetWorkspace}
+                  onPing={SHOW_DEV_TOOLS ? handlePing : null}
+                />
 
             </div>
           </div>
@@ -2712,6 +2541,16 @@ function renderWorkflowBar() {
               </div>
             </Card>
           ) : (
+          <>
+          {activeTabs ? (
+            <nav aria-label="Section" style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+              {activeTabs.map((t) => (
+                <NavLink key={t.to} to={t.to} end={t.end} style={({ isActive }) => tabLinkStyle(isActive)}>
+                  {t.label}
+                </NavLink>
+              ))}
+            </nav>
+          ) : null}
           <Routes>
             {/* default inside consultant */}
             <Route path="/" element={<Navigate to="evaluations" replace />} />
@@ -3050,6 +2889,7 @@ function renderWorkflowBar() {
             {/* Consultant unknown paths */}
             <Route path="*" element={<Navigate to="evaluations" replace />} />
           </Routes>
+          </>
           )}
         </div>
       </main>

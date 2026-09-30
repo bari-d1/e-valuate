@@ -101,7 +101,6 @@ export default function GenerateReportPage({
     <Card
       title="Generate Report"
       subtitle="One click: generate a new report, then fetch the latest report for the evaluation."
-      right={<Badge tone="blue">Consultant</Badge>}
     >
       {focus}
 

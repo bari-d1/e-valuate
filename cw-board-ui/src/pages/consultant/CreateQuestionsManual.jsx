@@ -8,11 +8,6 @@ export default function CreateQuestionsManualPage(props) {
 
     // data
     questions,
-    qsLoadedAt,
-
-    // questionnaire
-    selectedTemplate,
-    selectedVersion,
 
     // locks + actions
     lockReason,
@@ -100,14 +95,11 @@ export default function CreateQuestionsManualPage(props) {
   // ✅ Lock reasons (use correct key for "Load Questions")
   const reasonLoad = lockReason?.("list_questions") || "";
   const reasonManual = lockReason?.("manual_questions") || "";
-  const reasonAI = lockReason?.("ai_questions") || "";
-  const reasonSeed = lockReason?.("seed") || "";
 
   return (
     <Card
       title="Add / Edit Questions"
       subtitle="Creates questions in the evaluation’s selected questionnaire. Toggle Active without deleting."
-      right={<Badge tone="blue">Consultant</Badge>}
     >
       {focus}
 
@@ -118,52 +110,16 @@ export default function CreateQuestionsManualPage(props) {
             label: busy ? "Loading..." : "Load Questions",
             onClick: listQuestionsManual,
             disabled: busy || !!reasonLoad,
-            variant: "primary",
-            title: reasonLoad || "Load questions for the focused evaluation/questionnaire",
-          },
-          {
-            key: "view_table",
-            label: "View as Table →",
-            onClick: () => go(ROUTES.listQuestions),
-            disabled: busy,
             variant: "secondary",
+            title: reasonLoad || "Load questions for the focused evaluation/questionnaire",
           },
         ],
         meta: (
           <>
-            <Badge tone="gray">
-              Target: {String(selectedTemplate || "DEFAULT")} v{String(selectedVersion || "1")}
-            </Badge>
             <Badge tone="gray">Count: {qCount}</Badge>
-            {qsLoadedAt ? <Badge tone="gray">Loaded: {qsLoadedAt}</Badge> : null}
             {reasonLoad ? <Badge tone="amber">{reasonLoad}</Badge> : null}
           </>
         ),
-        right: [
-          {
-            key: "gen_ai",
-            label: "Generate (AI) →",
-            onClick: () => go(ROUTES.genAI),
-            disabled: busy || !!reasonAI,
-            variant: "highlight",
-            title: reasonAI || "Use AI helper to draft questions",
-          },
-          {
-            key: "next_seed",
-            label: "Next: Seed Demo Responses →",
-            onClick: () => go(ROUTES.seedDemo),
-            disabled: busy || !!reasonSeed,
-            variant: "secondary",
-            title: reasonSeed || "Seed demo participants + responses (for report testing)",
-          },
-          {
-            key: "back",
-            label: "Back →",
-            onClick: () => go(ROUTES.evaluations),
-            disabled: busy,
-            variant: "soft",
-          },
-        ],
         marginTop: 10,
       })}
 

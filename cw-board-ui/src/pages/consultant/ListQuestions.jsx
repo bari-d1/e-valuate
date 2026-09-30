@@ -8,9 +8,6 @@ export default function ListQuestionsPage({
   busy,
   focus,
   questions,
-  selectedTemplate,
-  selectedVersion,
-  qsListLoadedAt,
 
   // actions
   listQuestionsTask,
@@ -56,8 +53,6 @@ export default function ListQuestionsPage({
   const qCount = Array.isArray(questions) ? questions.length : 0;
 
   const reasonLoad = lockReason("list_questions"); // requires eval + questionnaire
-  const reasonManual = lockReason("manual_questions");
-  const reasonAI = lockReason("ai_questions");
 
 
 
@@ -73,7 +68,6 @@ export default function ListQuestionsPage({
     <Card
       title="View Questions"
       subtitle="Lists questions for the questionnaire selected on this evaluation (template/version)."
-      right={<Badge tone="blue">Consultant</Badge>}
     >
       {focus}
 
@@ -90,39 +84,10 @@ export default function ListQuestionsPage({
         ],
         meta: (
           <>
-            <Badge tone="gray">
-              Questionnaire: {String(selectedTemplate || "DEFAULT")} v{String(selectedVersion || "1")}
-            </Badge>
             <Badge tone="gray">Count: {qCount}</Badge>
-            {qsListLoadedAt ? <Badge tone="gray">Loaded: {qsListLoadedAt}</Badge> : null}
             {reasonLoad ? <Badge tone="amber">{reasonLoad}</Badge> : null}
           </>
         ),
-        right: [
-          {
-            key: "edit_questions",
-            label: "Add / Edit Questions →",
-            onClick: () => go(ROUTES.editManual),
-            disabled: busy || !!reasonManual,
-            variant: "secondary",
-            title: reasonManual || "Add/edit questions manually",
-          },
-          {
-            key: "gen_ai",
-            label: "Generate Questions (AI) →",
-            onClick: () => go(ROUTES.genAI),
-            disabled: busy || !!reasonAI,
-            variant: "highlight",
-            title: reasonAI || "Generate draft questions from a source file",
-          },
-          {
-            key: "back",
-            label: "Back to Evaluations →",
-            onClick: () => go(ROUTES.evaluations),
-            disabled: busy,
-            variant: "soft",
-          },
-        ],
         marginTop: 14,
       })}
 

@@ -23,27 +23,19 @@ export default function SelectQuestionnairePage({
 
   setEvaluationQuestionnaire,
 
-  // router nav
-  go,
-
   // helpers
   lockReason,
 
   // ui helpers/styles
   inputStyle,
-  renderFlowBar,
 }) {
   const { Card, Badge, Field, Button } = ui;
 
   // Locks
   const reasonEval = useMemo(() => lockReason("evaluation"), [lockReason]); // needs eval
   const reasonQuestionnaire = useMemo(() => lockReason("questionnaire"), [lockReason]); // needs eval + template/version
-  const reasonListQuestions = useMemo(() => lockReason("list_questions"), [lockReason]);
 
   const disabledEvalOnly = busy || !!reasonEval;
-
-  const canInvite = !busy && !reasonEval; // invite needs only eval
-  const canProceedToQuestions = !busy && !reasonQuestionnaire; // questions need questionnaire
 
   const markQuestionnaireDirty = () => {
     setQuestionnaireSavedForEvalId("");
@@ -59,7 +51,6 @@ export default function SelectQuestionnairePage({
     <Card
       title="Select Questionnaire"
       subtitle="Choose template + version for this evaluation, then save so the backend and all question tools use the same instrument."
-      right={<Badge tone="blue">Consultant</Badge>}
     >
       {focus}
 
@@ -70,8 +61,6 @@ export default function SelectQuestionnairePage({
 
       {/* Current selection */}
       <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-        <Badge tone="gray">Evaluation: {String(evalId || "—")}</Badge>
-
         <Badge tone="gray">
           Selected: {String(selectedTemplate || "—")} v{String(selectedVersion || "—")}
         </Badge>
@@ -133,59 +122,6 @@ export default function SelectQuestionnairePage({
       </div>
 
       {/* Flow / navigation */}
-      {renderFlowBar({
-        left: [
-          {
-            key: "invite",
-            label: "Invite Participants →",
-            onClick: () => go("/consultant/participants/invite"),
-            disabled: !canInvite,
-            variant: "secondary",
-            title: reasonEval || "Invite board members/directors",
-          },
-          {
-            key: "edit_questions",
-            label: "Continue: Add / Edit Questions →",
-            onClick: () => go("/consultant/questions/edit"),
-            disabled: !canProceedToQuestions,
-            variant: "primary",
-            title: reasonQuestionnaire || "Proceed to question authoring",
-          },
-        ],
-        meta: (
-          <span style={{ fontSize: 13, color: "#64748B" }}>
-            {reasonEval ? (
-              <>
-                <b style={{ color: "#92400E" }}>Locked:</b> {reasonEval}
-              </>
-            ) : reasonQuestionnaire ? (
-              <>
-                <b style={{ color: "#92400E" }}>Next step locked:</b> {reasonQuestionnaire}
-              </>
-            ) : (
-              <>Next: Add/Edit questions → (Optional) Seed demo → Generate report</>
-            )}
-          </span>
-        ),
-        right: [
-          {
-            key: "view_questions",
-            label: "View Questions →",
-            onClick: () => go("/consultant/questions"),
-            disabled: busy || !!reasonListQuestions,
-            variant: "soft",
-            title: reasonListQuestions || "View questions for this questionnaire",
-          },
-          {
-            key: "back",
-            label: "Back to Evaluations →",
-            onClick: () => go("/consultant/evaluations"),
-            disabled: busy,
-            variant: "soft",
-          },
-        ],
-        marginTop: 14,
-      })}
     </Card>
   );
 }

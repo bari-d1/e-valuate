@@ -108,7 +108,6 @@ export default function SeedDemoResponsesPage({
     <Card
       title="Seed Demo Responses"
       subtitle="Creates demo participants + responses so analytics and reports are based on real DB rows."
-      right={<Badge tone="blue">Consultant</Badge>}
     >
       <div style={{ marginTop: 6 }}>{focus}</div>
 

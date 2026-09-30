@@ -400,17 +400,8 @@ export default function ConsultantResponsesPage({
     <Card
       title="Responses & export"
       subtitle="Filtered preview and downloads use the same rules as the table below."
-      right={<Badge tone="blue">Consultant</Badge>}
     >
       {focus}
-
-      {renderFlowBar({
-        left: [
-          <Button key="back" disabled={busy} onClick={() => go("/consultant/evaluations")}>
-            ← Evaluations
-          </Button>,
-        ],
-      })}
 
       {reason ? (
         <div

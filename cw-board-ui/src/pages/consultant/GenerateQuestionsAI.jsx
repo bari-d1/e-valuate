@@ -91,7 +91,6 @@ export default function GenerateQuestionsAIPage({
 
   // Locks
   const reasonAI = lockReason("ai_questions");
-  const reasonListQs = lockReason("list_questions");
 
   // File requirement
   const reasonFile = !reasonAI && !aiFile ? "Choose a file first." : "";
@@ -99,7 +98,6 @@ export default function GenerateQuestionsAIPage({
   const disabledAI = busy || !!reasonAI;
   const disabledGenerate = busy || !!reasonAI || !!reasonFile;
   const disabledAdd = busy || !!reasonAI || draftCount === 0 || selectedCount === 0;
-  const disabledViewQs = busy || !!reasonListQs;
 
   return (
     <Card
@@ -308,14 +306,6 @@ export default function GenerateQuestionsAIPage({
             disabled: disabledAdd,
             variant: "primary",
             title: reasonAI ? reasonAI : selectedCount === 0 ? "Select at least one draft" : "Bulk insert selected questions",
-          },
-          {
-            key: "view_questions",
-            label: "View Questions →",
-            onClick: () => go("/consultant/questions"),
-            disabled: disabledViewQs,
-            title: reasonListQs || "View saved questions",
-            variant: "secondary",
           },
         ],
         marginTop: 14,

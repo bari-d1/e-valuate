@@ -69,8 +69,6 @@ export default function AssessmentTracksPage({
   apiGet,
   apiPost,
   notifyParticipantLinks,
-  go,
-  renderFlowBar,
   onTracksWorkflowUpdate,
   tableWrapStyle,
   tdStyle,
@@ -402,7 +400,6 @@ export default function AssessmentTracksPage({
     <Card
       title="Assessment tracks & assignments"
       subtitle="Configure which programmes run for this evaluation (you can save tracks before participants exist). Generating assignment tasks requires a participant list."
-      right={<Badge tone="blue">Consultant</Badge>}
     >
       <div style={{ marginTop: 6 }}>{focus}</div>
 
@@ -1114,14 +1111,6 @@ export default function AssessmentTracksPage({
         </div>
       </div>
 
-      {renderFlowBar({
-        left: [
-          { key: "back", label: "← Participants", onClick: () => go("/consultant/participants/invite"), variant: "secondary" },
-        ],
-        right: [
-          { key: "next", label: "Questions →", onClick: () => go("/consultant/questions"), variant: "primary" },
-        ],
-      })}
     </Card>
   );
 }

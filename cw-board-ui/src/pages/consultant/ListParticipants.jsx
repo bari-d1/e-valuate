@@ -81,7 +81,6 @@ export default function ListParticipantsPage({
 
   const reasonParticipants = lockReason("participants");
   const reasonListQuestions = lockReason("list_questions");
-  const reasonAiQuestions = lockReason("ai_questions");
   const reasonTracks = lockReason("tracks");
 
   const ROUTES = {
@@ -154,7 +153,6 @@ export default function ListParticipantsPage({
     <Card
       title="Participants"
       subtitle="Roster for this evaluation — confirm who is registered, then continue setup below."
-      right={<Badge tone="blue">Consultant</Badge>}
     >
       {focus}
 
@@ -276,40 +274,6 @@ export default function ListParticipantsPage({
             {reasonParticipants ? reasonParticipants : "Click Refresh List to load participants"}
           </Badge>
         ),
-        right: [
-          {
-            key: "primary-next",
-            label: primaryNext.label,
-            onClick: () => go(primaryNext.route),
-            disabled: busy || primaryNext.disabled,
-            title: primaryNext.title,
-            variant: "primary",
-          },
-          {
-            key: "qs",
-            label: "View Questions",
-            onClick: () => go(ROUTES.questions),
-            disabled: busy || !!reasonListQuestions,
-            title: reasonListQuestions || "View questions",
-            variant: "secondary",
-          },
-          {
-            key: "ai",
-            label: "Generate Questions (AI)",
-            onClick: () => go(ROUTES.genAI),
-            disabled: busy || !!reasonAiQuestions,
-            title: reasonAiQuestions || "AI question draft",
-            variant: "soft",
-          },
-          {
-            key: "back",
-            label: "Back to Evaluations",
-            onClick: () => go(ROUTES.evaluations),
-            disabled: busy,
-            title: "Evaluations list",
-            variant: "soft",
-          },
-        ],
       })}
 
       {isList ? (

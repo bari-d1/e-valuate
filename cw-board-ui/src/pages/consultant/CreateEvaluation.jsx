@@ -74,7 +74,6 @@ export default function CreateEvaluationPage({
     <Card
       title="Create Evaluation"
       subtitle="Create an evaluation cycle (client + sector + year + regulators)."
-      right={<Badge tone="blue">Consultant</Badge>}
     >
       {focus}
 

@@ -117,7 +117,6 @@ export default function InviteParticipantsPage({
     <Card
       title="Invite Participants"
       subtitle="Register board members on the roster. Send questionnaire links after you generate assignments (or use Resend links on Participants / Tracks)."
-      right={<Badge tone="blue">Consultant</Badge>}
     >
       <div style={{ marginTop: 6 }}>{focus}</div>
 
@@ -204,20 +203,6 @@ export default function InviteParticipantsPage({
             variant="primary"
           >
             {busy ? "Saving…" : sendEmailOnInvite ? "Register and send email" : "Register participants"}
-          </Button>
-
-          <Button
-            onClick={() => {
-              if (disabled) return;
-              // Optional refresh before viewing
-              listParticipants({ silent: true }).catch(() => {});
-              go("/consultant/participants");
-            }}
-            disabled={disabled}
-            title={reasonEval || "View participants"}
-            variant="soft"
-          >
-            View Participants
           </Button>
 
           {reasonEval ? <Badge tone="amber">{reasonEval}</Badge> : null}
