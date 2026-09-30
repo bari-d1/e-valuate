@@ -92,7 +92,11 @@ export default function ListEvaluationsPage({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {h}
+                    {h || (
+                      <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
+                        Actions
+                      </span>
+                    )}
                   </th>
                 ))}
               </tr>

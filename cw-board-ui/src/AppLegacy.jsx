@@ -54,6 +54,7 @@ import ConsultantResponsesPage from "./pages/consultant/ConsultantResponsesPage"
 
 import { saveBlobAsFile } from "./api/blobDownload.js";
 import { getConsultantHeaders } from "./api/consultantAuth.js";
+import { color, tone as toneColors, radius, space, font, SIDEBAR_BREAKPOINT } from "./theme.js";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 const FOCUS_STORAGE_KEY = "consultant.focusEvalId";
@@ -368,29 +369,21 @@ function normalizeAnswerTypes(keys) {
    UI Components
 -------------------------- */
 function Badge({ children, tone = "blue" }) {
-  const tones = {
-    blue: { bg: "#E6F0FF", fg: "#1E40AF", bd: "#BFDBFE" },
-    green: { bg: "#E8FFF3", fg: "#065F46", bd: "#A7F3D0" },
-    amber: { bg: "#FFF7ED", fg: "#92400E", bd: "#FED7AA" },
-    gray: { bg: "#F3F4F6", fg: "#374151", bd: "#E5E7EB" },
-    red: { bg: "#FEF2F2", fg: "#991B1B", bd: "#FECACA" },
-    purple: { bg: "#F3E8FF", fg: "#6B21A8", bd: "#E9D5FF" },
-  };
-  const t = tones[tone] || tones.gray;
-
+  const t = toneColors[tone] || toneColors.gray;
   return (
     <span
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 8,
+        gap: space.sm,
         padding: "4px 10px",
-        borderRadius: 999,
+        borderRadius: radius.pill,
         border: `1px solid ${t.bd}`,
         background: t.bg,
         color: t.fg,
-        fontSize: 12,
-        fontWeight: 600,
+        fontSize: font.small,
+        fontWeight: font.weight.medium,
+        whiteSpace: "nowrap",
       }}
     >
       {children}
@@ -398,39 +391,29 @@ function Badge({ children, tone = "blue" }) {
   );
 }
 
+// One Card per page: its title is the page's main heading (h1)
 function Card({ title, subtitle, children, right }) {
   return (
-    <div
+    <section
       style={{
-        background: "white",
-        border: "1px solid #E5E7EB",
-        borderRadius: 14,
-        padding: 16,
+        background: color.surface,
+        border: `1px solid ${color.border}`,
+        borderRadius: radius.lg,
+        padding: space.lg,
         boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: 12,
-        }}
-      >
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: space.md, flexWrap: "wrap" }}>
         <div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "#0F172A" }}>
-            {title}
-          </div>
+          <h1 style={{ margin: 0, fontSize: font.heading, fontWeight: font.weight.heavy, color: color.text }}>{title}</h1>
           {subtitle ? (
-            <div style={{ marginTop: 4, color: "#64748B", fontSize: 13 }}>
-              {subtitle}
-            </div>
+            <p style={{ margin: `${space.xs}px 0 0`, color: color.textSubtle, fontSize: 13 }}>{subtitle}</p>
           ) : null}
         </div>
         {right ? <div>{right}</div> : null}
       </div>
-      <div style={{ marginTop: 14 }}>{children}</div>
-    </div>
+      <div style={{ marginTop: space.md + 2 }}>{children}</div>
+    </section>
   );
 }
 
@@ -439,10 +422,10 @@ function Card({ title, subtitle, children, right }) {
 function Button({ children, onClick, disabled, variant = "primary", title }) {
   const styles =
     variant === "primary"
-      ? { bg: "#2563EB", fg: "white", bd: "#1D4ED8" }
+      ? { bg: color.primary, fg: "white", bd: color.primaryBorder }
       : variant === "danger"
-      ? { bg: "#FFFFFF", fg: "#B91C1C", bd: "#FCA5A5" }
-      : { bg: "#FFFFFF", fg: "#0F172A", bd: "#CBD5E1" };
+      ? { bg: color.surface, fg: color.danger, bd: color.dangerBorder }
+      : { bg: color.surface, fg: color.text, bd: color.borderStrong };
 
   return (
     <button
@@ -452,12 +435,12 @@ function Button({ children, onClick, disabled, variant = "primary", title }) {
       title={title}
       style={{
         padding: "8px 14px",
-        borderRadius: 8,
-        border: `1px solid ${disabled ? "#E2E8F0" : styles.bd}`,
-        background: disabled ? "#F1F5F9" : styles.bg,
-        color: disabled ? "#94A3B8" : styles.fg,
-        fontSize: 14,
-        fontWeight: 700,
+        borderRadius: radius.sm,
+        border: `1px solid ${disabled ? color.border : styles.bd}`,
+        background: disabled ? color.disabledBg : styles.bg,
+        color: disabled ? color.disabledText : styles.fg,
+        fontSize: font.body,
+        fontWeight: font.weight.bold,
         lineHeight: 1.4,
         cursor: disabled ? "not-allowed" : "pointer",
       }}
@@ -598,7 +581,7 @@ function Field({ label, children, hint }) {
   const control =
     React.isValidElement(children) && ["input", "select", "textarea"].includes(children.type) ? children : null;
   const controlId = control ? control.props.id || autoId : undefined;
-  const labelStyle = { fontSize: 13, color: "#334155", fontWeight: 700 };
+  const labelStyle = { fontSize: 13, color: color.text, fontWeight: font.weight.bold };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -611,7 +594,7 @@ function Field({ label, children, hint }) {
       )}
       {control ? React.cloneElement(control, { id: controlId, "aria-describedby": hintId }) : children}
       {hint ? (
-        <div id={hintId} style={{ fontSize: 12, color: "#64748B" }}>
+        <div id={hintId} style={{ fontSize: font.small, color: color.textMuted }}>
           {hint}
         </div>
       ) : null}
@@ -622,21 +605,25 @@ function Field({ label, children, hint }) {
 /* --------------------------
    Styles
 -------------------------- */
-function pageShellStyle() {
+function pageShellStyle(narrow) {
   return {
     minHeight: "100vh",
     display: "grid",
-    gridTemplateColumns: "260px 1fr",
-    background: "#F1F5F9",
+    gridTemplateColumns: narrow ? "1fr" : "260px 1fr",
+    background: color.page,
   };
 }
 
-function sidebarStyle() {
+// On narrow screens the sidebar becomes a slide-in panel over the content
+function sidebarStyle(narrow, open) {
   return {
-    background: "linear-gradient(180deg, #0B1220 0%, #111827 100%)",
+    background: `linear-gradient(180deg, ${color.sidebar} 0%, #111827 100%)`,
     borderRight: "1px solid rgba(255,255,255,0.08)",
-    display: "flex",
+    display: narrow && !open ? "none" : "flex",
     flexDirection: "column",
+    ...(narrow
+      ? { position: "fixed", top: 0, bottom: 0, left: 0, width: 260, zIndex: 40, overflowY: "auto" }
+      : {}),
   };
 }
 
@@ -660,11 +647,11 @@ function subNavItemStyle(active) {
     width: "100%",
     textAlign: "left",
     padding: "8px 12px",
-    borderRadius: 8,
-    background: active ? "rgba(59,130,246,0.25)" : "transparent",
-    color: active ? "white" : "rgba(255,255,255,0.82)",
-    fontSize: 14,
-    fontWeight: active ? 800 : 600,
+    borderRadius: radius.sm,
+    background: active ? color.sidebarActive : "transparent",
+    color: active ? "white" : color.sidebarText,
+    fontSize: font.body,
+    fontWeight: active ? font.weight.heavy : font.weight.medium,
     cursor: "pointer",
     marginBottom: 2,
   };
@@ -675,40 +662,28 @@ function navGroupHeadingStyle() {
   return {
     padding: "0 12px",
     fontSize: 11,
-    fontWeight: 800,
+    fontWeight: font.weight.heavy,
     letterSpacing: 0.8,
     textTransform: "uppercase",
-    color: "rgba(255,255,255,0.55)",
+    color: color.sidebarHeading,
   };
 }
 
 function tabLinkStyle(active) {
   return {
     padding: "8px 14px",
-    borderRadius: 8,
+    borderRadius: radius.sm,
     textDecoration: "none",
-    fontSize: 14,
-    fontWeight: active ? 800 : 600,
-    color: active ? "#1D4ED8" : "#475569",
-    background: active ? "#EFF6FF" : "transparent",
-    border: `1px solid ${active ? "#BFDBFE" : "transparent"}`,
+    fontSize: font.body,
+    fontWeight: active ? font.weight.heavy : font.weight.medium,
+    color: active ? color.primaryText : color.textMuted,
+    background: active ? color.primarySoft : "transparent",
+    border: `1px solid ${active ? color.primarySoftBorder : "transparent"}`,
   };
 }
 
-
-function groupHeaderStyle() {
-  return {
-    margin: "12px 8px 10px",
-    fontSize: 12,
-    fontWeight: 900,
-    color: "rgba(255,255,255,0.75)",
-    letterSpacing: 0.2,
-    textTransform: "uppercase",
-  };
-}
-
-function mainStyle() {
-  return { padding: 18 };
+function mainStyle(narrow) {
+  return { padding: narrow ? 12 : 18, minWidth: 0 };
 }
 
 function topbarStyle() {
@@ -886,6 +861,31 @@ export default function AppLegacy() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
+
+  // Collapse the sidebar on narrow screens
+  const narrowQuery = `(max-width: ${SIDEBAR_BREAKPOINT - 1}px)`;
+  const [isNarrow, setIsNarrow] = useState(() => window.matchMedia(narrowQuery).matches);
+  const [navOpen, setNavOpen] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia(narrowQuery);
+    const onChange = (e) => setIsNarrow(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, [narrowQuery]);
+
+  useEffect(() => {
+    setNavOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!navOpen) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setNavOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [navOpen]);
 
   // Evaluation in focus (remembered across reloads)
   const [evalId, setEvalId] = useState(() => {
@@ -2296,19 +2296,20 @@ function renderWorkflowBar() {
                 Go →
               </Button>
 
-              <div style={{ fontSize: 12, color: "#64748B" }}>
-                Click any step to jump • Current step is highlighted
-              </div>
+              {isNarrow ? null : (
+                <div style={{ fontSize: 12, color: color.textMuted }}>
+                  Click any step to jump • Current step is highlighted
+                </div>
+              )}
             </div>
           </div>
 
           <div
             style={{
               marginTop: 10,
-              display: "flex",
-              alignItems: "stretch",
-              gap: 10,
-              flexWrap: "wrap",
+              ...(isNarrow
+                ? { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }
+                : { display: "flex", alignItems: "stretch", gap: 10, flexWrap: "wrap" }),
             }}
           >
             {STEPS.map((s, idx) => {
@@ -2321,7 +2322,7 @@ function renderWorkflowBar() {
               const disabled = !!busy || !!s.lock;
 
               return (
-                <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                   <button
                     onClick={() => navigate(TASK_TO_PATH[s.toTask] || "/consultant/evaluations")}
 
@@ -2332,8 +2333,9 @@ function renderWorkflowBar() {
                       border: `1px solid ${tone.bd}`,
                       background: isCurrent ? tone.bg : "white",
                       color: tone.fg,
-                      padding: "10px 12px",
-                      minWidth: 160,
+                      padding: isNarrow ? "8px 10px" : "10px 12px",
+                      minWidth: isNarrow ? 0 : 160,
+                      width: isNarrow ? "100%" : undefined,
                       textAlign: "left",
                       cursor: disabled ? "not-allowed" : "pointer",
                       opacity: disabled ? 0.6 : 1,
@@ -2353,6 +2355,7 @@ function renderWorkflowBar() {
                         {s.label}
                       </div>
 
+                      {isNarrow ? null : (
                       <span
                         style={{
                           fontSize: 11,
@@ -2367,14 +2370,15 @@ function renderWorkflowBar() {
                       >
                         {isDone ? "Done" : isCurrent ? "Current" : "Next"}
                       </span>
+                      )}
                     </div>
 
-                    <div style={{ marginTop: 6, fontSize: 12, color: "#64748B", fontWeight: 700 }}>
+                    <div style={{ marginTop: 6, fontSize: 12, color: color.textMuted, fontWeight: 700 }}>
                       {s.hint}
                     </div>
                   </button>
 
-                  {idx < STEPS.length - 1 ? (
+                  {!isNarrow && idx < STEPS.length - 1 ? (
                     <div
                       aria-hidden
                       style={{
@@ -2449,9 +2453,16 @@ function renderWorkflowBar() {
 
 
   return (
-    <div style={pageShellStyle()}>
+    <div style={pageShellStyle(isNarrow)}>
+      {isNarrow && navOpen ? (
+        <div
+          aria-hidden
+          onClick={() => setNavOpen(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", zIndex: 30 }}
+        />
+      ) : null}
       {/* Sidebar */}
-      <aside style={sidebarStyle()}>
+      <aside id="consultant-sidebar" style={sidebarStyle(isNarrow, navOpen)}>
         <div style={{ padding: "20px 18px 8px" }}>
           <div style={{ fontSize: 15, fontWeight: 900, color: "white" }}>C&amp;W Board Eval</div>
         </div>
@@ -2482,12 +2493,32 @@ function renderWorkflowBar() {
       </aside>
 
       {/* Main */}
-      <main style={mainStyle()}>
+      <main style={mainStyle(isNarrow)}>
           <div style={topbarStyle()}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
               {/* LEFT */}
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                <div style={{ fontSize: 18, fontWeight: 900, color: "#0F172A" }}>Consultant Workspace</div>
+                {isNarrow ? (
+                  <button
+                    type="button"
+                    aria-controls="consultant-sidebar"
+                    aria-expanded={navOpen}
+                    onClick={() => setNavOpen((v) => !v)}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: radius.sm,
+                      border: `1px solid ${color.borderStrong}`,
+                      background: color.surface,
+                      color: color.text,
+                      fontSize: font.body,
+                      fontWeight: font.weight.bold,
+                      cursor: "pointer",
+                    }}
+                  >
+                    ☰ Menu
+                  </button>
+                ) : null}
+                <div style={{ fontSize: 18, fontWeight: 900, color: color.text }}>Consultant Workspace</div>
                 <button
                   type="button"
                   onClick={() => navigate("/consultant/evaluations")}

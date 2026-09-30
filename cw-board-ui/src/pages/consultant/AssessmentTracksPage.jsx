@@ -504,7 +504,7 @@ export default function AssessmentTracksPage({
                 const checkboxId = `track-${t.code}`;
 
                 return (
-                  <tr key={t.id || t.code} style={{ borderBottom: "1px solid #F1F5F9", opacity: selected ? 1 : 0.75 }}>
+                  <tr key={t.id || t.code} style={{ borderBottom: "1px solid #F1F5F9" }}>
                     <td style={{ ...tdStyle(), textAlign: "center", verticalAlign: "top" }}>
                       <input
                         id={checkboxId}
