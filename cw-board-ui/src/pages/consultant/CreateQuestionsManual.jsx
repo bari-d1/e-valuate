@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 
 export default function CreateQuestionsManualPage(props) {
   const {
@@ -54,6 +54,13 @@ export default function CreateQuestionsManualPage(props) {
     seedDemo: "/consultant/analysis/seed-demo",
     evaluations: "/consultant/evaluations",
   };
+
+  // Load existing questions as soon as the evaluation's questionnaire is known
+  const autoLoadBlocked = typeof lockReason === "function" ? lockReason("list_questions") : "missing";
+  useEffect(() => {
+    if (!autoLoadBlocked && typeof listQuestionsManual === "function") listQuestionsManual();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoLoadBlocked]);
 
   // ✅ Hard guard: show what is missing instead of blank screen
   const missing = [];
@@ -138,7 +145,12 @@ export default function CreateQuestionsManualPage(props) {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Dimension">
-              <input value={qDimension} onChange={(e) => setQDimension(e.target.value)} style={inputStyle()} />
+              <input
+                value={qDimension}
+                onChange={(e) => setQDimension(e.target.value)}
+                placeholder="e.g. Board Composition"
+                style={inputStyle()}
+              />
             </Field>
 
             <Field label="Answer Type">
@@ -173,6 +185,7 @@ export default function CreateQuestionsManualPage(props) {
               <textarea
                 value={qText}
                 onChange={(e) => setQText(e.target.value)}
+                placeholder="e.g. The board has an appropriate mix of skills, experience and independence."
                 style={textareaStyle(140)}
                 spellCheck={false}
               />

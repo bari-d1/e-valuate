@@ -12,6 +12,38 @@ import {
  * Consultant: multi-track configuration — templates, enable tracks, generate assignments, copy portal URLs.
  */
 
+const monoFont = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace';
+const sectionTitleStyle = { fontWeight: 900, fontSize: 15, color: "#0F172A" };
+const sectionHintStyle = { marginTop: 2, fontSize: 13, color: "#64748B", lineHeight: 1.45 };
+const thStyle = { fontWeight: 800, textAlign: "left", verticalAlign: "bottom" };
+const visuallyHidden = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  overflow: "hidden",
+  clip: "rect(0 0 0 0)",
+  whiteSpace: "nowrap",
+};
+const linkButtonStyle = {
+  padding: 0,
+  border: 0,
+  background: "none",
+  color: "#1D4ED8",
+  fontWeight: 700,
+  fontSize: 13,
+  cursor: "pointer",
+  textDecoration: "underline",
+};
+const compactInputStyle = {
+  display: "block",
+  width: "100%",
+  marginTop: 2,
+  padding: "6px 8px",
+  fontSize: 13,
+  border: "1px solid #CBD5E1",
+  borderRadius: 8,
+};
+
 function parseConfigJson(text) {
   const t = String(text || "").trim();
   if (!t) return {};
@@ -378,28 +410,35 @@ export default function AssessmentTracksPage({
     }
   };
 
-  const respondentLabel = (participantId) => {
+  // Name on top, email underneath, for the tasks table
+  const personCell = (participantId) => {
     const p = participantsById[participantId];
     if (!p) return participantId;
-    return [p.full_name, p.email].filter(Boolean).join(" — ") || p.email;
+    return (
+      <>
+        <div style={{ fontWeight: 700, color: "#0F172A" }}>{p.full_name || p.email}</div>
+        {p.full_name ? <div style={{ fontSize: 12, color: "#64748B" }}>{p.email}</div> : null}
+      </>
+    );
   };
 
-  const subjectLabel = (participantId) => {
-    if (!participantId) return "—";
-    return respondentLabel(participantId);
-  };
+  // Track codes (also used as assignment types) → the template's display name
+  const trackName = (code) => templates.find((t) => t.code === code)?.name || code || "—";
 
   const templatesEmpty = templates.length === 0;
 
-  const selectionSummary = useMemo(() => {
-    const codes = templates.filter((t) => selectedCodes.has(t.code)).map((t) => t.code);
-    return codes.join(", ") || "—";
-  }, [templates, selectedCodes]);
+  // Tracks currently saved as enabled on the evaluation
+  const savedEnabledCodes = useMemo(
+    () => new Set(evalTracks.filter((r) => Number(r.enabled) === 1).map((r) => r.code)),
+    [evalTracks]
+  );
+  const selectionDirty =
+    savedEnabledCodes.size !== selectedCodes.size || [...selectedCodes].some((c) => !savedEnabledCodes.has(c));
 
   return (
     <Card
       title="Assessment tracks & assignments"
-      subtitle="Configure which programmes run for this evaluation (you can save tracks before participants exist). Generating assignment tasks requires a participant list."
+      subtitle="Choose the assessments to run, then generate a questionnaire task for each participant."
     >
       <div style={{ marginTop: 6 }}>{focus}</div>
 
@@ -412,194 +451,172 @@ export default function AssessmentTracksPage({
         </div>
       )}
 
-      {templatesEmpty ? (
+      {templatesEmpty && !loading ? (
         <div style={{ marginTop: 14, padding: 12, background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 12 }}>
-          <b>No track templates in the database.</b> Insert rows into <code>assessment_track_templates</code> (or seed
-          data) so tracks can be enabled. The API <code>GET /api/v1/track-templates</code> is empty.
+          <b>No assessment tracks are set up yet.</b> Ask an administrator to load the track templates.
         </div>
       ) : null}
 
       <div style={{ marginTop: 16 }}>
-        <div style={{ fontWeight: 900, fontSize: 14, marginBottom: 8 }}>1) Track template library</div>
-        <div style={tableWrapStyle()}>
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              fontSize: 13,
-              tableLayout: "fixed",
-            }}
-          >
-            <colgroup>
-              <col style={{ width: "52px" }} />
-              <col style={{ width: "13%" }} />
-              <col />
-              <col style={{ width: "17%" }} />
-              <col style={{ width: "14%" }} />
-              <col style={{ width: "16%" }} />
-            </colgroup>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+          <div>
+            <div style={sectionTitleStyle}>Tracks</div>
+            <div style={sectionHintStyle}>
+              Tick the assessments to run in this evaluation, then save. Each track uses the evaluation questionnaire (
+              {evalInstrument.template_code} v{evalInstrument.version}) unless you customise it.
+            </div>
+          </div>
+          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#475569", cursor: "pointer" }}>
+            <input type="checkbox" checked={showAdvancedJson} onChange={(e) => setShowAdvancedJson(e.target.checked)} />
+            Show technical details
+          </label>
+        </div>
+
+        <div style={{ ...tableWrapStyle(), marginTop: 10 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E5E7EB" }}>
-                <th
-                  style={{
-                    ...tdStyle(),
-                    fontWeight: 800,
-                    textAlign: "center",
-                    verticalAlign: "bottom",
-                  }}
-                >
-                  Enable
+                <th style={{ ...tdStyle(), ...thStyle, width: 44 }}>
+                  <span style={visuallyHidden}>Include</span>
                 </th>
-                <th
-                  style={{
-                    ...tdStyle(),
-                    fontWeight: 800,
-                    textAlign: "left",
-                    verticalAlign: "bottom",
-                  }}
-                >
-                  Code
-                </th>
-                <th
-                  style={{
-                    ...tdStyle(),
-                    fontWeight: 800,
-                    textAlign: "left",
-                    verticalAlign: "bottom",
-                  }}
-                >
-                  Name
-                </th>
-                <th
-                  style={{
-                    ...tdStyle(),
-                    fontWeight: 800,
-                    textAlign: "left",
-                    verticalAlign: "bottom",
-                  }}
-                >
-                  Assignment type
-                </th>
-                <th
-                  style={{
-                    ...tdStyle(),
-                    fontWeight: 800,
-                    textAlign: "left",
-                    verticalAlign: "bottom",
-                  }}
-                >
-                  Subject mode
-                </th>
-                <th
-                  style={{
-                    ...tdStyle(),
-                    fontWeight: 800,
-                    textAlign: "left",
-                    verticalAlign: "bottom",
-                  }}
-                >
-                  Default instrument
-                </th>
+                <th style={{ ...tdStyle(), ...thStyle }}>Track</th>
+                <th style={{ ...tdStyle(), ...thStyle, width: 150 }}>Status</th>
+                <th style={{ ...tdStyle(), ...thStyle, width: "34%" }}>Questionnaire</th>
               </tr>
             </thead>
             <tbody>
-              {templates.map((t) => (
-                <tr key={t.id || t.code} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                  <td
-                    style={{
-                      ...tdStyle(),
-                      textAlign: "center",
-                      verticalAlign: "middle",
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedCodes.has(t.code)}
-                      onChange={() => toggleCode(t.code)}
-                      disabled={disabledBase}
-                      style={{ margin: 0, verticalAlign: "middle" }}
-                    />
-                  </td>
-                  <td
-                    style={{
-                      ...tdStyle(),
-                      fontWeight: 800,
-                      fontFamily:
-                        'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
-                      fontSize: 12,
-                      verticalAlign: "middle",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                    title={t.code}
-                  >
-                    {t.code}
-                  </td>
-                  <td
-                    style={{
-                      ...tdStyle(),
-                      verticalAlign: "middle",
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {t.name}
-                  </td>
-                  <td
-                    style={{
-                      ...tdStyle(),
-                      verticalAlign: "middle",
-                      fontFamily:
-                        'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
-                      fontSize: 12,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                    title={t.assignment_type}
-                  >
-                    {t.assignment_type}
-                  </td>
-                  <td
-                    style={{
-                      ...tdStyle(),
-                      verticalAlign: "middle",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                    title={t.subject_mode}
-                  >
-                    {t.subject_mode}
-                  </td>
-                  <td
-                    style={{
-                      ...tdStyle(),
-                      verticalAlign: "middle",
-                      fontFamily:
-                        'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
-                      fontSize: 12,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                    title={`${t.default_template_code} v${t.default_version}`}
-                  >
-                    {t.default_template_code} v{t.default_version}
-                  </td>
-                </tr>
-              ))}
+              {templates.map((t) => {
+                const selected = selectedCodes.has(t.code);
+                const saved = savedEnabledCodes.has(t.code);
+                const status = selected
+                  ? saved
+                    ? { tone: "green", label: "Active" }
+                    : { tone: "amber", label: "Will be added" }
+                  : saved
+                  ? { tone: "amber", label: "Will be removed" }
+                  : { tone: "gray", label: "Not included" };
+                const st = instrumentByCode[t.code] || {
+                  useEvalDefault: true,
+                  template: evalInstrument.template_code,
+                  version: String(evalInstrument.version),
+                };
+                const useDef = !!st.useEvalDefault;
+                const checkboxId = `track-${t.code}`;
+
+                return (
+                  <tr key={t.id || t.code} style={{ borderBottom: "1px solid #F1F5F9", opacity: selected ? 1 : 0.75 }}>
+                    <td style={{ ...tdStyle(), textAlign: "center", verticalAlign: "top" }}>
+                      <input
+                        id={checkboxId}
+                        type="checkbox"
+                        checked={selected}
+                        onChange={() => toggleCode(t.code)}
+                        disabled={disabledBase}
+                        style={{ marginTop: 3 }}
+                      />
+                    </td>
+                    <td style={{ ...tdStyle(), verticalAlign: "top" }}>
+                      <label htmlFor={checkboxId} style={{ fontWeight: 800, color: "#0F172A", cursor: "pointer" }}>
+                        {t.name || t.code}
+                      </label>
+                      {t.description ? (
+                        <div style={{ marginTop: 2, color: "#64748B" }}>{t.description}</div>
+                      ) : null}
+                      {showAdvancedJson ? (
+                        <div style={{ marginTop: 4, fontFamily: monoFont, fontSize: 11, color: "#64748B" }}>
+                          {t.code} · {t.assignment_type} · {t.subject_mode}
+                        </div>
+                      ) : null}
+                    </td>
+                    <td style={{ ...tdStyle(), verticalAlign: "top" }}>
+                      <Badge tone={status.tone}>{status.label}</Badge>
+                    </td>
+                    <td style={{ ...tdStyle(), verticalAlign: "top" }}>
+                      {useDef ? (
+                        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                          <span style={{ color: "#475569" }}>Evaluation default</span>
+                          {selected ? (
+                            <button
+                              type="button"
+                              style={linkButtonStyle}
+                              disabled={disabledBase}
+                              onClick={() => setInstrumentUseEvalDefault(t.code, false)}
+                            >
+                              Customise
+                            </button>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+                          <label style={{ fontSize: 12, color: "#475569", flex: "1 1 120px" }}>
+                            Template
+                            <input
+                              type="text"
+                              value={st.template}
+                              disabled={disabledBase}
+                              onChange={(e) => updateInstrumentField(t.code, "template", e.target.value)}
+                              placeholder={evalInstrument.template_code}
+                              spellCheck={false}
+                              style={{ ...compactInputStyle, fontFamily: monoFont }}
+                            />
+                          </label>
+                          <label style={{ fontSize: 12, color: "#475569", width: 70 }}>
+                            Version
+                            <input
+                              type="number"
+                              min={1}
+                              value={st.version}
+                              disabled={disabledBase}
+                              onChange={(e) => updateInstrumentField(t.code, "version", e.target.value)}
+                              style={compactInputStyle}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            style={{ ...linkButtonStyle, marginBottom: 8 }}
+                            disabled={disabledBase}
+                            onClick={() => setInstrumentUseEvalDefault(t.code, true)}
+                          >
+                            Use default
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
+        </div>
+
+        <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <Button
+            variant="primary"
+            disabled={disabledBase || templatesEmpty}
+            onClick={applyEnabledTracks}
+            title={!hasEval ? "Select an evaluation first." : "Save the selected tracks"}
+          >
+            {loading ? "Saving…" : "Save tracks"}
+          </Button>
+          <Button variant="secondary" disabled={busy} onClick={loadAll}>
+            Refresh
+          </Button>
+          {selectionDirty ? (
+            <span style={{ fontSize: 13, color: "#92400E", fontWeight: 700 }}>You have unsaved changes.</span>
+          ) : (
+            <span style={{ fontSize: 13, color: "#64748B" }}>
+              {savedEnabledCodes.size} track{savedEnabledCodes.size === 1 ? "" : "s"} active
+            </span>
+          )}
         </div>
       </div>
 
       {selectedCommitteeTemplates.length > 0 ? (
-        <div style={{ marginTop: 16 }}>
-          <div style={{ fontWeight: 900, fontSize: 14, marginBottom: 8 }}>1b) Committee evaluation</div>
+        <div style={{ marginTop: 20 }}>
+          <div style={sectionTitleStyle}>Committee setup</div>
           {selectedCommitteeTemplates.map((t) => (
-            <div key={t.code} style={{ marginBottom: 12 }}>
-              <Field label={`${t.name || t.code} (${t.code})`}>
+            <div key={t.code} style={{ marginTop: 8, marginBottom: 12 }}>
+              <Field label={t.name || t.code}>
                 <CommitteeTrackConfigEditor
                   ui={ui}
                   disabled={disabledBase}
@@ -618,256 +635,31 @@ export default function AssessmentTracksPage({
         </div>
       ) : null}
 
-      {selectedNonCommitteeWithConfig.length > 0 ? (
-        <div style={{ marginTop: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-            <div style={{ fontWeight: 900, fontSize: 14 }}>1b) Other track config (advanced JSON)</div>
-            <Button variant="soft" disabled={disabledBase} onClick={() => setShowAdvancedJson((v) => !v)}>
-              {showAdvancedJson ? "Hide" : "Show"}
-            </Button>
-          </div>
-          {showAdvancedJson ? (
-            <div style={{ fontSize: 12, color: "#64748B", marginBottom: 8 }}>
-              Only needed for unusual track settings. Committee tracks use the editor above.
-            </div>
-          ) : null}
-          {showAdvancedJson
-            ? selectedNonCommitteeWithConfig.map((t) => (
-                <Field key={t.code} label={`Config: ${t.code}`}>
-                  <textarea
-                    value={configByCode[t.code] || ""}
-                    onChange={(e) => setConfigByCode((prev) => ({ ...prev, [t.code]: e.target.value }))}
-                    disabled={disabledBase}
-                    rows={4}
-                    style={{ width: "100%", fontFamily: "monospace", fontSize: 12 }}
-                    spellCheck={false}
-                    placeholder="{}"
-                  />
-                </Field>
-              ))
-            : null}
+      {showAdvancedJson && selectedNonCommitteeWithConfig.length > 0 ? (
+        <div style={{ marginTop: 20 }}>
+          <div style={sectionTitleStyle}>Advanced track settings (JSON)</div>
+          <div style={sectionHintStyle}>Only needed for unusual track settings.</div>
+          {selectedNonCommitteeWithConfig.map((t) => (
+            <Field key={t.code} label={`${t.name || t.code} settings`}>
+              <textarea
+                value={configByCode[t.code] || ""}
+                onChange={(e) => setConfigByCode((prev) => ({ ...prev, [t.code]: e.target.value }))}
+                disabled={disabledBase}
+                rows={4}
+                style={{ width: "100%", fontFamily: "monospace", fontSize: 12 }}
+                spellCheck={false}
+                placeholder="{}"
+              />
+            </Field>
+          ))}
         </div>
       ) : null}
 
-      <div style={{ marginTop: 16 }}>
-        <div style={{ fontWeight: 900, fontSize: 14, marginBottom: 8 }}>1c) Per-track questionnaire (optional)</div>
-        <div style={{ fontSize: 12, color: "#64748B", marginBottom: 10 }}>
-          By default each track uses the <b>evaluation</b> instrument from Step 2 (Questionnaire):{" "}
-          <code>
-            {evalInstrument.template_code} v{evalInstrument.version}
-          </code>
-          . Uncheck &quot;Use evaluation default&quot; to point a track at a different template/version (must exist in
-          your question bank).
-        </div>
-        <div style={tableWrapStyle()}>
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              fontSize: 13,
-              tableLayout: "fixed",
-            }}
-          >
-            <colgroup>
-              <col style={{ width: "14%" }} />
-              <col style={{ width: "24%" }} />
-              <col />
-              <col style={{ width: 100 }} />
-            </colgroup>
-            <thead>
-              <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E5E7EB" }}>
-                <th style={{ ...tdStyle(), fontWeight: 800, textAlign: "left", verticalAlign: "bottom" }}>Code</th>
-                <th style={{ ...tdStyle(), fontWeight: 800, textAlign: "left", verticalAlign: "bottom" }}>
-                  Use evaluation default
-                </th>
-                <th style={{ ...tdStyle(), fontWeight: 800, textAlign: "left", verticalAlign: "bottom" }}>Template</th>
-                <th style={{ ...tdStyle(), fontWeight: 800, textAlign: "left", verticalAlign: "bottom" }}>Version</th>
-              </tr>
-            </thead>
-            <tbody>
-              {templates.map((t) => {
-                const st = instrumentByCode[t.code] || {
-                  useEvalDefault: true,
-                  template: evalInstrument.template_code,
-                  version: String(evalInstrument.version),
-                };
-                const useDef = !!st.useEvalDefault;
-                return (
-                  <tr key={`inst-${t.code}`} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                    <td
-                      style={{
-                        ...tdStyle(),
-                        fontWeight: 800,
-                        fontFamily:
-                          'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
-                        fontSize: 12,
-                        verticalAlign: "middle",
-                      }}
-                    >
-                      {t.code}
-                    </td>
-                    <td style={{ ...tdStyle(), verticalAlign: "middle" }}>
-                      <label
-                        style={{
-                          display: "flex",
-                          gap: 8,
-                          alignItems: "center",
-                          cursor: disabledBase ? "default" : "pointer",
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={useDef}
-                          disabled={disabledBase}
-                          onChange={(e) => setInstrumentUseEvalDefault(t.code, e.target.checked)}
-                        />
-                        <span style={{ fontSize: 12 }}>{useDef ? "Yes (Step 2)" : "No (custom)"}</span>
-                      </label>
-                    </td>
-                    <td style={{ ...tdStyle(), verticalAlign: "middle" }}>
-                      <input
-                        type="text"
-                        value={st.template}
-                        disabled={disabledBase || useDef}
-                        onChange={(e) => updateInstrumentField(t.code, "template", e.target.value)}
-                        style={{
-                          width: "100%",
-                          boxSizing: "border-box",
-                          padding: "6px 8px",
-                          fontSize: 13,
-                          fontFamily:
-                            'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
-                        }}
-                        placeholder={evalInstrument.template_code}
-                        spellCheck={false}
-                      />
-                    </td>
-                    <td style={{ ...tdStyle(), verticalAlign: "middle", width: 100 }}>
-                      <input
-                        type="number"
-                        min={1}
-                        value={st.version}
-                        disabled={disabledBase || useDef}
-                        onChange={(e) => updateInstrumentField(t.code, "version", e.target.value)}
-                        style={{ width: "100%", boxSizing: "border-box", padding: "6px 8px", fontSize: 13 }}
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-        <Button
-          variant="primary"
-          disabled={disabledBase || templatesEmpty}
-          onClick={applyEnabledTracks}
-          title={!hasEval ? "Select an evaluation first." : "Save"}
-        >
-          {loading ? "Saving…" : "Save enabled tracks"}
-        </Button>
-        <Badge tone="gray">Selected: {selectionSummary}</Badge>
-        <Button variant="soft" disabled={busy} onClick={loadAll}>
-          Refresh
-        </Button>
-      </div>
-
       <div style={{ marginTop: 20 }}>
-        <div style={{ fontWeight: 900, fontSize: 14, marginBottom: 8 }}>2) Tracks on this evaluation</div>
-        <div style={tableWrapStyle()}>
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              fontSize: 13,
-              tableLayout: "fixed",
-            }}
-          >
-            <colgroup>
-              <col style={{ width: "14%" }} />
-              <col style={{ width: "22%" }} />
-              <col style={{ width: "10%" }} />
-              <col style={{ width: "22%" }} />
-              <col />
-            </colgroup>
-            <thead>
-              <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E5E7EB" }}>
-                <th style={{ ...tdStyle(), fontWeight: 800, textAlign: "left", verticalAlign: "bottom" }}>Code</th>
-                <th style={{ ...tdStyle(), fontWeight: 800, textAlign: "left", verticalAlign: "bottom" }}>Name</th>
-                <th style={{ ...tdStyle(), fontWeight: 800, textAlign: "center", verticalAlign: "bottom" }}>
-                  Enabled
-                </th>
-                <th style={{ ...tdStyle(), fontWeight: 800, textAlign: "left", verticalAlign: "bottom" }}>
-                  instrument override
-                </th>
-                <th style={{ ...tdStyle(), fontWeight: 800, textAlign: "left", verticalAlign: "bottom" }}>config</th>
-              </tr>
-            </thead>
-            <tbody>
-              {evalTracks.length === 0 ? (
-                <tr>
-                  <td colSpan={5} style={{ ...tdStyle(), color: "#64748B" }}>
-                    No rows yet. Select templates above and save.
-                  </td>
-                </tr>
-              ) : (
-                evalTracks.map((r) => (
-                  <tr key={r.evaluation_track_id} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                    <td
-                      style={{
-                        ...tdStyle(),
-                        fontWeight: 800,
-                        fontFamily:
-                          'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
-                        fontSize: 12,
-                        verticalAlign: "middle",
-                      }}
-                    >
-                      {r.code ?? "—"}
-                    </td>
-                    <td style={{ ...tdStyle(), verticalAlign: "middle", wordBreak: "break-word" }}>{r.name ?? "—"}</td>
-                    <td style={{ ...tdStyle(), textAlign: "center", verticalAlign: "middle" }}>
-                      {Number(r.enabled) === 1 ? "yes" : "no"}
-                    </td>
-                    <td style={{ ...tdStyle(), verticalAlign: "middle", fontSize: 12 }}>
-                      {r.instrument_template_code == null && r.instrument_version == null ? (
-                        <span style={{ color: "#64748B" }}>
-                          {evalInstrument.template_code} v{evalInstrument.version}{" "}
-                          <span style={{ fontWeight: 600 }}>(evaluation default)</span>
-                        </span>
-                      ) : (
-                        <>
-                          {r.instrument_template_code || "—"}{" "}
-                          {r.instrument_version != null ? `v${r.instrument_version}` : ""}
-                        </>
-                      )}
-                    </td>
-                    <td
-                      style={{
-                        ...tdStyle(),
-                        verticalAlign: "middle",
-                        fontFamily:
-                          'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
-                        fontSize: 11,
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      {JSON.stringify(r.config || {}).slice(0, 120)}
-                      {JSON.stringify(r.config || {}).length > 120 ? "…" : ""}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div style={sectionTitleStyle}>Generate questionnaire tasks</div>
+        <div style={{ ...sectionHintStyle, marginBottom: 10 }}>
+          Creates a task for each participant on every active track. Running it again only adds missing tasks.
         </div>
-      </div>
-
-      <div style={{ marginTop: 20 }}>
-        <div style={{ fontWeight: 900, fontSize: 14, marginBottom: 8 }}>3) Generate assignments from enabled tracks</div>
         {needsParticipantsToGenerate ? (
           <div
             style={{
@@ -891,10 +683,7 @@ export default function AssessmentTracksPage({
             onChange={(e) => setSendEmailNotifications(e.target.checked)}
             disabled={generateDisabled}
           />
-          <span>
-            After generate, email each person their <b>hub + all task links</b> (recommended). Requires{" "}
-            <code>EMAIL_ENABLED=true</code> and SMTP.
-          </span>
+          <span>Email each participant their links after generating (recommended)</span>
         </label>
         {genResult && !sendEmailNotifications ? (
           <div
@@ -928,18 +717,6 @@ export default function AssessmentTracksPage({
         ) : null}
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
           <Button
-            variant="soft"
-            disabled={generateDisabled}
-            onClick={() => runGenerate(true)}
-            title={
-              needsParticipantsToGenerate
-                ? "Invite participants first"
-                : "Preview counts only"
-            }
-          >
-            Dry run (no DB writes)
-          </Button>
-          <Button
             variant="primary"
             disabled={generateDisabled}
             onClick={() => runGenerate(false)}
@@ -949,14 +726,36 @@ export default function AssessmentTracksPage({
                 : "Create assignment rows + tokens"
             }
           >
-            Generate assignments
+            Generate tasks
+          </Button>
+          <Button
+            variant="secondary"
+            disabled={generateDisabled}
+            onClick={() => runGenerate(true)}
+            title={needsParticipantsToGenerate ? "Invite participants first" : "See what would be created, without saving"}
+          >
+            Preview
           </Button>
           {participantCount > 0 ? (
-            <Badge tone="gray">
-              Participants: {participantCount}
-            </Badge>
+            <span style={{ fontSize: 13, color: "#64748B" }}>
+              {participantCount} participant{participantCount === 1 ? "" : "s"}
+            </span>
           ) : null}
         </div>
+        {dryRunResult ? (
+          <div style={{ marginTop: 10, fontSize: 13, color: "#1E3A8A" }}>
+            <b>Preview:</b> {dryRunResult.created ?? 0} new task{dryRunResult.created === 1 ? "" : "s"} would be
+            created; {dryRunResult.existing ?? 0} already exist
+            {dryRunResult.skipped ? `; ${dryRunResult.skipped} skipped` : ""}. Nothing has been saved.
+          </div>
+        ) : null}
+        {genResult ? (
+          <div style={{ marginTop: 10, fontSize: 13, color: "#065F46" }}>
+            <b>Done:</b> {genResult.created ?? 0} new task{genResult.created === 1 ? "" : "s"} created;{" "}
+            {genResult.existing ?? 0} already existed
+            {genResult.skipped ? `; ${genResult.skipped} skipped` : ""}.
+          </div>
+        ) : null}
         {dryRunResult?.skipped_items?.length > 0 ? (
           <div
             style={{
@@ -973,13 +772,13 @@ export default function AssessmentTracksPage({
             <ul style={{ margin: "8px 0 0", paddingLeft: 18 }}>
               {dryRunResult.skipped_items.map((s, i) => (
                 <li key={i}>
-                  <code>{s.track_code || "—"}</code>: {s.detail || s.reason}
+                  <b>{trackName(s.track_code)}</b>: {s.detail || s.reason}
                 </li>
               ))}
             </ul>
           </div>
         ) : null}
-        {dryRunResult ? (
+        {showAdvancedJson && dryRunResult ? (
           <pre style={{ marginTop: 10, padding: 12, background: "#F8FAFC", borderRadius: 8, fontSize: 12, overflow: "auto" }}>
             {JSON.stringify(dryRunResult, null, 2)}
           </pre>
@@ -1000,13 +799,13 @@ export default function AssessmentTracksPage({
             <ul style={{ margin: "8px 0 0", paddingLeft: 18 }}>
               {genResult.skipped_items.map((s, i) => (
                 <li key={i}>
-                  <code>{s.track_code || "—"}</code>: {s.detail || s.reason}
+                  <b>{trackName(s.track_code)}</b>: {s.detail || s.reason}
                 </li>
               ))}
             </ul>
           </div>
         ) : null}
-        {genResult ? (
+        {showAdvancedJson && genResult ? (
           <pre style={{ marginTop: 10, padding: 12, background: "#ECFDF5", borderRadius: 8, fontSize: 12, overflow: "auto" }}>
             {JSON.stringify(genResult, null, 2)}
           </pre>
@@ -1014,26 +813,25 @@ export default function AssessmentTracksPage({
       </div>
 
       <div style={{ marginTop: 20 }}>
-        <div style={{ fontWeight: 900, fontSize: 14, marginBottom: 8 }}>3b) Notify participants</div>
-        <div style={{ fontSize: 12, color: "#64748B", marginBottom: 10, lineHeight: 1.45 }}>
-          Resend hub and questionnaire links without re-inviting. Use after generate if email was skipped, or to nudge
-          people who have not finished.
+        <div style={sectionTitleStyle}>Send links</div>
+        <div style={{ ...sectionHintStyle, marginBottom: 10 }}>
+          Email participants their links again, for example if email was off when you generated, or as a reminder.
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
           <Button
-            variant="primary"
+            variant="secondary"
+            disabled={disabledBase || assignments.length === 0 || typeof notifyParticipantLinks !== "function"}
+            onClick={() => runNotifyLinks(true)}
+            title="Only tasks not yet completed"
+          >
+            {loading ? "Sending…" : "Remind people who haven't finished"}
+          </Button>
+          <Button
+            variant="secondary"
             disabled={disabledBase || assignments.length === 0 || typeof notifyParticipantLinks !== "function"}
             onClick={() => runNotifyLinks(false)}
           >
-            {loading ? "Sending…" : "Resend links (all tasks)"}
-          </Button>
-          <Button
-            variant="soft"
-            disabled={disabledBase || assignments.length === 0 || typeof notifyParticipantLinks !== "function"}
-            onClick={() => runNotifyLinks(true)}
-            title="Only assignments not yet marked responded"
-          >
-            Resend (pending tasks only)
+            Resend to everyone
           </Button>
         </div>
         {notifyResult ? (
@@ -1062,13 +860,13 @@ export default function AssessmentTracksPage({
       </div>
 
       <div style={{ marginTop: 20 }}>
-        <div style={{ fontWeight: 900, fontSize: 14, marginBottom: 8 }}>4) Assignments (portal links)</div>
-        <div style={tableWrapStyle()}>
+        <div style={sectionTitleStyle}>Questionnaire tasks</div>
+        <div style={{ ...tableWrapStyle(), marginTop: 10 }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead style={{ background: "#F8FAFC" }}>
               <tr>
-                {["Respondent", "Subject", "Type", "Committee", "Status", "Portal URL"].map((h) => (
-                  <th key={h} style={{ ...tdStyle(), fontWeight: 800 }}>
+                {["Answered by", "About", "Track", "Committee", "Status", "Link"].map((h) => (
+                  <th key={h} style={{ ...tdStyle(), ...thStyle }}>
                     {h}
                   </th>
                 ))}
@@ -1078,26 +876,32 @@ export default function AssessmentTracksPage({
               {assignments.length === 0 ? (
                 <tr>
                   <td colSpan={6} style={{ ...tdStyle(), color: "#64748B" }}>
-                    No assignments yet. Invite participants, enable tracks, then generate.
+                    No tasks yet. Invite participants, save tracks, then generate tasks.
                   </td>
                 </tr>
               ) : (
                 assignments.map((a) => (
                   <tr key={a.assignment_id} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                    <td style={tdStyle()}>{respondentLabel(a.respondent_participant_id)}</td>
-                    <td style={tdStyle()}>{subjectLabel(a.subject_participant_id)}</td>
-                    <td style={tdStyle()}>{a.assignment_type}</td>
+                    <td style={tdStyle()}>{personCell(a.respondent_participant_id)}</td>
+                    <td style={tdStyle()}>{a.subject_participant_id ? personCell(a.subject_participant_id) : "—"}</td>
+                    <td style={tdStyle()}>{trackName(a.assignment_type)}</td>
                     <td style={tdStyle()}>{a.committee_name || "—"}</td>
-                    <td style={tdStyle()}>{a.status}</td>
+                    <td style={tdStyle()}>
+                      {a.status === "responded" ? (
+                        <Badge tone="green">Completed</Badge>
+                      ) : (
+                        <Badge tone="gray">Not started</Badge>
+                      )}
+                    </td>
                     <td style={tdStyle()}>
                       {a.portal_url ? (
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                          <a href={a.portal_url} target="_blank" rel="noreferrer" style={{ fontWeight: 800 }}>
+                        <div style={{ display: "flex", gap: 12, alignItems: "center", whiteSpace: "nowrap" }}>
+                          <a href={a.portal_url} target="_blank" rel="noreferrer" style={{ fontWeight: 700 }}>
                             Open
                           </a>
-                          <Button variant="soft" onClick={() => copyText(a.portal_url)}>
+                          <button type="button" style={linkButtonStyle} onClick={() => copyText(a.portal_url)}>
                             Copy
-                          </Button>
+                          </button>
                         </div>
                       ) : (
                         "—"

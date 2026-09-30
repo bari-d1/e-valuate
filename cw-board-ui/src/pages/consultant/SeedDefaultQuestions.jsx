@@ -47,8 +47,11 @@ export default function SeedDefaultQuestionsPage({
         {reason ? <div style={{ marginBottom: 12, fontWeight: 800 }}>{reason}</div> : null}
 
         <div style={{ marginBottom: 12, display: "flex", flexDirection: "column", gap: 6, maxWidth: 420 }}>
-          <label style={{ fontSize: 12, fontWeight: 800, color: "#334155" }}>Questionnaire preset</label>
+          <label htmlFor="questionnaire-preset" style={{ fontSize: 12, fontWeight: 800, color: "#334155" }}>
+            Questionnaire preset
+          </label>
           <select
+            id="questionnaire-preset"
             value={preset}
             onChange={(e) => setPreset(e.target.value)}
             disabled={busy}

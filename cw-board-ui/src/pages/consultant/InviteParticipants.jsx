@@ -116,42 +116,14 @@ export default function InviteParticipantsPage({
   return (
     <Card
       title="Invite Participants"
-      subtitle="Register board members on the roster. Send questionnaire links after you generate assignments (or use Resend links on Participants / Tracks)."
+      subtitle="Add board members to this evaluation. They get their questionnaire links once you generate tasks on the Tracks page."
     >
       <div style={{ marginTop: 6 }}>{focus}</div>
-
-      <div
-        style={{
-          marginTop: 12,
-          padding: 12,
-          borderRadius: 12,
-          border: "1px solid #BFDBFE",
-          background: "#EFF6FF",
-          color: "#1E3A8A",
-          fontSize: 13,
-          lineHeight: 1.45,
-        }}
-      >
-        <b>Recommended flow</b>
-        <ol style={{ margin: "8px 0 0", paddingLeft: 18 }}>
-          <li>
-            <b>Register</b> participants here (email optional — off by default).
-          </li>
-          <li>Configure tracks and <b>Generate assignments</b> (enable “send email” there to notify everyone).</li>
-          <li>
-            Or use <b>Resend links</b> on Participants / Tracks to email hub + task links later.
-          </li>
-          <li>
-            Copy <b>Hub link</b> (all tasks) from the table — not the same as a single <b>Task link</b> (one
-            questionnaire).
-          </li>
-        </ol>
-      </div>
 
       <div style={{ marginTop: 14 }}>
         <Field
           label="Participants (one per line)"
-          hint='Formats: "email" OR "email,Full Name" OR "email,Full Name,Role"'
+          hint="Email, then optionally full name and role, separated by commas."
         >
           <textarea
             value={inviteText}
@@ -190,8 +162,7 @@ export default function InviteParticipantsPage({
             disabled={disabled}
           />
           <span>
-            Also send welcome email (hub link; includes task links if assignments already exist). Requires{" "}
-            <code>EMAIL_ENABLED=true</code>.
+            Also email each person a welcome message with their link
           </span>
         </label>
 

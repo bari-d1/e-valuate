@@ -31,7 +31,7 @@
 
 //import React, { useMemo, useState, useEffect } from "react";
 
-import React, { useMemo, useState, useEffect, useRef } from "react";
+import React, { useMemo, useState, useEffect, useRef, useId } from "react";
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 
 import InviteParticipantsPage from "./pages/consultant/InviteParticipants";
@@ -434,30 +434,31 @@ function Card({ title, subtitle, children, right }) {
   );
 }
 
+// Three roles only: primary (the main action), secondary (everything else), danger (destructive).
+// Older "soft"/"highlight" variants render as secondary.
 function Button({ children, onClick, disabled, variant = "primary", title }) {
   const styles =
     variant === "primary"
       ? { bg: "#2563EB", fg: "white", bd: "#1D4ED8" }
-      : variant === "soft"
-      ? { bg: "#EEF2FF", fg: "#1E40AF", bd: "#C7D2FE" }
       : variant === "danger"
-      ? { bg: "#FEF2F2", fg: "#991B1B", bd: "#FECACA" }
-      : variant === "highlight"
-      ? { bg: "#ECFDF5", fg: "#065F46", bd: "#A7F3D0" }
-      : { bg: "#F8FAFC", fg: "#0F172A", bd: "#E2E8F0" };
+      ? { bg: "#FFFFFF", fg: "#B91C1C", bd: "#FCA5A5" }
+      : { bg: "#FFFFFF", fg: "#0F172A", bd: "#CBD5E1" };
 
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
       title={title}
       style={{
-        padding: "10px 12px",
-        borderRadius: 10,
-        border: `1px solid ${styles.bd}`,
-        background: disabled ? "#E5E7EB" : styles.bg,
-        color: disabled ? "#6B7280" : styles.fg,
-        fontWeight: 800,
+        padding: "8px 14px",
+        borderRadius: 8,
+        border: `1px solid ${disabled ? "#E2E8F0" : styles.bd}`,
+        background: disabled ? "#F1F5F9" : styles.bg,
+        color: disabled ? "#94A3B8" : styles.fg,
+        fontSize: 14,
+        fontWeight: 700,
+        lineHeight: 1.4,
         cursor: disabled ? "not-allowed" : "pointer",
       }}
     >
@@ -590,14 +591,29 @@ function WorkspaceMenu({ disabled, onSoftReset, onReset, onPing }) {
 }
 
 function Field({ label, children, hint }) {
+  const autoId = useId();
+  const hintId = hint ? `${autoId}-hint` : undefined;
+
+  // A single native control gets a real <label>; composite children keep a plain heading
+  const control =
+    React.isValidElement(children) && ["input", "select", "textarea"].includes(children.type) ? children : null;
+  const controlId = control ? control.props.id || autoId : undefined;
+  const labelStyle = { fontSize: 13, color: "#334155", fontWeight: 700 };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <div style={{ fontSize: 13, color: "#334155", fontWeight: 700 }}>
-        {label}
-      </div>
-      {children}
+      {control ? (
+        <label htmlFor={controlId} style={labelStyle}>
+          {label}
+        </label>
+      ) : (
+        <div style={labelStyle}>{label}</div>
+      )}
+      {control ? React.cloneElement(control, { id: controlId, "aria-describedby": hintId }) : children}
       {hint ? (
-        <div style={{ fontSize: 12, color: "#64748B" }}>{hint}</div>
+        <div id={hintId} style={{ fontSize: 12, color: "#64748B" }}>
+          {hint}
+        </div>
       ) : null}
     </div>
   );
@@ -918,10 +934,8 @@ export default function AppLegacy() {
   const [qsListLoadedAt, setQsListLoadedAt] = useState("");
 
   // Create question form (manual)
-  const [qDimension, setQDimension] = useState("Board Composition");
-  const [qText, setQText] = useState(
-    "The board has an appropriate mix of skills, experience, and independence to oversee the organisation effectively."
-  );
+  const [qDimension, setQDimension] = useState("");
+  const [qText, setQText] = useState("");
   const [qAnswerType, setQAnswerType] = useState("rating");
   const [qWeight, setQWeight] = useState("1");
   const [qActive, setQActive] = useState(true);

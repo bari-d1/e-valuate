@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 
 /**
  * View Questions page (router-based)
@@ -25,6 +25,13 @@ export default function ListQuestionsPage({
   // ui bundle (components + styles)
   ui,
 }) {
+  // Load questions as soon as the evaluation's questionnaire is known
+  const autoLoadBlocked = typeof lockReason === "function" ? lockReason("list_questions") : "missing";
+  useEffect(() => {
+    if (!autoLoadBlocked && typeof listQuestionsTask === "function") listQuestionsTask();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoLoadBlocked]);
+
   // guards
   const missing = [];
   if (!ui?.Card) missing.push("ui.Card");
