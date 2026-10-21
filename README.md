@@ -4,33 +4,32 @@ Board evaluation app: FastAPI backend (`cw_board_evaluation/`) and React + Vite 
 
 ## Run the app (macOS)
 
+Requires Python 3.14, Node.js and PostgreSQL:
+
+```bash
+brew install python@3.14 node postgresql@18
+brew services start postgresql@18
+```
+
+Then, from a fresh clone:
+
 ```bash
 ./dev.sh
 ```
 
-Open http://127.0.0.1:5173/consultant. Ctrl+C stops everything.
+Open http://127.0.0.1:5173/consultant and click **Open** on `eval-002` (EMOK Express). Ctrl+C stops everything.
 
-`dev.sh` starts the backend on port 8000 and the frontend on port 5173, and applies any pending database migrations. On first run it also creates the Python environment (`cw_board_evaluation/.venv-mac`) and installs frontend dependencies.
+On first run `dev.sh` creates `cw_board_evaluation/.env` from `.env.example`, the Python environment and `node_modules`, creates the database, and seeds the demo evaluation `eval-002`. On every run it applies pending migrations, then starts the backend on port 8000 and the frontend on port 5173. Existing data is never changed.
 
-## First-time setup
+Add your `OPENAI_API_KEY` to `cw_board_evaluation/.env` for AI question generation and reports. Never commit `.env`.
 
-Requires Python 3.14, Node.js and PostgreSQL (`brew install python@3.14 node postgresql@18`).
+## Tests
 
-1. Start Postgres: `brew services start postgresql@18`
-2. Create `cw_board_evaluation/.env` with `DATABASE_URL`, `OPENAI_API_KEY` and the email settings. Never commit this file.
-3. Create the database user and database named in `DATABASE_URL`, for example:
-   ```bash
-   psql -d postgres -c "CREATE ROLE postgres LOGIN CREATEDB PASSWORD '<password>';"
-   createdb -O postgres cw_board_eval
-   ```
-4. Run `./dev.sh` once so it creates the Python environment and runs migrations, then stop it with Ctrl+C.
-5. Seed demo data:
-   ```bash
-   cd cw_board_evaluation
-   .venv-mac/bin/python scripts/seed_reference_data.py
-   .venv-mac/bin/python scripts/seed_demo_environment.py eval-002
-   ```
-   The consultant UI opens evaluation `eval-002` by default.
+See [cw_board_evaluation/TESTING.md](cw_board_evaluation/TESTING.md): unit and integration tests, the recorded baseline, and an end-to-end smoke test (`scripts/e2e_smoke.py`).
+
+## Branches
+
+`main` is kept demoable for client calls. Do new work on a feature branch and merge it into `main` once the tests and the end-to-end smoke test pass.
 
 ## Windows
 
