@@ -15,7 +15,7 @@ import os
 import uuid
 
 import pytest
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, make_url, text
 from sqlalchemy.orm import Session, sessionmaker
 
 # Dummy URL so `import app.*` works in unit tests without Postgres.
@@ -48,6 +48,15 @@ def integration_engine():
         pytest.skip(f"Set {INTEGRATION_ENV}=1 to run integration tests")
 
     url = os.environ["DATABASE_URL"]
+    # This fixture drops every table. Refuse anything that isn't clearly a test database,
+    # so a stray .env or exported DATABASE_URL can never wipe dev or production data.
+    db_name = make_url(url).database or ""
+    if not db_name.endswith("_test"):
+        pytest.exit(
+            f"Refusing to run integration tests against database '{db_name}': "
+            "its name must end in '_test' (they drop all tables).",
+            returncode=2,
+        )
     if not _postgres_reachable(url):
         pytest.skip(f"PostgreSQL not reachable at DATABASE_URL ({url})")
 
