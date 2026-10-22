@@ -23,6 +23,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 from sqlalchemy import (
+    CheckConstraint,
     DateTime,
     ForeignKey,
     Index,
@@ -263,6 +264,56 @@ class Report(Base):
     __table_args__ = (
         Index("ix_reports_evaluation_created_at", "evaluation_id", "created_at"),
     )
+
+
+# ----------------------------
+# Taxonomy lookup tables (see app.domain.taxonomy)
+# ----------------------------
+
+class SubjectType(Base):
+    """WHO or WHAT is being evaluated (e.g. BOARD, CHAIR, INED, COMMITTEE)."""
+
+    __tablename__ = "subject_types"
+
+    code: Mapped[str] = mapped_column(String(32), primary_key=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # "single" | "per_person" | "per_committee"
+    cardinality: Mapped[str] = mapped_column(String(16), nullable=False)
+
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+    __table_args__ = (
+        CheckConstraint(
+            "cardinality IN ('single', 'per_person', 'per_committee')",
+            name="ck_subject_types_cardinality",
+        ),
+    )
+
+
+class Theme(Base):
+    """WHICH ASPECT is being evaluated. Provisional list: names are data, not code."""
+
+    __tablename__ = "themes"
+
+    code: Mapped[str] = mapped_column(String(64), primary_key=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+
+class EvidenceSource(Base):
+    """WHAT KIND of evidence a question gathers (PERCEPTION, ROLE_SELF, ORG_FACT)."""
+
+    __tablename__ = "evidence_sources"
+
+    code: Mapped[str] = mapped_column(String(32), primary_key=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
 
 # ----------------------------
