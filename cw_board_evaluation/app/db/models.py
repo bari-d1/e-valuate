@@ -534,6 +534,19 @@ class Question(Base):
     # SQLite-friendly bool; for Postgres this is fine too
     active: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
+    # Taxonomy tags (optional). `dimension` above is unchanged and still drives
+    # analytics, portal ordering and exports.
+    theme_code: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        ForeignKey("themes.code", ondelete="RESTRICT"),
+        nullable=True,
+    )
+    evidence_source_code: Mapped[Optional[str]] = mapped_column(
+        String(32),
+        ForeignKey("evidence_sources.code", ondelete="RESTRICT"),
+        nullable=True,
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -542,10 +555,48 @@ class Question(Base):
 
     responses: Mapped[list["Response"]] = relationship(back_populates="question")
 
+    # Subject TYPES this question is about (e.g. COMMITTEE). Which committee or
+    # director a response is about is decided at assembly time, not here.
+    subject_type_links: Mapped[list["QuestionSubjectType"]] = relationship(
+        back_populates="question",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        order_by="QuestionSubjectType.subject_type_code",
+    )
+
+    @property
+    def subject_type_codes(self) -> list[str]:
+        return [link.subject_type_code for link in self.subject_type_links]
+
     __table_args__ = (
         Index("ix_questions_template_version", "template_code", "version"),
         Index("ix_questions_dimension", "dimension"),
+        Index("ix_questions_theme", "theme_code"),
+        Index("ix_questions_evidence_source", "evidence_source_code"),
         UniqueConstraint("template_code", "version", "text", name="uq_question_template_version_text"),
+    )
+
+
+class QuestionSubjectType(Base):
+    """Join table: which subject types a question relates to (many-to-many)."""
+
+    __tablename__ = "question_subject_types"
+
+    question_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("questions.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    subject_type_code: Mapped[str] = mapped_column(
+        String(32),
+        ForeignKey("subject_types.code", ondelete="RESTRICT"),
+        primary_key=True,
+    )
+
+    question: Mapped["Question"] = relationship(back_populates="subject_type_links")
+
+    __table_args__ = (
+        Index("ix_question_subject_types_subject_type", "subject_type_code"),
     )
 
 
