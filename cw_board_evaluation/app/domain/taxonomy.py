@@ -18,6 +18,7 @@ database; only the codes are relied on here.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 # ----------------------------
@@ -120,3 +121,69 @@ def subject_type_for_role(role: Optional[str]) -> Optional[str]:
     if not key:
         return None
     return ROLE_TO_SUBJECT_TYPE.get(key)
+
+
+# ----------------------------
+# Legacy assignment type -> subject type
+# ----------------------------
+
+@dataclass(frozen=True)
+class AssignmentMapping:
+    subject_type_code: Optional[str]  # None when it can't be resolved
+    theme_code: Optional[str] = None
+    provisional: bool = False
+    reason: Optional[str] = None  # why subject_type_code is None
+
+
+# Fixed mappings. DIRECTOR_SELF / DIRECTOR_PEER are absent on purpose: they
+# depend on the subject participant's role (see map_assignment_type).
+ASSIGNMENT_TYPE_TO_SUBJECT_TYPE: Dict[str, str] = {
+    "BOARD_AS_WHOLE": "BOARD",
+    "CHAIR_EVAL": "CHAIR",
+    "CEO_SELF": "MD_CEO",
+    "CEO_EVAL": "MD_CEO",
+    "ED_SELF": "ED",
+    "ED_EVAL": "ED",
+    "COMMITTEE_EVAL": "COMMITTEE",
+    # PROVISIONAL: the client hasn't confirmed whether governance compliance is
+    # a subject or a theme. Treated as the board, themed COMPLIANCE_ETHICS.
+    "GOV_AUDIT": "BOARD",
+}
+
+ASSIGNMENT_TYPE_THEME: Dict[str, str] = {
+    "GOV_AUDIT": "COMPLIANCE_ETHICS",  # PROVISIONAL, see above
+}
+
+PROVISIONAL_ASSIGNMENT_TYPES = frozenset({"GOV_AUDIT"})
+
+ROLE_RESOLVED_ASSIGNMENT_TYPES = frozenset({"DIRECTOR_SELF", "DIRECTOR_PEER"})
+
+LEGACY_ASSIGNMENT_TYPES = tuple(ASSIGNMENT_TYPE_TO_SUBJECT_TYPE) + tuple(sorted(ROLE_RESOLVED_ASSIGNMENT_TYPES))
+
+
+def map_assignment_type(assignment_type: str, subject_role: Optional[str] = None) -> AssignmentMapping:
+    """
+    Map a legacy AssessmentAssignment.assignment_type to a subject type.
+
+    subject_role is the role of the assignment's subject participant; it is only
+    used for DIRECTOR_SELF / DIRECTOR_PEER, which resolve to NED, INED or ED.
+    """
+    atype = (assignment_type or "").strip().upper()
+
+    if atype in ROLE_RESOLVED_ASSIGNMENT_TYPES:
+        code = subject_type_for_role(subject_role)
+        if code in DIRECTOR_SUBJECT_TYPES:
+            return AssignmentMapping(subject_type_code=code)
+        return AssignmentMapping(
+            subject_type_code=None,
+            reason=f"{atype} needs a subject participant with role NED, INED or ED (got {subject_role!r}).",
+        )
+
+    if atype in ASSIGNMENT_TYPE_TO_SUBJECT_TYPE:
+        return AssignmentMapping(
+            subject_type_code=ASSIGNMENT_TYPE_TO_SUBJECT_TYPE[atype],
+            theme_code=ASSIGNMENT_TYPE_THEME.get(atype),
+            provisional=atype in PROVISIONAL_ASSIGNMENT_TYPES,
+        )
+
+    return AssignmentMapping(subject_type_code=None, reason=f"Unknown assignment type {assignment_type!r}.")
