@@ -47,6 +47,8 @@ import SeedDemoResponsesPage from "./pages/consultant/SeedDemoResponses";
 import SeedDefaultQuestionsPage from "./pages/consultant/SeedDefaultQuestions";
 import AssessmentTracksPage from "./pages/consultant/AssessmentTracksPage";
 import ConsultantResponsesPage from "./pages/consultant/ConsultantResponsesPage";
+import CompaniesListPage from "./pages/consultant/companies/CompaniesListPage";
+import CompanyPage from "./pages/consultant/companies/CompanyPage";
 
 
 
@@ -266,13 +268,6 @@ function parseCsvLine(line) {
     full_name: parts[1] || null,
     role: parts[2] || null,
   };
-}
-
-function parseRegulators(input) {
-  return (input || "")
-    .split(",")
-    .map((x) => x.trim())
-    .filter(Boolean);
 }
 
 async function safeJsonOrText(res) {
@@ -913,11 +908,6 @@ export default function AppLegacy() {
   const [evalsLoadedAt, setEvalsLoadedAt] = useState("");
 
   // Create Evaluation form
-  const [newEvalId, setNewEvalId] = useState("");
-  const [tenantName, setTenantName] = useState("");
-  const [sector, setSector] = useState("");
-  const [year, setYear] = useState(() => String(new Date().getFullYear()));
-  const [regulatorsText, setRegulatorsText] = useState("");
 
   // Invite Participants form
   const [inviteText, setInviteText] = useState("");
@@ -1516,16 +1506,11 @@ function renderNextActionBar(opts = {}) {
     if (nextTaskKey) setTask(nextTaskKey);
   }
 
-  async function createEvaluation() {
+  // Creates an evaluation for a company (organisation). Returns the created evaluation, or undefined on error.
+  async function createEvaluation(fields) {
   beginAction();
   try {
-    const payload = {
-      evaluation_id: (newEvalId || "").trim() || undefined,
-      tenant_name: tenantName,
-      sector,
-      year: Number(year),
-      regulators: parseRegulators(regulatorsText),
-    };
+    const payload = fields || {};
 
     const res = await fetch(`${API_BASE}/api/v1/evaluations`, {
       method: "POST",
@@ -1551,8 +1536,10 @@ function renderNextActionBar(opts = {}) {
     } catch {
       // ignore
     }
+    return data;
   } catch (e) {
     setError(e?.message || String(e));
+    return undefined;
   } finally {
     setBusy(false);
   }
@@ -2260,6 +2247,7 @@ function getWorkflowProgress() {
     {
       group: "Setup",
       items: [
+        { to: "/consultant/companies", label: "Companies" },
         { to: "/consultant/evaluations", step: "evaluation", label: "Evaluations" },
         { to: "/consultant/questionnaire/select", step: "questionnaire", label: "Questionnaire" },
         { to: "/consultant/participants", step: "participants", label: "Participants" },
@@ -2341,10 +2329,10 @@ function getWorkflowProgress() {
   // The evaluation in focus is shown once, in the top bar; pages no longer render their own panel
   const focus = null;
 
-  // Every consultant page except the evaluation list/create works on the evaluation in focus
+  // Every consultant page except companies and the evaluation list/create works on the evaluation in focus
   const needsFocus =
     !String(evalId || "").trim() &&
-    !/^\/consultant\/?$|^\/consultant\/evaluations(\/|$)/.test(location.pathname);
+    !/^\/consultant\/?$|^\/consultant\/(evaluations|companies)(\/|$)/.test(location.pathname);
 
   //Here is where we actually build the page with sidebar and the main bar(page)
 
@@ -2563,7 +2551,12 @@ function getWorkflowProgress() {
           ) : null}
           <Routes>
             {/* default inside consultant */}
-            <Route path="/" element={<Navigate to="evaluations" replace />} />
+            <Route path="/" element={<Navigate to="companies" replace />} />
+
+            {/* Companies */}
+            <Route path="companies" element={<CompaniesListPage ui={ui} />} />
+            <Route path="companies/:orgId" element={<Navigate to="documents" replace />} />
+            <Route path="companies/:orgId/:tab" element={<CompanyPage ui={ui} />} />
 
             {/* Evaluations */}
             <Route
@@ -2602,16 +2595,6 @@ function getWorkflowProgress() {
               element={
                 <CreateEvaluationPage
                   ui={ui}
-                  tenantName={tenantName}
-                  setTenantName={setTenantName}
-                  sector={sector}
-                  setSector={setSector}
-                  year={year}
-                  setYear={setYear}
-                  newEvalId={newEvalId}
-                  setNewEvalId={setNewEvalId}
-                  regulatorsText={regulatorsText}
-                  setRegulatorsText={setRegulatorsText}
                   evalId={evalId}
                   lastCreatedEvalId={lastCreatedEvalId}
                   questionnaireSavedAt={questionnaireSavedAt}
