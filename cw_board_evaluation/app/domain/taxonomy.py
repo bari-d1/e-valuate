@@ -18,7 +18,7 @@ database; only the codes are relied on here.
 
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 # ----------------------------
 # Subject types
@@ -90,3 +90,33 @@ DIMENSION_TO_THEME: Dict[str, str] = {
     "Management Oversight": "MANAGEMENT_OVERSIGHT",
     "Open Comments": "GENERAL",
 }
+
+# ----------------------------
+# Participant.role -> subject type
+# ----------------------------
+
+# Participant.role is free text. These are the values found in code, seed data,
+# tests and the demo database ("Chair", "INED", "ED", "Company Secretary"), plus
+# the subject type codes themselves. Matching is trimmed and case-insensitive.
+# Anything else (including "Chairman", "CEO", "MD", "NED-I") is deliberately
+# unmapped: callers report it instead of guessing. Extend this table as roles
+# are confirmed.
+ROLE_TO_SUBJECT_TYPE: Dict[str, str] = {
+    "chair": "CHAIR",
+    "ined": "INED",
+    "ed": "ED",
+    "company secretary": "COMPANY_SECRETARY",
+    "ned": "NED",
+    "md_ceo": "MD_CEO",
+    "company_secretary": "COMPANY_SECRETARY",
+}
+
+DIRECTOR_SUBJECT_TYPES = ("NED", "INED", "ED")
+
+
+def subject_type_for_role(role: Optional[str]) -> Optional[str]:
+    """Subject type code for a Participant.role, or None when unknown/empty."""
+    key = (role or "").strip().lower()
+    if not key:
+        return None
+    return ROLE_TO_SUBJECT_TYPE.get(key)

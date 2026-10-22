@@ -600,6 +600,66 @@ class QuestionSubjectType(Base):
     )
 
 
+class EvaluationSubject(Base):
+    """
+    A concrete subject within one evaluation: the board, a committee, or a
+    person in a role (e.g. "INED: Jane Doe"). Built from existing evaluation
+    data by app.services.evaluation_subjects.sync_evaluation_subjects.
+
+    Shape by cardinality of the subject type:
+      single        -> participant_id NULL (BOARD) or the one person (CHAIR, MD_CEO, COMPANY_SECRETARY)
+      per_person    -> participant_id set (ED, NED, INED)
+      per_committee -> committee_name set (COMMITTEE)
+    """
+
+    __tablename__ = "evaluation_subjects"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    evaluation_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("evaluations.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    subject_type_code: Mapped[str] = mapped_column(
+        String(32),
+        ForeignKey("subject_types.code", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    participant_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("participants.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    committee_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
+    label: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        # NULLS NOT DISTINCT so e.g. a second BOARD row (both NULLs) is rejected too.
+        UniqueConstraint(
+            "evaluation_id",
+            "subject_type_code",
+            "participant_id",
+            "committee_name",
+            name="uq_evaluation_subject",
+            postgresql_nulls_not_distinct=True,
+        ),
+        CheckConstraint(
+            "participant_id IS NULL OR committee_name IS NULL",
+            name="ck_evaluation_subjects_one_target",
+        ),
+        Index("ix_evaluation_subjects_evaluation", "evaluation_id"),
+        Index("ix_evaluation_subjects_participant", "participant_id"),
+    )
+
+
 class Response(Base):
     """
     One participant's answer to one question.
