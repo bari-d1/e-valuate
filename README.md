@@ -57,3 +57,34 @@ RUN_INTEGRATION_TESTS=1 \
 DATABASE_URL=postgresql+psycopg://localhost:5432/cw_board_eval_test \
 .venv-mac/bin/python -m pytest -q
 ```
+
+## Smoke test baseline
+
+Recorded 2026-10-22 on branch `chore/groundwork` (base `22b5392`). Fresh database migrated to head and seeded, backend and frontend started as `dev.sh` does, then the journey was driven in headless Chrome. OpenAI key configured.
+
+**Seeding:** `seed_demo_environment.py eval-002` on its own creates the evaluation and questions but **no tracks, tasks or responses** ("template missing"). It needs `seed_reference_data.py` to run first, as in First-time setup above. In that order: 12 participants, 10 questions, 28 tasks, 86 demo answers.
+
+### Consultant
+
+| Step | Result |
+|---|---|
+| List evaluations | Works: `eval-002` listed |
+| Open the demo evaluation (Select) | Works |
+| Participants | Works: 12 shown |
+| Questions | Works: 10 shown |
+| Tracks and assignments | Works: 3 active tracks, 28 tasks (10 completed, 18 not started) |
+| Responses | Works: 86 rows, CSV/Excel download buttons present |
+| Generate report | **Works only via in-app navigation.** Opening `/consultant/analysis/report` directly or refreshing it leaves *Generate + Load Latest* disabled with "Add questions first." (the check uses questions held in memory, filled by visiting Questions first). Reached through the sidebar (Questions, then Report) it generated the AI report. |
+| Export DOCX | Works: valid `.docx` downloaded (~38 KB) |
+
+Every consultant page logs `404 GET /api/v1/evaluations/{id}/report` until a report exists (lookup for a latest report; harmless but noisy).
+
+### Member
+
+| Step | Result |
+|---|---|
+| Open invite link (hub) | **Breaks on a fresh checkout:** "Could not open hub: Unexpected token '<' … is not valid JSON". `src/api/portalApi.js` uses `VITE_API_BASE_URL` (default empty), so requests go to the Vite server, which returns HTML; there is no Vite proxy. Works once `VITE_API_BASE_URL=http://127.0.0.1:8000` is set (an untracked `cw-board-ui/.env` does this on the original dev machine; it is not in the repo or this README). |
+| Hub | Works (with the variable set): 2 tasks, one completed, one to do |
+| Answer questions | Works: 10/10 answered (8 ratings, 2 comments) |
+| Submit | Works: task marked `responded` on the server |
+| Thank-you page | Works |
