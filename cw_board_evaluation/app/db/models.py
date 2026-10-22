@@ -1087,7 +1087,7 @@ class OrgCommittee(Base):
         UUID(as_uuid=True), ForeignKey("org_documents.id", ondelete="SET NULL"), nullable=True
     )
     source: Mapped[str] = mapped_column(String(16), nullable=False)  # public | client | consultant
-    status: Mapped[str] = mapped_column(String(16), nullable=False, default="proposed")  # proposed | confirmed
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="proposed")  # proposed | confirmed | rejected
     # Provenance for AI proposals (same rules as facts)
     origin: Mapped[str] = mapped_column(String(16), nullable=False, default="manual")  # ai_extraction | manual
     source_document_id: Mapped[Optional[uuid.UUID]] = mapped_column(
@@ -1102,7 +1102,7 @@ class OrgCommittee(Base):
             name="ck_org_committees_type",
         ),
         CheckConstraint("source IN ('public', 'client', 'consultant')", name="ck_org_committees_source"),
-        CheckConstraint("status IN ('proposed', 'confirmed')", name="ck_org_committees_status"),
+        CheckConstraint("status IN ('proposed', 'confirmed', 'rejected')", name="ck_org_committees_status"),
         CheckConstraint("origin IN ('ai_extraction', 'manual')", name="ck_org_committees_origin"),
         Index("ix_org_committees_organisation", "organisation_id"),
     )

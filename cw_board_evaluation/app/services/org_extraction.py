@@ -414,6 +414,9 @@ def _save_committees(db, org, cands: Dict[str, List[_CommitteeCandidate]], resul
         if any(m.status == "confirmed" or m.origin == "manual" for m in matches):
             result.unchanged.append({"committee": primary.name, "reason": "confirmed or manual entry exists"})
             continue
+        if any(m.status == "rejected" for m in matches):
+            result.unchanged.append({"committee": primary.name, "reason": "rejected before"})
+            continue
         if matches:
             m = matches[0]
             m.name, m.committee_type, m.chair_name, m.member_names = primary.name, primary.committee_type, chair, members

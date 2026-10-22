@@ -104,7 +104,7 @@ def upgrade() -> None:
     sa.CheckConstraint("committee_type IN ('audit', 'risk', 'remuneration', 'nomination', 'finance', 'governance', 'other')", name='ck_org_committees_type'),
     sa.CheckConstraint("origin IN ('ai_extraction', 'manual')", name='ck_org_committees_origin'),
     sa.CheckConstraint("source IN ('public', 'client', 'consultant')", name='ck_org_committees_source'),
-    sa.CheckConstraint("status IN ('proposed', 'confirmed')", name='ck_org_committees_status'),
+    sa.CheckConstraint("status IN ('proposed', 'confirmed', 'rejected')", name='ck_org_committees_status'),
     sa.ForeignKeyConstraint(['organisation_id'], ['organisations.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['source_document_id'], ['org_documents.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['terms_of_reference_document_id'], ['org_documents.id'], ondelete='SET NULL'),

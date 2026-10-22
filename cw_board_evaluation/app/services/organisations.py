@@ -47,8 +47,13 @@ def sync_evaluation_from_organisation(db: Session, ev: Evaluation, org: Organisa
 
 
 def resync_organisation_evaluations(db: Session, org: Organisation) -> int:
-    """Re-apply the organisation's name/sector/regulators to all its evaluations. Returns the count."""
-    evals = db.execute(select(Evaluation).where(Evaluation.organisation_id == org.id)).scalars().all()
+    """
+    Re-apply the organisation's name/sector/regulators to its evaluations that
+    aren't closed (closed evaluations keep what they were run with). Returns the count.
+    """
+    evals = db.execute(
+        select(Evaluation).where(Evaluation.organisation_id == org.id, Evaluation.status != "closed")
+    ).scalars().all()
     for ev in evals:
         sync_evaluation_from_organisation(db, ev, org)
     return len(evals)
