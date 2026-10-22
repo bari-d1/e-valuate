@@ -6,17 +6,20 @@ Database helpers for the governance code library.
 
 from __future__ import annotations
 
+import csv
 import json
+import re
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.models import GovernanceClause, GovernanceCode
+from app.db.models import GovernanceClause, GovernanceClauseSubjectType, GovernanceCode, SubjectType, Theme
 from app.domain.governance import GOVERNANCE_CODES
 
 FIXTURE_DIR = Path(__file__).resolve().parents[2] / "reference" / "governance"
+TAG_RULES_PATH = FIXTURE_DIR / "tag_rules.csv"
 
 
 def seed_governance_codes(db: Session) -> Dict[str, int]:
@@ -111,6 +114,80 @@ def load_clause_fixtures(db: Session, fixtures: Iterable[Dict[str, Any]]) -> Dic
         db.get(GovernanceCode, code).clauses_loaded = True
     db.flush()
     return summary
+
+
+def _norm_heading(s: Optional[str]) -> str:
+    s = (s or "").lower().replace("&", "and")
+    return re.sub(r"[^a-z0-9]+", " ", s).strip()
+
+
+def read_tag_rules(path: Path = TAG_RULES_PATH) -> List[Dict[str, Any]]:
+    """Heading -> tags rules from the reviewable CSV (code, heading, subject_types, theme, note)."""
+    rules = []
+    with open(path, newline="", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            rules.append({
+                "code": row["code"].strip(),
+                "heading": row["heading"].strip(),
+                "subject_types": [x.strip() for x in (row.get("subject_types") or "").split(";") if x.strip()],
+                "theme": (row.get("theme") or "").strip() or None,
+            })
+    return rules
+
+
+def apply_tag_rules(db: Session, codes: Iterable[str], rules: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Tag clauses deterministically from their headings (no LLM):
+    a clause whose heading matches a rule gets exactly that rule's subject
+    types and theme; other clauses inherit their parent's tags. Parts are
+    never tagged (Part headings repeat principle headings, e.g. Part D).
+    Replaces existing tags, so it is idempotent. Flushes but does not commit.
+    """
+    known_subjects = set(db.execute(select(SubjectType.code)).scalars().all())
+    known_themes = set(db.execute(select(Theme.code)).scalars().all())
+    bad = []
+    for r in rules:
+        bad += [f"{r['code']} '{r['heading']}': unknown subject type {s}" for s in r["subject_types"] if s not in known_subjects]
+        if r["theme"] and r["theme"] not in known_themes:
+            bad.append(f"{r['code']} '{r['heading']}': unknown theme {r['theme']}")
+    if bad:
+        raise ValueError("Invalid tag rules: " + "; ".join(bad))
+
+    result: Dict[str, Any] = {"codes": {}, "unmatched_rules": [], "untagged": []}
+    matched = set()
+    for code in codes:
+        by_heading = {(r["code"], _norm_heading(r["heading"])): r for r in rules}
+        clauses = db.execute(
+            select(GovernanceClause).where(GovernanceClause.code == code).order_by(GovernanceClause.sort_order)
+        ).scalars().all()
+        tags: Dict[Any, Any] = {}  # clause id -> (subjects, theme); parents come before children
+        counts = {"rule": 0, "inherited": 0, "untagged": 0}
+        for c in clauses:
+            rule = by_heading.get((code, _norm_heading(c.heading))) if c.level != "part" and c.heading else None
+            if rule:
+                subjects, theme = list(rule["subject_types"]), rule["theme"]
+                matched.add((code, _norm_heading(rule["heading"])))
+                counts["rule"] += 1
+            elif c.parent_id in tags:
+                subjects, theme = tags[c.parent_id]
+                counts["inherited"] += 1 if (subjects or theme) else 0
+            else:
+                subjects, theme = [], None
+            tags[c.id] = (subjects, theme)
+            c.theme_code = theme
+            c.subject_type_links = [GovernanceClauseSubjectType(subject_type_code=s) for s in subjects]
+            if not subjects and not theme and c.level != "part":
+                counts["untagged"] += 1
+                result["untagged"].append({"code": code, "reference": c.reference, "heading": c.heading})
+        result["codes"][code] = counts
+    codes = set(codes)
+    result["unmatched_rules"] = [
+        {"code": r["code"], "heading": r["heading"]}
+        for r in rules
+        if r["code"] in codes and (r["code"], _norm_heading(r["heading"])) not in matched
+    ]
+    db.flush()
+    return result
 
 
 def fixture_paths(codes: Optional[List[str]] = None) -> List[Path]:
