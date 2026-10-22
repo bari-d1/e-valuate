@@ -73,3 +73,20 @@ SUBJECT_TYPE_CODES = [s["code"] for s in SUBJECT_TYPES]
 THEME_CODES = [t["code"] for t in THEMES]
 EVIDENCE_SOURCE_CODES = [e["code"] for e in EVIDENCE_SOURCES]
 SUBJECT_TYPE_CARDINALITY: Dict[str, str] = {str(s["code"]): str(s["cardinality"]) for s in SUBJECT_TYPES}
+
+# ----------------------------
+# Legacy Question.dimension -> theme (used once, by the backfill migration)
+# ----------------------------
+
+DIMENSION_TO_THEME: Dict[str, str] = {
+    "Board Composition": "BOARD_COMPOSITION",
+    "Risk Oversight": "RISK_MONITORING",
+    "Strategy Oversight": "STRATEGY",
+    "Board Culture & Dynamics": "BOARD_DYNAMICS",
+    "Audit & Assurance": "AUDIT_ASSURANCE",
+    "Remuneration & Nomination": "REMUNERATION_NOMINATION",
+    "Stakeholder & Stakeholder Governance": "STAKEHOLDER",
+    "Compliance & Ethics": "COMPLIANCE_ETHICS",
+    "Management Oversight": "MANAGEMENT_OVERSIGHT",
+    "Open Comments": "GENERAL",
+}
