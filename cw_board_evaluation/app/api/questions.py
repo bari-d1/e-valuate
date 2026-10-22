@@ -478,6 +478,19 @@ def update_question(question_id: str, payload: UpdateQuestionRequest, db: Sessio
     if not q:
         raise HTTPException(status_code=404, detail="Question not found.")
 
+    # Tags: only fields present in the request are changed (null clears).
+    # Validate before changing anything, so a 400 leaves the question untouched.
+    sent = payload.model_fields_set
+    theme_code = normalize_code(payload.theme_code)
+    evidence_source_code = normalize_code(payload.evidence_source_code)
+    subject_type_codes = _normalize_subject_codes(payload.subject_type_codes)
+    _validate_tags_or_400(
+        db,
+        theme_codes=[theme_code] if "theme_code" in sent else [],
+        evidence_source_codes=[evidence_source_code] if "evidence_source_code" in sent else [],
+        subject_type_codes=subject_type_codes if "subject_type_codes" in sent else [],
+    )
+
     if payload.dimension is not None:
         q.dimension = payload.dimension.strip()
     if payload.text is not None:
@@ -489,17 +502,6 @@ def update_question(question_id: str, payload: UpdateQuestionRequest, db: Sessio
     if payload.active is not None:
         q.active = 1 if payload.active else 0
 
-    # Tags: only fields present in the request are changed (null clears).
-    sent = payload.model_fields_set
-    theme_code = normalize_code(payload.theme_code)
-    evidence_source_code = normalize_code(payload.evidence_source_code)
-    subject_type_codes = _normalize_subject_codes(payload.subject_type_codes)
-    _validate_tags_or_400(
-        db,
-        theme_codes=[theme_code] if "theme_code" in sent else [],
-        evidence_source_codes=[evidence_source_code] if "evidence_source_code" in sent else [],
-        subject_type_codes=subject_type_codes if "subject_type_codes" in sent else [],
-    )
     if "theme_code" in sent:
         q.theme_code = theme_code
     if "evidence_source_code" in sent:
