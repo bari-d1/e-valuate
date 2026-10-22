@@ -15,8 +15,15 @@ from typing import Any, Dict, Iterable, List, Optional
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.models import GovernanceClause, GovernanceClauseSubjectType, GovernanceCode, SubjectType, Theme
-from app.domain.governance import GOVERNANCE_CODES
+from app.db.models import (
+    GovernanceClause,
+    GovernanceClauseSubjectType,
+    GovernanceCode,
+    SectorCodeDefault,
+    SubjectType,
+    Theme,
+)
+from app.domain.governance import GOVERNANCE_CODES, SECTOR_CODE_DEFAULTS, normalize_sector
 
 FIXTURE_DIR = Path(__file__).resolve().parents[2] / "reference" / "governance"
 TAG_RULES_PATH = FIXTURE_DIR / "tag_rules.csv"
@@ -37,6 +44,32 @@ def seed_governance_codes(db: Session) -> Dict[str, int]:
         db.flush()
         created += 1
     return {"governance_codes": created}
+
+
+def seed_sector_code_defaults(db: Session) -> Dict[str, int]:
+    """Insert any missing sector -> code defaults. Flushes but does not commit."""
+    existing = {(r.sector, r.sub_type, r.code) for r in db.execute(select(SectorCodeDefault)).scalars().all()}
+    created = 0
+    for sector, sub_type, code in SECTOR_CODE_DEFAULTS:
+        if (sector, sub_type, code) not in existing:
+            db.add(SectorCodeDefault(sector=sector, sub_type=sub_type, code=code))
+            created += 1
+    db.flush()
+    return {"sector_code_defaults": created}
+
+
+def default_codes_for_sector(db: Session, sector_text: Optional[str]) -> List[str]:
+    """
+    Default governance codes for a free-text sector. A sub-type (e.g. microfinance)
+    uses its own list; otherwise the sector's default list. [] when the sector
+    isn't recognised.
+    """
+    sector, sub_type = normalize_sector(sector_text)
+    if sector is None:
+        return []
+    stmt = select(SectorCodeDefault.code).where(SectorCodeDefault.sector == sector)
+    stmt = stmt.where(SectorCodeDefault.sub_type == sub_type) if sub_type else stmt.where(SectorCodeDefault.sub_type.is_(None))
+    return sorted(db.execute(stmt).scalars().all())
 
 
 def read_fixture(path: Path) -> Dict[str, Any]:

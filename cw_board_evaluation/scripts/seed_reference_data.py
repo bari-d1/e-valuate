@@ -3,6 +3,7 @@ Seed global reference data (idempotent):
 - assessment_track_templates (by code; existing rows are updated)
 - taxonomy: subject_types, themes, evidence_sources (missing rows only)
 - governance_codes: code metadata (missing rows only)
+- sector_code_defaults: sector -> default codes (missing rows only)
 """
 from __future__ import annotations
 
@@ -18,7 +19,7 @@ load_dotenv(find_dotenv())
 from sqlalchemy import select
 from app.db.models import AssessmentTrackTemplate
 from app.db.session import SessionLocal
-from app.services.governance import seed_governance_codes
+from app.services.governance import seed_governance_codes, seed_sector_code_defaults
 from app.services.taxonomy import seed_taxonomy
 
 TRACK_TEMPLATES = [
@@ -49,12 +50,14 @@ def main():
                 created += 1
         taxonomy_created = seed_taxonomy(db)
         governance_created = seed_governance_codes(db)
+        sector_created = seed_sector_code_defaults(db)
         db.commit()
     finally:
         db.close()
     print(f"Track templates: {created} created, {updated} updated.")
     print("Taxonomy rows created: " + ", ".join(f"{k} {v}" for k, v in taxonomy_created.items()) + ".")
     print(f"Governance codes created: {governance_created['governance_codes']}.")
+    print(f"Sector code defaults created: {sector_created['sector_code_defaults']}.")
 
 if __name__ == "__main__":
     main()

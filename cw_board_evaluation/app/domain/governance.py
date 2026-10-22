@@ -13,7 +13,8 @@ keep frozen copies) and by scripts/seed_reference_data.py.
 from __future__ import annotations
 
 from datetime import date
-from typing import Dict, List, Optional
+import re
+from typing import Dict, List, Optional, Tuple
 
 GOVERNANCE_CODES: List[Dict[str, object]] = [
     # Base code first: the others reference it through supplements_code.
@@ -149,3 +150,89 @@ GOVERNANCE_CODES: List[Dict[str, object]] = [
 ]
 
 GOVERNANCE_CODE_KEYS = [str(c["code"]) for c in GOVERNANCE_CODES]
+
+# ----------------------------
+# Sector defaults
+# ----------------------------
+
+# (sector key, sub_type, code). sub_type None is the sector's default; a sub-type
+# (e.g. microfinance) has its own complete list.
+SECTOR_CODE_DEFAULTS: List[Tuple[str, Optional[str], str]] = [
+    ("insurance", None, "NCCG_2018"),
+    ("insurance", None, "NAICOM_2021"),
+    # Commercial, merchant, non-interest and payment service banks
+    ("banking", None, "NCCG_2018"),
+    ("banking", None, "CBN_BANKS_2023"),
+    ("banking", "microfinance", "NCCG_2018"),
+    ("banking", "microfinance", "CBN_MFB_2018"),
+    ("pension", None, "NCCG_2018"),
+    ("pension", None, "PENCOM_2025"),
+    ("telecommunications", None, "NCCG_2018"),
+    ("telecommunications", None, "NCC_2025"),
+    ("sme", None, "SME_2024"),
+    ("finance", None, "NCCG_2018"),
+]
+
+SECTOR_KEYS = sorted({s for s, _, _ in SECTOR_CODE_DEFAULTS})
+
+# Free text (after normalising case, spacing, punctuation and a trailing
+# "sector"/"industry") -> (sector key, sub_type). Only unambiguous spellings:
+# e.g. "financial services" is NOT mapped, because banks and insurers are
+# financial services too.
+_SECTOR_ALIASES: Dict[str, Tuple[str, Optional[str]]] = {
+    "insurance": ("insurance", None),
+    "insurer": ("insurance", None),
+    "insurers": ("insurance", None),
+    "reinsurance": ("insurance", None),
+    "insurance and reinsurance": ("insurance", None),
+    "banking": ("banking", None),
+    "bank": ("banking", None),
+    "banks": ("banking", None),
+    "commercial bank": ("banking", None),
+    "commercial banking": ("banking", None),
+    "merchant bank": ("banking", None),
+    "merchant banking": ("banking", None),
+    "non interest bank": ("banking", None),
+    "non interest banking": ("banking", None),
+    "payment service bank": ("banking", None),
+    "payment service banks": ("banking", None),
+    "microfinance": ("banking", "microfinance"),
+    "microfinance bank": ("banking", "microfinance"),
+    "microfinance banks": ("banking", "microfinance"),
+    "microfinance banking": ("banking", "microfinance"),
+    "mfb": ("banking", "microfinance"),
+    "banking microfinance": ("banking", "microfinance"),
+    "pension": ("pension", None),
+    "pensions": ("pension", None),
+    "pension fund": ("pension", None),
+    "pension fund operators": ("pension", None),
+    "pfa": ("pension", None),
+    "pfc": ("pension", None),
+    "telecommunications": ("telecommunications", None),
+    "telecommunication": ("telecommunications", None),
+    "telecom": ("telecommunications", None),
+    "telecoms": ("telecommunications", None),
+    "telco": ("telecommunications", None),
+    "sme": ("sme", None),
+    "smes": ("sme", None),
+    "msme": ("sme", None),
+    "msmes": ("sme", None),
+    "small and medium enterprises": ("sme", None),
+    "finance": ("finance", None),
+}
+
+
+def _clean_sector(text: Optional[str]) -> str:
+    s = (text or "").lower().replace("&", " and ")
+    s = re.sub(r"[^a-z0-9]+", " ", s).strip()
+    s = re.sub(r"\s+(sector|industry)$", "", s)
+    return s
+
+
+def normalize_sector(text: Optional[str]) -> Tuple[Optional[str], Optional[str]]:
+    """
+    Map free-text Evaluation.sector (e.g. "Insurance", "INSURANCE ", "Microfinance Bank")
+    to a (sector key, sub_type) pair used by sector_code_defaults, or (None, None)
+    when the text is empty or not a known spelling.
+    """
+    return _SECTOR_ALIASES.get(_clean_sector(text), (None, None))
