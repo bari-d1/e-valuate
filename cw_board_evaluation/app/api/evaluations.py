@@ -36,9 +36,9 @@ from __future__ import annotations
 
 import random
 import secrets
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any, Dict, List, Optional
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response as PlainHttpResponse
@@ -50,6 +50,10 @@ from sqlalchemy.exc import IntegrityError
 
 from app.db.session import get_db
 from app.db.models import (
+    EvaluationContextSnapshot,
+    EvaluationScopeSubjectType,
+    Organisation,
+    SubjectType,
     Evaluation,
     Participant,
     Question,
@@ -60,6 +64,8 @@ from app.db.models import (
 )
 
 from app.services.analytics import build_analytics
+from app.services.organisations import sync_evaluation_from_organisation
+from app.services.profile_review import snapshot_context
 from app.services.committee_track_config import (
     is_committee_track_template,
     normalize_committee_config,
@@ -426,11 +432,32 @@ def _get_subjects_for_track(
 # -------------------------
 
 class CreateEvaluationRequest(BaseModel):
-    evaluation_id: Optional[str] = None
-    tenant_name: str
-    sector: str
-    year: int
+    evaluation_id: Optional[str] = None  # auto-generated when empty
+    # Required for new evaluations; tenant_name/sector come from the organisation.
+    organisation_id: Optional[str] = None
+    name: Optional[str] = None  # default "<year> Board Evaluation"
+    review_period_start: Optional[date] = None
+    review_period_end: Optional[date] = None
+    deadline: Optional[date] = None
+    brief: Optional[str] = None
+    subject_type_codes: Optional[List[str]] = None  # default: all subject types
+    year: Optional[int] = None  # default: year of review_period_end, deadline, or today
+    # Legacy fields: ignored for tenant_name/sector (synced from the organisation).
+    # regulators is used only if the organisation has no confirmed regulator fact.
+    tenant_name: Optional[str] = None
+    sector: Optional[str] = None
     regulators: List[str] = Field(default_factory=list)
+
+
+class UpdateEvaluationRequest(BaseModel):
+    organisation_id: Optional[str] = None
+    name: Optional[str] = None
+    review_period_start: Optional[date] = None
+    review_period_end: Optional[date] = None
+    deadline: Optional[date] = None
+    brief: Optional[str] = None
+    status: Optional[str] = None  # draft | in_review | live | closed
+    subject_type_codes: Optional[List[str]] = None
 
 
 class InviteParticipantItem(BaseModel):
@@ -524,8 +551,96 @@ class GenerateAssignmentsRequest(BaseModel):
 # Evaluations
 # -------------------------
 
+def _organisation_or_400(db: Session, organisation_id: Optional[str]) -> Organisation:
+    if not (organisation_id or "").strip():
+        raise HTTPException(status_code=400, detail="organisation_id is required: choose the company this evaluation is for.")
+    try:
+        org = db.get(Organisation, UUID(str(organisation_id)))
+    except ValueError:
+        org = None
+    if org is None:
+        raise HTTPException(status_code=400, detail="Unknown organisation_id.")
+    return org
+
+
+def _scope_codes(db: Session, codes: Optional[List[str]]) -> List[str]:
+    """Validated subject type codes; None means all active types."""
+    all_codes = db.execute(
+        select(SubjectType.code).where(SubjectType.active == 1).order_by(SubjectType.sort_order)
+    ).scalars().all()
+    if codes is None:
+        return list(all_codes)
+    wanted = []
+    for c in codes:
+        c = (c or "").strip().upper()
+        if c and c not in wanted:
+            wanted.append(c)
+    unknown = [c for c in wanted if c not in all_codes]
+    if unknown:
+        raise HTTPException(status_code=400, detail=f"Unknown subject type(s): {', '.join(unknown)}.")
+    if not wanted:
+        raise HTTPException(status_code=400, detail="Choose at least one subject type in scope.")
+    return wanted
+
+
+def _set_scope(db: Session, ev: Evaluation, codes: List[str]) -> None:
+    existing = {r.subject_type_code: r for r in db.execute(
+        select(EvaluationScopeSubjectType).where(EvaluationScopeSubjectType.evaluation_id == ev.id)
+    ).scalars().all()}
+    for code, row in existing.items():
+        if code not in codes:
+            db.delete(row)
+    for code in codes:
+        if code not in existing:
+            db.add(EvaluationScopeSubjectType(evaluation_id=ev.id, subject_type_code=code))
+
+
+def _check_period(start: Optional[date], end: Optional[date]) -> None:
+    if start and end and end < start:
+        raise HTTPException(status_code=400, detail="The review period ends before it starts.")
+
+
+def _evaluation_dict(db: Session, ev: Evaluation) -> Dict[str, Any]:
+    org = db.get(Organisation, ev.organisation_id) if ev.organisation_id else None
+    scope = db.execute(
+        select(EvaluationScopeSubjectType.subject_type_code)
+        .join(SubjectType, SubjectType.code == EvaluationScopeSubjectType.subject_type_code)
+        .where(EvaluationScopeSubjectType.evaluation_id == ev.id)
+        .order_by(SubjectType.sort_order)
+    ).scalars().all()
+    return {
+        "evaluation_id": ev.id,
+        "name": ev.name,
+        "status": ev.status,
+        "organisation_id": str(ev.organisation_id) if ev.organisation_id else None,
+        "organisation": (
+            {"organisation_id": str(org.id), "name": org.name, "sector_key": org.sector_key,
+             "profile_status": org.profile_status}
+            if org else None
+        ),
+        "tenant_name": ev.tenant_name,
+        "sector": ev.sector,
+        "year": ev.year,
+        "regulators": (ev.regulators or {}).get("items", []) if isinstance(ev.regulators, dict) else [],
+        "review_period_start": ev.review_period_start.isoformat() if ev.review_period_start else None,
+        "review_period_end": ev.review_period_end.isoformat() if ev.review_period_end else None,
+        "deadline": ev.deadline.isoformat() if ev.deadline else None,
+        "brief": ev.brief,
+        "subject_type_codes": list(scope),
+        "instrument": {
+            "template_code": ev.instrument_template_code,
+            "version": ev.instrument_version,
+        },
+        "created_at": ev.created_at.isoformat() if ev.created_at else None,
+    }
+
+
 @router.post("/evaluations", status_code=status.HTTP_201_CREATED)
 def create_evaluation(payload: CreateEvaluationRequest, db: Session = Depends(get_db)) -> Dict[str, Any]:
+    org = _organisation_or_400(db, payload.organisation_id)
+    _check_period(payload.review_period_start, payload.review_period_end)
+    scope = _scope_codes(db, payload.subject_type_codes)
+
     evaluation_id = (payload.evaluation_id or "").strip()
     if not evaluation_id:
         evaluation_id = f"eval-{str(uuid4())[:8]}"
@@ -533,60 +648,105 @@ def create_evaluation(payload: CreateEvaluationRequest, db: Session = Depends(ge
     if db.get(Evaluation, evaluation_id):
         raise HTTPException(status_code=409, detail=f"Evaluation already exists: {evaluation_id}")
 
+    year = payload.year or (payload.review_period_end or payload.deadline or date.today()).year
     ev = Evaluation(
         id=evaluation_id,
-        tenant_name=payload.tenant_name,
-        sector=payload.sector,
-        year=int(payload.year),
+        tenant_name=org.name,
+        sector=org.sector_key or "",
+        year=int(year),
         regulators={"items": list(payload.regulators or [])},
+        name=(payload.name or "").strip() or f"{year} Board Evaluation",
+        review_period_start=payload.review_period_start,
+        review_period_end=payload.review_period_end,
+        deadline=payload.deadline,
+        brief=(payload.brief or "").strip() or None,
+        status="draft",
     )
+    sync_evaluation_from_organisation(db, ev, org)
     db.add(ev)
+    db.flush()
+    _set_scope(db, ev, scope)
     db.commit()
     db.refresh(ev)
-
-    return {
-        "evaluation_id": ev.id,
-        "tenant_name": ev.tenant_name,
-        "sector": ev.sector,
-        "year": ev.year,
-        "regulators": (ev.regulators or {}).get("items", []) if isinstance(ev.regulators, dict) else [],
-        "created_at": ev.created_at.isoformat() if ev.created_at else None,
-    }
+    return _evaluation_dict(db, ev)
 
 
 @router.get("/evaluations", status_code=status.HTTP_200_OK)
 def list_evaluations(db: Session = Depends(get_db)) -> Dict[str, Any]:
     rows = db.execute(select(Evaluation).order_by(Evaluation.created_at.desc())).scalars().all()
-    items = []
-    for ev in rows:
-        items.append(
-            {
-                "evaluation_id": ev.id,
-                "tenant_name": ev.tenant_name,
-                "sector": ev.sector,
-                "year": ev.year,
-                "regulators": (ev.regulators or {}).get("items", []) if isinstance(ev.regulators, dict) else [],
-                "created_at": ev.created_at.isoformat() if ev.created_at else None,
-            }
-        )
+    items = [_evaluation_dict(db, ev) for ev in rows]
     return {"count": len(items), "items": items}
 
 
 @router.get("/evaluations/{evaluation_id}", status_code=status.HTTP_200_OK)
 def get_evaluation(evaluation_id: str, db: Session = Depends(get_db)) -> Dict[str, Any]:
     ev = _ensure_evaluation_exists(db, evaluation_id)
+    return _evaluation_dict(db, ev)
+
+
+@router.patch("/evaluations/{evaluation_id}", status_code=status.HTTP_200_OK)
+def update_evaluation(evaluation_id: str, payload: UpdateEvaluationRequest, db: Session = Depends(get_db)) -> Dict[str, Any]:
+    ev = _ensure_evaluation_exists(db, evaluation_id)
+    sent = payload.model_fields_set
+    if "organisation_id" in sent:
+        org = _organisation_or_400(db, payload.organisation_id)
+        if org.id != ev.organisation_id:
+            sync_evaluation_from_organisation(db, ev, org)
+    if "name" in sent:
+        ev.name = (payload.name or "").strip() or f"{ev.year} Board Evaluation"
+    for f in ("review_period_start", "review_period_end", "deadline"):
+        if f in sent:
+            setattr(ev, f, getattr(payload, f))
+    _check_period(ev.review_period_start, ev.review_period_end)
+    if "brief" in sent:
+        ev.brief = (payload.brief or "").strip() or None
+    if "status" in sent:
+        if payload.status not in ("draft", "in_review", "live", "closed"):
+            raise HTTPException(status_code=400, detail="Status must be draft, in_review, live or closed.")
+        ev.status = payload.status
+    if "subject_type_codes" in sent:
+        _set_scope(db, ev, _scope_codes(db, payload.subject_type_codes))
+    db.commit()
+    db.refresh(ev)
+    return _evaluation_dict(db, ev)
+
+
+def _snapshot_dict(s: EvaluationContextSnapshot) -> Dict[str, Any]:
     return {
-        "evaluation_id": ev.id,
-        "tenant_name": ev.tenant_name,
-        "sector": ev.sector,
-        "year": ev.year,
-        "regulators": (ev.regulators or {}).get("items", []) if isinstance(ev.regulators, dict) else [],
-        "instrument": {
-            "template_code": ev.instrument_template_code,
-            "version": ev.instrument_version,
-        },
-        "created_at": ev.created_at.isoformat() if ev.created_at else None,
+        "snapshot_id": str(s.id),
+        "evaluation_id": s.evaluation_id,
+        "profile_version": s.profile_version,
+        "facts": s.facts,
+        "committees": s.committees,
+        "document_ids": s.document_ids,
+        "governance_codes": s.governance_codes,
+        "created_at": s.created_at.isoformat() if s.created_at else None,
     }
+
+
+@router.get("/evaluations/{evaluation_id}/context", status_code=status.HTTP_200_OK)
+def get_evaluation_context(evaluation_id: str, db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """The latest context snapshot for this evaluation."""
+    _ensure_evaluation_exists(db, evaluation_id)
+    snap = db.execute(
+        select(EvaluationContextSnapshot)
+        .where(EvaluationContextSnapshot.evaluation_id == evaluation_id)
+        .order_by(EvaluationContextSnapshot.created_at.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+    if snap is None:
+        raise HTTPException(status_code=404, detail="No context snapshot yet for this evaluation.")
+    return _snapshot_dict(snap)
+
+
+@router.post("/evaluations/{evaluation_id}/context/snapshot", status_code=status.HTTP_201_CREATED)
+def create_evaluation_context_snapshot(evaluation_id: str, db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """Freeze the organisation's current confirmed context for this evaluation."""
+    _ensure_evaluation_exists(db, evaluation_id)
+    snap = snapshot_context(db, evaluation_id)
+    db.commit()
+    db.refresh(snap)
+    return _snapshot_dict(snap)
 
 @router.post("/evaluations/{evaluation_id}/tracks", status_code=status.HTTP_201_CREATED)
 def enable_evaluation_tracks(

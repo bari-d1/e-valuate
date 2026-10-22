@@ -12,18 +12,21 @@ from __future__ import annotations
 
 from typing import Dict, Iterable, List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db.models import (
     Evaluation,
     EvaluationGovernanceCode,
+    EvaluationScopeSubjectType,
     GovernanceCode,
     Organisation,
     OrganisationFact,
     OrganisationGovernanceCode,
     SectorCodeDefault,
+    SubjectType,
 )
+from app.domain.governance import normalize_sector
 from app.services.governance import default_codes_for_sector
 
 
@@ -166,3 +169,45 @@ def apply_evaluation_code_defaults(db: Session, ev: Evaluation) -> Dict[str, obj
         .order_by(EvaluationGovernanceCode.code)
     ).scalars().all()
     return {"basis": basis, "codes": [{"code": r.code, "source": r.source} for r in rows]}
+
+
+# ----------------------------
+# Evaluations without an organisation (seed scripts, legacy rows)
+# ----------------------------
+
+def ensure_default_scope(db: Session, ev: Evaluation) -> None:
+    """Put every active subject type in scope if the evaluation has no scope yet."""
+    has_scope = db.execute(
+        select(EvaluationScopeSubjectType).where(EvaluationScopeSubjectType.evaluation_id == ev.id).limit(1)
+    ).first()
+    if has_scope:
+        return
+    for code in db.execute(select(SubjectType.code).where(SubjectType.active == 1)).scalars().all():
+        db.add(EvaluationScopeSubjectType(evaluation_id=ev.id, subject_type_code=code))
+
+
+def ensure_organisation_for_evaluation(db: Session, ev: Evaluation) -> Organisation:
+    """
+    Same rules as the backfill migration: find the organisation by name
+    (case-insensitive) or create it with the normalised sector and its default
+    governance codes, then link and sync the evaluation and set default scope.
+    Flushes but does not commit.
+    """
+    if ev.organisation_id:
+        org = db.get(Organisation, ev.organisation_id)
+    else:
+        name = (ev.tenant_name or "").strip()
+        org = db.execute(
+            select(Organisation).where(func.lower(Organisation.name) == name.lower()).order_by(Organisation.created_at)
+        ).scalars().first()
+        if org is None:
+            key, sub = normalize_sector(ev.sector)
+            org = Organisation(name=name, sector_key=key, sector_sub_type=sub, country="NG")
+            db.add(org)
+            db.flush()
+            link_sector_defaults(db, org)
+    sync_evaluation_from_organisation(db, ev, org)
+    db.flush()
+    ensure_default_scope(db, ev)
+    db.flush()
+    return org
