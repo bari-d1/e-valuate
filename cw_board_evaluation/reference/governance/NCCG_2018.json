@@ -1,0 +1,4116 @@
+{
+  "code": "NCCG_2018",
+  "source_filename": "Nigerian-Code-of-Corporate-Governance-2018.pdf",
+  "source_sha256": "b44006f274ee202ef40ec9f28f0d52a00379bfcb3c32e03f10f8bbeaffc17090",
+  "extracted_with": "scripts/governance/extract_clauses.py (PyMuPDF)",
+  "clause_count": 403,
+  "checks": {
+    "toc": {
+      "parts": 7,
+      "principles": 29,
+      "section_11_sub_headings": 5
+    },
+    "extracted": {
+      "parts": 7,
+      "principles": 29,
+      "practices": 367
+    },
+    "counts_by_part": {
+      "Part A": {
+        "heading": "Board of Directors and Officers of the Board",
+        "principles": 16,
+        "practices": 222
+      },
+      "Part B": {
+        "heading": "Assurance",
+        "principles": 4,
+        "practices": 39
+      },
+      "Part C": {
+        "heading": "Relationship with Shareholders",
+        "principles": 3,
+        "practices": 19
+      },
+      "Part D": {
+        "heading": "Business Conduct and Ethics",
+        "principles": 2,
+        "practices": 27
+      },
+      "Part E": {
+        "heading": "Sustainability",
+        "principles": 1,
+        "practices": 12
+      },
+      "Part F": {
+        "heading": "Transparency",
+        "principles": 2,
+        "practices": 18
+      },
+      "Part G": {
+        "heading": "Definitions",
+        "principles": 1,
+        "practices": 30
+      }
+    },
+    "toc_mismatches": [],
+    "principles_not_in_toc": [],
+    "skipped": [
+      "Introduction A-E (Authority, Aims and Objectives, Code Philosophy, Monitoring, Structure): explanatory text before Part A, not numbered clauses"
+    ],
+    "numbering_gaps": [],
+    "review": [
+      {
+        "reference": "19.4.1",
+        "issue": "text does not end with punctuation (possibly truncated)",
+        "tail": "ported cases and bring them to the notice of the committee responsible for audit"
+      },
+      {
+        "reference": "28.9",
+        "issue": "ends with a bare list marker 'a.' (stray text in the source)"
+      }
+    ],
+    "sequence_anomalies": [
+      {
+        "page": 28,
+        "line": "11.4.7.9 above prior to their appointment to",
+        "issue": "numbered line 11.4.7.9 is out of sequence after 11.4.7.10; kept as text of 11.4.7.10"
+      }
+    ],
+    "citations": {
+      "resolved": [],
+      "unresolved": []
+    }
+  },
+  "clauses": [
+    {
+      "reference": "Part A",
+      "parent_reference": null,
+      "level": "part",
+      "heading": "Board of Directors and Officers of the Board",
+      "text": "",
+      "sort_order": 10,
+      "page": 13,
+      "cites": null
+    },
+    {
+      "reference": "1",
+      "parent_reference": "Part A",
+      "level": "principle",
+      "heading": "Role of the Board",
+      "text": "A successful Company is headed by an effective Board which is responsible for providing entrepreneurial and strategic leadership as well as promoting ethical culture and responsible corporate citizenship. As a link between stakeholders and the Company, the Board is to exercise oversight and control to ensure that management acts in the best interest of the shareholders and other stakeholders while sustaining the prosperity of the Company. The Board, being central in corporate governance and the highest governing body in the Company, should have a charter setting out its responsibilities, which may include the following:",
+      "sort_order": 20,
+      "page": 13,
+      "cites": null
+    },
+    {
+      "reference": "1.1",
+      "parent_reference": "1",
+      "level": "practice",
+      "heading": null,
+      "text": "exercising leadership, enterprise, integrity and judgment in its oversight and control of the Company so as to achieve the Company’s continued survival and prosperity;",
+      "sort_order": 30,
+      "page": 13,
+      "cites": null
+    },
+    {
+      "reference": "1.2",
+      "parent_reference": "1",
+      "level": "practice",
+      "heading": null,
+      "text": "ensuring that the Board and its committees act in the best interest of the Company at all times;",
+      "sort_order": 40,
+      "page": 13,
+      "cites": null
+    },
+    {
+      "reference": "1.3",
+      "parent_reference": "1",
+      "level": "practice",
+      "heading": null,
+      "text": "ensuring compliance with the laws of the Federal Republic of Nigeria and other applicable regulations;",
+      "sort_order": 50,
+      "page": 13,
+      "cites": null
+    },
+    {
+      "reference": "1.4",
+      "parent_reference": "1",
+      "level": "practice",
+      "heading": null,
+      "text": "considering and approving the long-term and short-term strategies for the business of the Company and monitoring their implementation by management;",
+      "sort_order": 60,
+      "page": 13,
+      "cites": null
+    },
+    {
+      "reference": "1.5",
+      "parent_reference": "1",
+      "level": "practice",
+      "heading": null,
+      "text": "ensuring the establishment and implementation of a succession plan, appointment process, training mechanism and remuneration structure for both the Board and senior management of the Company;",
+      "sort_order": 70,
+      "page": 13,
+      "cites": null
+    },
+    {
+      "reference": "1.6",
+      "parent_reference": "1",
+      "level": "practice",
+      "heading": null,
+      "text": "being accountable to the Company as well as identifying and managing the relationship with shareholders and other stakeholders;",
+      "sort_order": 80,
+      "page": 13,
+      "cites": null
+    },
+    {
+      "reference": "1.7",
+      "parent_reference": "1",
+      "level": "practice",
+      "heading": null,
+      "text": "establishing and maintaining the Company's values and standards (including an ethical culture) as well as modelling these values and standards;",
+      "sort_order": 90,
+      "page": 13,
+      "cites": null
+    },
+    {
+      "reference": "1.8",
+      "parent_reference": "1",
+      "level": "practice",
+      "heading": null,
+      "text": "overseeing the internal audit function, approving the internal audit plan, and appointing and removing the head of the internal audit function on the recommendation of the committee responsible for audit;",
+      "sort_order": 100,
+      "page": 13,
+      "cites": null
+    },
+    {
+      "reference": "1.9",
+      "parent_reference": "1",
+      "level": "practice",
+      "heading": null,
+      "text": "establishing the Company’s risk management framework and monitoring its effectiveness, setting the Company’s risk appetite, receiving and reviewing risk reports;",
+      "sort_order": 110,
+      "page": 13,
+      "cites": null
+    },
+    {
+      "reference": "1.10",
+      "parent_reference": "1",
+      "level": "practice",
+      "heading": null,
+      "text": "providing oversight over Information Technology governance;",
+      "sort_order": 120,
+      "page": 13,
+      "cites": null
+    },
+    {
+      "reference": "1.11",
+      "parent_reference": "1",
+      "level": "practice",
+      "heading": null,
+      "text": "defining a formal schedule of matters specifically reserved for Board decision and matters delegated to Board committees and management;",
+      "sort_order": 130,
+      "page": 14,
+      "cites": null
+    },
+    {
+      "reference": "1.12",
+      "parent_reference": "1",
+      "level": "practice",
+      "heading": null,
+      "text": "overseeing the effectiveness and adequacy of the internal control system;",
+      "sort_order": 140,
+      "page": 14,
+      "cites": null
+    },
+    {
+      "reference": "1.13",
+      "parent_reference": "1",
+      "level": "practice",
+      "heading": null,
+      "text": "overseeing the Company’s communication and information dissemination policy;",
+      "sort_order": 150,
+      "page": 14,
+      "cites": null
+    },
+    {
+      "reference": "1.14",
+      "parent_reference": "1",
+      "level": "practice",
+      "heading": null,
+      "text": "performing the appraisal of Board members and executive management;",
+      "sort_order": 160,
+      "page": 14,
+      "cites": null
+    },
+    {
+      "reference": "1.15",
+      "parent_reference": "1",
+      "level": "practice",
+      "heading": null,
+      "text": "ensuring the integrity of annual reports and accounts and all material information provided to regulators and other stakeholders; and",
+      "sort_order": 170,
+      "page": 14,
+      "cites": null
+    },
+    {
+      "reference": "1.16",
+      "parent_reference": "1",
+      "level": "practice",
+      "heading": null,
+      "text": "ensuring that management systems are in place to identify and manage environmental and social risks and their impact.",
+      "sort_order": 180,
+      "page": 14,
+      "cites": null
+    },
+    {
+      "reference": "2",
+      "parent_reference": "Part A",
+      "level": "principle",
+      "heading": "Board Structure and Composition",
+      "text": "The effective discharge of the responsibilities of the Board and its committees is assured by an appropriate balance of skills and diversity (including experience and gender) without compromising competence, independence and integrity.",
+      "sort_order": 190,
+      "page": 14,
+      "cites": null
+    },
+    {
+      "reference": "2.1",
+      "parent_reference": "2",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should be of a sufficient size to effectively undertake and fulfil its business; to oversee, monitor, direct and control the Company’s activities and be relative to the scale and complexity of its operations.",
+      "sort_order": 200,
+      "page": 14,
+      "cites": null
+    },
+    {
+      "reference": "2.2",
+      "parent_reference": "2",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should assume responsibility for its composition by setting the direction and approving the processes for it to attain the appropriate balance of knowledge, skills, experience, diversity and independence to objectively and effectively discharge its governance role and responsibilities.",
+      "sort_order": 210,
+      "page": 14,
+      "cites": null
+    },
+    {
+      "reference": "2.3",
+      "parent_reference": "2",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should consider the following factors in determining the requisite number of its members:\n(a) appropriate mix of knowledge, skills and experience, including the business, commercial and industry experience needed to govern the Company;\n(b) appropriate mix of Executive, Non-Executive and Independent Non-Executive members such that majority of the Board are Non-Executive Directors. It is desirable that most of the Non-Executive Directors are independent;\n(c) need for a sufficient number of members that qualify to serve on the committees of the Board;\n(d) need to secure quorum at meetings; and\n(e) diversity targets relating to the composition of the Board.",
+      "sort_order": 220,
+      "page": 14,
+      "cites": null
+    },
+    {
+      "reference": "2.4",
+      "parent_reference": "2",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should promote diversity in its membership across a variety of attributes relevant for promoting better decision-making and effective governance. These attributes include field of knowledge, skills and experience as well as age, culture and gender. The Board should have a policy to govern this process and establish measurable objectives for achieving diversity in gender and other areas.",
+      "sort_order": 230,
+      "page": 15,
+      "cites": null
+    },
+    {
+      "reference": "2.5",
+      "parent_reference": "2",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should periodically invigorate its capabilities by ensuring the appointment of new members with relevant skills and fresh perspectives, while retaining valuable knowledge, skills, experience and diversity; and maintaining continuity.",
+      "sort_order": 240,
+      "page": 15,
+      "cites": null
+    },
+    {
+      "reference": "2.6",
+      "parent_reference": "2",
+      "level": "practice",
+      "heading": null,
+      "text": "No individual or small group of individuals should dominate the Board’s decision-making.",
+      "sort_order": 250,
+      "page": 15,
+      "cites": null
+    },
+    {
+      "reference": "2.7",
+      "parent_reference": "2",
+      "level": "practice",
+      "heading": null,
+      "text": "The positions of the Chairman of the Board and the Managing Director/Chief Executive Officer (MD/CEO) of the Company should be separate such that no person can combine the two positions.",
+      "sort_order": 260,
+      "page": 15,
+      "cites": null
+    },
+    {
+      "reference": "2.8",
+      "parent_reference": "2",
+      "level": "practice",
+      "heading": null,
+      "text": "Directors may hold concurrent directorships. However, concurrent service on too many Boards may interfere with an individual’s ability to discharge his responsibilities. To assist the Board in determining the appropriateness of concurrent directorships:",
+      "sort_order": 270,
+      "page": 15,
+      "cites": null
+    },
+    {
+      "reference": "2.8.1",
+      "parent_reference": "2.8",
+      "level": "practice",
+      "heading": null,
+      "text": "Prospective Directors should disclose memberships on other Boards, and current Directors should notify the Board of prospective appointments on other Boards. This information should be kept current by serving Board members.",
+      "sort_order": 280,
+      "page": 15,
+      "cites": null
+    },
+    {
+      "reference": "2.8.2",
+      "parent_reference": "2.8",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should consider the disclosed directorships, taking into account the number of other directorships and the responsibilities held, and determine whether the individual can discharge his responsibilities and contribute effectively to the performance of the Board before recommending such a person for appointment or continued service.",
+      "sort_order": 290,
+      "page": 15,
+      "cites": null
+    },
+    {
+      "reference": "2.8.3",
+      "parent_reference": "2.8",
+      "level": "practice",
+      "heading": null,
+      "text": "Directors should not be members of Boards of competing companies to avoid conflict of interest, breach of confidentiality, diversion of corporate opportunity and divulgence of corporate information.",
+      "sort_order": 300,
+      "page": 15,
+      "cites": null
+    },
+    {
+      "reference": "2.9",
+      "parent_reference": "2",
+      "level": "practice",
+      "heading": null,
+      "text": "The Chairman of the Board should not serve as chairman or member of any Board committee. The MD/CEO or an Executive Director should not serve as chairman of any Board committee.",
+      "sort_order": 310,
+      "page": 15,
+      "cites": null
+    },
+    {
+      "reference": "2.10",
+      "parent_reference": "2",
+      "level": "practice",
+      "heading": null,
+      "text": "A person (or group of persons) who is not a serving Director of the Company should not exercise any influence or dominance over the Board and/or Management. Such a person or group of persons would be deemed a shadow director as defined by extant laws.",
+      "sort_order": 320,
+      "page": 15,
+      "cites": null
+    },
+    {
+      "reference": "3",
+      "parent_reference": "Part A",
+      "level": "principle",
+      "heading": "Chairman",
+      "text": "The Chairman is responsible for providing overall leadership of the Company and the Board, and eliciting the constructive participation of all Directors to facilitate effective direction of the Board.",
+      "sort_order": 330,
+      "page": 16,
+      "cites": null
+    },
+    {
+      "reference": "3.1",
+      "parent_reference": "3",
+      "level": "practice",
+      "heading": null,
+      "text": "The Chairman’s primary responsibility is to ensure the effective operation of the Board such that the Board works as a group towards achieving the Company’s strategic objectives. He should also provide guidance to the MD/CEO and be available to him for regular communication.",
+      "sort_order": 340,
+      "page": 16,
+      "cites": null
+    },
+    {
+      "reference": "3.2",
+      "parent_reference": "3",
+      "level": "practice",
+      "heading": null,
+      "text": "The Chairman of the Board should be a NED and not be involved in the day-to-day operations of the Company, which should be the primary responsibility of the MD/CEO and the management team.",
+      "sort_order": 350,
+      "page": 16,
+      "cites": null
+    },
+    {
+      "reference": "3.3",
+      "parent_reference": "3",
+      "level": "practice",
+      "heading": null,
+      "text": "The MD/CEO or an Executive Director (ED) should not go on to be the Chairman of the same Company. If in very exceptional circumstances the Board decides that a former MD/CEO or an ED should become Chairman, a cool-off period of three years should be adopted.",
+      "sort_order": 360,
+      "page": 16,
+      "cites": null
+    },
+    {
+      "reference": "3.4",
+      "parent_reference": "3",
+      "level": "practice",
+      "heading": null,
+      "text": "The Chairman’s functions should include the following:",
+      "sort_order": 370,
+      "page": 16,
+      "cites": null
+    },
+    {
+      "reference": "3.4.1",
+      "parent_reference": "3.4",
+      "level": "practice",
+      "heading": null,
+      "text": "presiding over meetings of the Board of Directors and general meetings of shareholders;",
+      "sort_order": 380,
+      "page": 16,
+      "cites": null
+    },
+    {
+      "reference": "3.4.2",
+      "parent_reference": "3.4",
+      "level": "practice",
+      "heading": null,
+      "text": "agreeing an annual Board plan with the Board;",
+      "sort_order": 390,
+      "page": 16,
+      "cites": null
+    },
+    {
+      "reference": "3.4.3",
+      "parent_reference": "3.4",
+      "level": "practice",
+      "heading": null,
+      "text": "ensuring that the agenda for Board meetings is set;",
+      "sort_order": 400,
+      "page": 16,
+      "cites": null
+    },
+    {
+      "reference": "3.4.4",
+      "parent_reference": "3.4",
+      "level": "practice",
+      "heading": null,
+      "text": "ensuring that the Board and its committees are composed of individuals with relevant skills, competencies and desired experience;",
+      "sort_order": 410,
+      "page": 16,
+      "cites": null
+    },
+    {
+      "reference": "3.4.5",
+      "parent_reference": "3.4",
+      "level": "practice",
+      "heading": null,
+      "text": "ensuring that Board meetings are properly conducted;",
+      "sort_order": 420,
+      "page": 16,
+      "cites": null
+    },
+    {
+      "reference": "3.4.6",
+      "parent_reference": "3.4",
+      "level": "practice",
+      "heading": null,
+      "text": "ensuring that the Board is effective and functions in a cohesive manner;",
+      "sort_order": 430,
+      "page": 16,
+      "cites": null
+    },
+    {
+      "reference": "3.4.7",
+      "parent_reference": "3.4",
+      "level": "practice",
+      "heading": null,
+      "text": "ensuring that induction programmes are conducted for new Directors and a continuing education programme is in place for all Directors;",
+      "sort_order": 440,
+      "page": 16,
+      "cites": null
+    },
+    {
+      "reference": "3.4.8",
+      "parent_reference": "3.4",
+      "level": "practice",
+      "heading": null,
+      "text": "ensuring effective communication and relations with the Company’s shareholders and other stakeholders; and",
+      "sort_order": 450,
+      "page": 16,
+      "cites": null
+    },
+    {
+      "reference": "3.4.9",
+      "parent_reference": "3.4",
+      "level": "practice",
+      "heading": null,
+      "text": "taking a lead role in the assessment, improvement and development of the Board.",
+      "sort_order": 460,
+      "page": 16,
+      "cites": null
+    },
+    {
+      "reference": "3.5",
+      "parent_reference": "3",
+      "level": "practice",
+      "heading": null,
+      "text": "The Chairman is responsible for ensuring that management provides the Directors with accurate, timely and adequate information.",
+      "sort_order": 470,
+      "page": 16,
+      "cites": null
+    },
+    {
+      "reference": "3.6",
+      "parent_reference": "3",
+      "level": "practice",
+      "heading": null,
+      "text": "The Chairman may interact with NEDs periodically.",
+      "sort_order": 480,
+      "page": 16,
+      "cites": null
+    },
+    {
+      "reference": "4",
+      "parent_reference": "Part A",
+      "level": "principle",
+      "heading": "Managing Director/Chief Executive Officer",
+      "text": "The Managing Director/Chief Executive Officer is the head of management delegated by the Board to run the affairs of the Company to achieve its strategic objectives for sustainable corporate performance.",
+      "sort_order": 490,
+      "page": 17,
+      "cites": null
+    },
+    {
+      "reference": "4.1",
+      "parent_reference": "4",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board may delegate any of its powers to the MD/CEO as it deems appropriate for the smooth operation of the Company.",
+      "sort_order": 500,
+      "page": 17,
+      "cites": null
+    },
+    {
+      "reference": "4.2",
+      "parent_reference": "4",
+      "level": "practice",
+      "heading": null,
+      "text": "The MD/CEO should have a broad understanding of the Company’s business. He should demonstrate entrepreneurial skills, credibility and integrity and have the confidence of the Board and management.",
+      "sort_order": 510,
+      "page": 17,
+      "cites": null
+    },
+    {
+      "reference": "4.3",
+      "parent_reference": "4",
+      "level": "practice",
+      "heading": null,
+      "text": "The MD/CEO should establish a culture of integrity, conformance and performance which should be assimilated by personnel at all levels of the Company.",
+      "sort_order": 520,
+      "page": 17,
+      "cites": null
+    },
+    {
+      "reference": "4.4",
+      "parent_reference": "4",
+      "level": "practice",
+      "heading": null,
+      "text": "The functions and responsibilities of the MD/CEO should include:",
+      "sort_order": 530,
+      "page": 17,
+      "cites": null
+    },
+    {
+      "reference": "4.4.1",
+      "parent_reference": "4.4",
+      "level": "practice",
+      "heading": null,
+      "text": "day-to-day management of the Company;",
+      "sort_order": 540,
+      "page": 17,
+      "cites": null
+    },
+    {
+      "reference": "4.4.2",
+      "parent_reference": "4.4",
+      "level": "practice",
+      "heading": null,
+      "text": "proper implementation and achievement of the Company’s strategic imperatives to ensure the sustainable development and growth of the Company;",
+      "sort_order": 550,
+      "page": 17,
+      "cites": null
+    },
+    {
+      "reference": "4.4.3",
+      "parent_reference": "4.4",
+      "level": "practice",
+      "heading": null,
+      "text": "ensuring prudent management of the Company’s finances and other resources;",
+      "sort_order": 560,
+      "page": 17,
+      "cites": null
+    },
+    {
+      "reference": "4.4.4",
+      "parent_reference": "4.4",
+      "level": "practice",
+      "heading": null,
+      "text": "providing the Board with complete, accurate and timely information and documentation to enable it make sound decisions;",
+      "sort_order": 570,
+      "page": 17,
+      "cites": null
+    },
+    {
+      "reference": "4.4.5",
+      "parent_reference": "4.4",
+      "level": "practice",
+      "heading": null,
+      "text": "promoting and protecting the interests of the Company; and",
+      "sort_order": 580,
+      "page": 17,
+      "cites": null
+    },
+    {
+      "reference": "4.4.6",
+      "parent_reference": "4.4",
+      "level": "practice",
+      "heading": null,
+      "text": "being the Company's leading representative in its dealings with its stakeholders.",
+      "sort_order": 590,
+      "page": 17,
+      "cites": null
+    },
+    {
+      "reference": "4.5",
+      "parent_reference": "4",
+      "level": "practice",
+      "heading": null,
+      "text": "The authority of the MD/CEO and the relationship between him and the Board should be clearly set out in a contract of employment.",
+      "sort_order": 600,
+      "page": 17,
+      "cites": null
+    },
+    {
+      "reference": "4.6",
+      "parent_reference": "4",
+      "level": "practice",
+      "heading": null,
+      "text": "The MD/CEO should declare any conflict of interest on appointment and annually thereafter. In the event that he becomes aware of any potential conflict of interest at any other point, he should disclose this to the Board at the first possible opportunity. Actions following disclosure should be subject to the Company’s Conflict of Interest Policy.",
+      "sort_order": 610,
+      "page": 17,
+      "cites": null
+    },
+    {
+      "reference": "4.7",
+      "parent_reference": "4",
+      "level": "practice",
+      "heading": null,
+      "text": "The MD/CEO should not be a member of the committees responsible for remuneration, audit, or nomination and governance.",
+      "sort_order": 620,
+      "page": 17,
+      "cites": null
+    },
+    {
+      "reference": "4.8",
+      "parent_reference": "4",
+      "level": "practice",
+      "heading": null,
+      "text": "The MD/CEO may be appointed an NED in any other Company, provided such appointment is not detrimental to his responsibilities and is in accordance with Board-approved policy.",
+      "sort_order": 630,
+      "page": 18,
+      "cites": null
+    },
+    {
+      "reference": "5",
+      "parent_reference": "Part A",
+      "level": "principle",
+      "heading": "Executive Directors",
+      "text": "Executive Directors support the Managing Director/Chief Executive Officer in the operations and management of the Company.",
+      "sort_order": 640,
+      "page": 18,
+      "cites": null
+    },
+    {
+      "reference": "5.1",
+      "parent_reference": "5",
+      "level": "practice",
+      "heading": null,
+      "text": "EDs should have a broad understanding of the Company’s business in addition to possessing such other qualifications as may be needed for their specific assignments or responsibilities.",
+      "sort_order": 650,
+      "page": 18,
+      "cites": null
+    },
+    {
+      "reference": "5.2",
+      "parent_reference": "5",
+      "level": "practice",
+      "heading": null,
+      "text": "EDs should support the MD/CEO in the proper implementation and achievement of the Company’s strategic imperatives, as well as prudent management of the Company’s finances and other resources.",
+      "sort_order": 660,
+      "page": 18,
+      "cites": null
+    },
+    {
+      "reference": "5.3",
+      "parent_reference": "5",
+      "level": "practice",
+      "heading": null,
+      "text": "EDs should declare any conflict of interest on appointment and annually thereafter. In the event that they become aware of any potential conflict of interest at any other point, they should disclose this to the Board at the first possible opportunity. Actions following disclosure should be subject to the Company’s Conflict of Interest Policy.",
+      "sort_order": 670,
+      "page": 18,
+      "cites": null
+    },
+    {
+      "reference": "5.4",
+      "parent_reference": "5",
+      "level": "practice",
+      "heading": null,
+      "text": "An ED may be appointed NED in any other company, provided such appointment is not detrimental to his responsibilities as an ED and is in accordance with Board-approved policy.",
+      "sort_order": 680,
+      "page": 18,
+      "cites": null
+    },
+    {
+      "reference": "5.5",
+      "parent_reference": "5",
+      "level": "practice",
+      "heading": null,
+      "text": "An ED should not be a member of the committees responsible for remuneration, audit, or nomination and governance.",
+      "sort_order": 690,
+      "page": 18,
+      "cites": null
+    },
+    {
+      "reference": "5.6",
+      "parent_reference": "5",
+      "level": "practice",
+      "heading": null,
+      "text": "The responsibilities and authority of EDs should be clearly set out in a contract of employment.",
+      "sort_order": 700,
+      "page": 18,
+      "cites": null
+    },
+    {
+      "reference": "6",
+      "parent_reference": "Part A",
+      "level": "principle",
+      "heading": "Non-Executive Directors",
+      "text": "Non-Executive Directors bring to bear their knowledge, expertise and independent judgment on issues of strategy and performance on the Board.",
+      "sort_order": 710,
+      "page": 18,
+      "cites": null
+    },
+    {
+      "reference": "6.1",
+      "parent_reference": "6",
+      "level": "practice",
+      "heading": null,
+      "text": "NEDs should be chosen on the basis of their wide experience, knowledge and personal qualities and are expected to bring these qualities to bear on the Company’s business and affairs.",
+      "sort_order": 720,
+      "page": 18,
+      "cites": null
+    },
+    {
+      "reference": "6.2",
+      "parent_reference": "6",
+      "level": "practice",
+      "heading": null,
+      "text": "NEDs should constructively contribute to the development of the Company’s strategy.",
+      "sort_order": 730,
+      "page": 18,
+      "cites": null
+    },
+    {
+      "reference": "6.3",
+      "parent_reference": "6",
+      "level": "practice",
+      "heading": null,
+      "text": "NEDs should not be involved in the day-to-day operations of the Company, which should be the primary responsibility of the MD/CEO and the management team.",
+      "sort_order": 740,
+      "page": 19,
+      "cites": null
+    },
+    {
+      "reference": "6.4",
+      "parent_reference": "6",
+      "level": "practice",
+      "heading": null,
+      "text": "NEDs should have unfettered access to the EDs, Company Secretary and the Internal Auditor, while access to other senior management should be through the MD/CEO.",
+      "sort_order": 750,
+      "page": 19,
+      "cites": null
+    },
+    {
+      "reference": "6.5",
+      "parent_reference": "6",
+      "level": "practice",
+      "heading": null,
+      "text": "To facilitate the effective discharge of their duties, NEDs should be provided, in a timely manner, with reasonable support as well as quality and comprehensive information relating to the management of the Company and on all Board matters.",
+      "sort_order": 760,
+      "page": 19,
+      "cites": null
+    },
+    {
+      "reference": "7",
+      "parent_reference": "Part A",
+      "level": "principle",
+      "heading": "Independent Non-Executive Directors",
+      "text": "Independent Non-Executive Directors bring a high degree of objectivity to the Board for sustaining stakeholder trust and confidence.",
+      "sort_order": 770,
+      "page": 19,
+      "cites": null
+    },
+    {
+      "reference": "7.1",
+      "parent_reference": "7",
+      "level": "practice",
+      "heading": null,
+      "text": "An Independent Non-Executive Director (INED) should represent a strong independent voice on the Board, be independent in character and judgment and accordingly be free from such relationships or circumstances with the Company, its management, or substantial shareholders as may, or appear to, impair his ability to make independent judgment.",
+      "sort_order": 780,
+      "page": 19,
+      "cites": null
+    },
+    {
+      "reference": "7.2",
+      "parent_reference": "7",
+      "level": "practice",
+      "heading": null,
+      "text": "An INED is a NED who:",
+      "sort_order": 790,
+      "page": 19,
+      "cites": null
+    },
+    {
+      "reference": "7.2.1",
+      "parent_reference": "7.2",
+      "level": "practice",
+      "heading": null,
+      "text": "does not possess a shareholding in the Company the value of which is material to the holder such as will impair his independence or in excess of 0.01% of the paid up capital of the Company;",
+      "sort_order": 800,
+      "page": 19,
+      "cites": null
+    },
+    {
+      "reference": "7.2.2",
+      "parent_reference": "7.2",
+      "level": "practice",
+      "heading": null,
+      "text": "is not a representative of a shareholder that has the ability to control or significantly influence Management;",
+      "sort_order": 810,
+      "page": 19,
+      "cites": null
+    },
+    {
+      "reference": "7.2.3",
+      "parent_reference": "7.2",
+      "level": "practice",
+      "heading": null,
+      "text": "is not, or has not been an employee of the Company or group within the last five years;",
+      "sort_order": 820,
+      "page": 19,
+      "cites": null
+    },
+    {
+      "reference": "7.2.4",
+      "parent_reference": "7.2",
+      "level": "practice",
+      "heading": null,
+      "text": "is not a close family member of any of the Company’s advisers, Directors, senior employees, consultants, auditors, creditors, suppliers, customers or substantial shareholders;",
+      "sort_order": 830,
+      "page": 19,
+      "cites": null
+    },
+    {
+      "reference": "7.2.5",
+      "parent_reference": "7.2",
+      "level": "practice",
+      "heading": null,
+      "text": "does not have, and has not had within the last five years, a material business relationship with the Company either directly, or as a partner, shareholder, Director or senior employee of a body that has, or has had, such a relationship with the Company;",
+      "sort_order": 840,
+      "page": 19,
+      "cites": null
+    },
+    {
+      "reference": "7.2.6",
+      "parent_reference": "7.2",
+      "level": "practice",
+      "heading": null,
+      "text": "has not served at directorate level or above at the Company's regulator within the last three years;",
+      "sort_order": 850,
+      "page": 19,
+      "cites": null
+    },
+    {
+      "reference": "7.2.7",
+      "parent_reference": "7.2",
+      "level": "practice",
+      "heading": null,
+      "text": "does not render any professional, consultancy or other advisory services to the Company or the group, other than in the capacity of a Director;",
+      "sort_order": 860,
+      "page": 20,
+      "cites": null
+    },
+    {
+      "reference": "7.2.8",
+      "parent_reference": "7.2",
+      "level": "practice",
+      "heading": null,
+      "text": "does not receive, and has not received additional remuneration from the Company apart from a Director’s fee and allowances; does not participate in the Company’s share option or a performance-related pay scheme, and is not a member of the Company’s pension scheme; and",
+      "sort_order": 870,
+      "page": 20,
+      "cites": null
+    },
+    {
+      "reference": "7.2.9",
+      "parent_reference": "7.2",
+      "level": "practice",
+      "heading": null,
+      "text": "has not served on the Board for more than nine years from the date of his first election.",
+      "sort_order": 880,
+      "page": 20,
+      "cites": null
+    },
+    {
+      "reference": "7.3",
+      "parent_reference": "7",
+      "level": "practice",
+      "heading": null,
+      "text": "The above-mentioned criteria for establishing the independent status of an INED are not exhaustive, but should be considered as examples of some of those relationships or circumstances which may impair, or appear to impair an INED’s independent judgment.",
+      "sort_order": 890,
+      "page": 20,
+      "cites": null
+    },
+    {
+      "reference": "7.4",
+      "parent_reference": "7",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should annually ascertain and confirm the continued independence of each INED of the Company.",
+      "sort_order": 900,
+      "page": 20,
+      "cites": null
+    },
+    {
+      "reference": "7.5",
+      "parent_reference": "7",
+      "level": "practice",
+      "heading": null,
+      "text": "Reclassification of an existing NED into an INED on the same Board is not desirable.",
+      "sort_order": 910,
+      "page": 20,
+      "cites": null
+    },
+    {
+      "reference": "8",
+      "parent_reference": "Part A",
+      "level": "principle",
+      "heading": "Company Secretary",
+      "text": "The Company Secretary plays an important role in supporting the effectiveness of the Board by assisting the Board and management to develop good corporate governance practices and culture within the Company.",
+      "sort_order": 920,
+      "page": 20,
+      "cites": null
+    },
+    {
+      "reference": "8.1",
+      "parent_reference": "8",
+      "level": "practice",
+      "heading": null,
+      "text": "Without prejudice to the provisions of extant laws, the Company Secretary should be a person with relevant qualifications and competence necessary to effectively discharge the duties of his office. The Board should ensure that the person appointed has the gravitas and objectivity to provide independent guidance and support at the highest level of decision-making in the Company.",
+      "sort_order": 930,
+      "page": 20,
+      "cites": null
+    },
+    {
+      "reference": "8.2",
+      "parent_reference": "8",
+      "level": "practice",
+      "heading": null,
+      "text": "Where the Company Secretary is an employee of the Company, he should be a member of senior management and should be appointed through a rigorous selection process similar to that of new Directors.",
+      "sort_order": 940,
+      "page": 20,
+      "cites": null
+    },
+    {
+      "reference": "8.3",
+      "parent_reference": "8",
+      "level": "practice",
+      "heading": null,
+      "text": "The Company Secretary should be properly empowered by the Board to discharge his duties and responsibilities.",
+      "sort_order": 950,
+      "page": 20,
+      "cites": null
+    },
+    {
+      "reference": "8.4",
+      "parent_reference": "8",
+      "level": "practice",
+      "heading": null,
+      "text": "The Company Secretary should have both functional and administrative responsibilities. The functional responsibility is to the Board through the Chairman, while administratively, he reports to the MD/CEO.",
+      "sort_order": 960,
+      "page": 20,
+      "cites": null
+    },
+    {
+      "reference": "8.5",
+      "parent_reference": "8",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should approve the performance evaluation of the Company Secretary.",
+      "sort_order": 970,
+      "page": 21,
+      "cites": null
+    },
+    {
+      "reference": "8.6",
+      "parent_reference": "8",
+      "level": "practice",
+      "heading": null,
+      "text": "In addition to his statutory functions, the Company Secretary should carry out the following duties and responsibilities:",
+      "sort_order": 980,
+      "page": 21,
+      "cites": null
+    },
+    {
+      "reference": "8.6.1",
+      "parent_reference": "8.6",
+      "level": "practice",
+      "heading": null,
+      "text": "Provide the Board and Directors individually, with detailed guidance as to how their responsibilities should be properly discharged in the best interest of the Company;",
+      "sort_order": 990,
+      "page": 21,
+      "cites": null
+    },
+    {
+      "reference": "8.6.2",
+      "parent_reference": "8.6",
+      "level": "practice",
+      "heading": null,
+      "text": "Coordinate the induction and training of new Directors.",
+      "sort_order": 1000,
+      "page": 21,
+      "cites": null
+    },
+    {
+      "reference": "8.6.3",
+      "parent_reference": "8.6",
+      "level": "practice",
+      "heading": null,
+      "text": "Assist the Chairman and MD/CEO in coordinating activities regarding the annual Board plan and with the administration of other strategic issues at the Board level;",
+      "sort_order": 1010,
+      "page": 21,
+      "cites": null
+    },
+    {
+      "reference": "8.6.4",
+      "parent_reference": "8.6",
+      "level": "practice",
+      "heading": null,
+      "text": "Notify Board members of upcoming meetings of the Board and its committees as well as other matters that warrant their attention;",
+      "sort_order": 1020,
+      "page": 21,
+      "cites": null
+    },
+    {
+      "reference": "8.6.5",
+      "parent_reference": "8.6",
+      "level": "practice",
+      "heading": null,
+      "text": "Compile Board papers and ensure that the Board’s discussions and decisions are clearly and properly recorded and communicated to relevant persons in a timely manner;",
+      "sort_order": 1030,
+      "page": 21,
+      "cites": null
+    },
+    {
+      "reference": "8.6.6",
+      "parent_reference": "8.6",
+      "level": "practice",
+      "heading": null,
+      "text": "Provide a central source of guidance and advice to the Board and the Company on matters of ethics, conflict of interest and good corporate governance.",
+      "sort_order": 1040,
+      "page": 21,
+      "cites": null
+    },
+    {
+      "reference": "8.7",
+      "parent_reference": "8",
+      "level": "practice",
+      "heading": null,
+      "text": "Under the direction of the Chairman, the Company Secretary’s responsibilities include ensuring good information flow within the Board and its committees and between senior management and NEDs.",
+      "sort_order": 1050,
+      "page": 21,
+      "cites": null
+    },
+    {
+      "reference": "8.8",
+      "parent_reference": "8",
+      "level": "practice",
+      "heading": null,
+      "text": "Subject to the provisions of extant laws, the appointment and removal of the Company Secretary should be a matter for the Board.",
+      "sort_order": 1060,
+      "page": 21,
+      "cites": null
+    },
+    {
+      "reference": "9",
+      "parent_reference": "Part A",
+      "level": "principle",
+      "heading": "Access to Independent Advice",
+      "text": "Directors are sometimes required to make decisions of a technical and complex nature that may require independent external expertise.",
+      "sort_order": 1070,
+      "page": 21,
+      "cites": null
+    },
+    {
+      "reference": "9.1",
+      "parent_reference": "9",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should ensure that Directors, especially NEDs, have access to independent professional advice where they consider it necessary to discharge their responsibilities as Directors.",
+      "sort_order": 1080,
+      "page": 21,
+      "cites": null
+    },
+    {
+      "reference": "9.2",
+      "parent_reference": "9",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should ensure that such independent professional advice is obtained as set out in the Company’s governance policies and at the Company’s expense.",
+      "sort_order": 1090,
+      "page": 21,
+      "cites": null
+    },
+    {
+      "reference": "10",
+      "parent_reference": "Part A",
+      "level": "principle",
+      "heading": "Meetings of the Board",
+      "text": "Meetings are the principal vehicle for conducting the business of the Board and successfully fulfilling the strategic objectives of the Company.",
+      "sort_order": 1100,
+      "page": 22,
+      "cites": null
+    },
+    {
+      "reference": "10.1",
+      "parent_reference": "10",
+      "level": "practice",
+      "heading": null,
+      "text": "In order to effectively perform its oversight function and monitor management’s performance, the Board should meet at least once every quarter.",
+      "sort_order": 1110,
+      "page": 22,
+      "cites": null
+    },
+    {
+      "reference": "10.2",
+      "parent_reference": "10",
+      "level": "practice",
+      "heading": null,
+      "text": "Every Director should endeavour to attend all Board meetings. The attendance record of Directors should be among the criteria for the re-election of a Director.",
+      "sort_order": 1120,
+      "page": 22,
+      "cites": null
+    },
+    {
+      "reference": "10.3",
+      "parent_reference": "10",
+      "level": "practice",
+      "heading": null,
+      "text": "Minutes of meetings of the Board and its committees, as a record of what transpired at those meetings, should be prepared and sent to Directors on a timely basis. Such minutes should be formally reviewed and approved by the members of the Board or relevant Board committee at its next meeting.",
+      "sort_order": 1130,
+      "page": 22,
+      "cites": null
+    },
+    {
+      "reference": "11",
+      "parent_reference": "Part A",
+      "level": "principle",
+      "heading": "Board Committees",
+      "text": "To ensure efficiency and effectiveness, the Board delegates some of its functions, duties and responsibilities to well-structured committees, without abdicating its responsibilities.",
+      "sort_order": 1140,
+      "page": 22,
+      "cites": null
+    },
+    {
+      "reference": "11.1",
+      "parent_reference": "11",
+      "level": "practice",
+      "heading": "Board Committees",
+      "text": "",
+      "sort_order": 1150,
+      "page": 22,
+      "cites": null
+    },
+    {
+      "reference": "11.1.1",
+      "parent_reference": "11.1",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should determine the number and composition of its committees as well as ensure that each is comprised of Directors with relevant skills and competencies.",
+      "sort_order": 1160,
+      "page": 22,
+      "cites": null
+    },
+    {
+      "reference": "11.1.2",
+      "parent_reference": "11.1",
+      "level": "practice",
+      "heading": null,
+      "text": "Only Directors may be members of Board committees, while members of senior management may be required to attend committee meetings.",
+      "sort_order": 1170,
+      "page": 22,
+      "cites": null
+    },
+    {
+      "reference": "11.1.3",
+      "parent_reference": "11.1",
+      "level": "practice",
+      "heading": null,
+      "text": "The terms of reference and composition of such committees should be set out in the Board-approved committee charter, which should be reviewed periodically.",
+      "sort_order": 1180,
+      "page": 22,
+      "cites": null
+    },
+    {
+      "reference": "11.1.4",
+      "parent_reference": "11.1",
+      "level": "practice",
+      "heading": null,
+      "text": "The membership of Board committees should be reviewed and refreshed periodically.",
+      "sort_order": 1190,
+      "page": 22,
+      "cites": null
+    },
+    {
+      "reference": "11.1.5",
+      "parent_reference": "11.1",
+      "level": "practice",
+      "heading": null,
+      "text": "Each committee should be composed of at least three members. Individual Board committee charters will indicate where INEDs are required.",
+      "sort_order": 1200,
+      "page": 22,
+      "cites": null
+    },
+    {
+      "reference": "11.1.6",
+      "parent_reference": "11.1",
+      "level": "practice",
+      "heading": null,
+      "text": "To facilitate adequate oversight, the Board should establish committees responsible for nomination and governance, remuneration, audit and risk management.",
+      "sort_order": 1210,
+      "page": 23,
+      "cites": null
+    },
+    {
+      "reference": "11.1.7",
+      "parent_reference": "11.1",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board may combine any of the responsibilities mentioned in Section 11.1.6 on Board committees, taking into consideration the size, needs and other requirements of the Company.",
+      "sort_order": 1220,
+      "page": 23,
+      "cites": null
+    },
+    {
+      "reference": "11.1.8",
+      "parent_reference": "11.1",
+      "level": "practice",
+      "heading": null,
+      "text": "The chairmen of Board committees should be appointed by the Board.",
+      "sort_order": 1230,
+      "page": 23,
+      "cites": null
+    },
+    {
+      "reference": "11.1.9",
+      "parent_reference": "11.1",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should ensure that, in appointing members of the Board committees, there is a balanced distribution of power in respect of membership across committees so that no individual has the ability to dominate decision making and undue reliance is not placed on any individual.",
+      "sort_order": 1240,
+      "page": 23,
+      "cites": null
+    },
+    {
+      "reference": "11.1.10",
+      "parent_reference": "11.1",
+      "level": "practice",
+      "heading": null,
+      "text": "The Company Secretary, or any other officer in the office of the Company Secretary, should be the secretary of all Board committees.",
+      "sort_order": 1250,
+      "page": 23,
+      "cites": null
+    },
+    {
+      "reference": "11.1.11",
+      "parent_reference": "11.1",
+      "level": "practice",
+      "heading": null,
+      "text": "The agenda for the meetings of Board committees should be developed in consultation with the respective committee chairmen.",
+      "sort_order": 1260,
+      "page": 23,
+      "cites": null
+    },
+    {
+      "reference": "11.1.12",
+      "parent_reference": "11.1",
+      "level": "practice",
+      "heading": null,
+      "text": "The timing of committee meetings should be well coordinated for the effective discharge of their duties.",
+      "sort_order": 1270,
+      "page": 23,
+      "cites": null
+    },
+    {
+      "reference": "11.1.13",
+      "parent_reference": "11.1",
+      "level": "practice",
+      "heading": null,
+      "text": "At board meetings, the chairman of each Board committee should present a written report of the key recommendations made at all the meetings held by the committee since the last Board meeting.",
+      "sort_order": 1280,
+      "page": 23,
+      "cites": null
+    },
+    {
+      "reference": "11.1.14",
+      "parent_reference": "11.1",
+      "level": "practice",
+      "heading": null,
+      "text": "Members of Board committees should devote sufficient time to the committees’ work.",
+      "sort_order": 1290,
+      "page": 23,
+      "cites": null
+    },
+    {
+      "reference": "11.1.15",
+      "parent_reference": "11.1",
+      "level": "practice",
+      "heading": null,
+      "text": "Board Committees may engage a consultant at the expense of the Company for the purpose of obtaining independent external expertise in carrying out their responsibilities. This should be done in line with the Company’s policies.",
+      "sort_order": 1300,
+      "page": 23,
+      "cites": null
+    },
+    {
+      "reference": "11.1.16",
+      "parent_reference": "11.1",
+      "level": "practice",
+      "heading": null,
+      "text": "Board Committees should be accountable to the Board for their own activities and performance.",
+      "sort_order": 1310,
+      "page": 23,
+      "cites": null
+    },
+    {
+      "reference": "11.2",
+      "parent_reference": "11",
+      "level": "practice",
+      "heading": "Committee responsible for Nomination and Governance",
+      "text": "",
+      "sort_order": 1320,
+      "page": 24,
+      "cites": null
+    },
+    {
+      "reference": "11.2.1",
+      "parent_reference": "11.2",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should consider assigning the responsibilities for nomination of members and oversight of governance matters to a stand-alone committee, or to any other committee capable of combining it with their existing functions, as is appropriate.",
+      "sort_order": 1330,
+      "page": 24,
+      "cites": null
+    },
+    {
+      "reference": "11.2.2",
+      "parent_reference": "11.2",
+      "level": "practice",
+      "heading": null,
+      "text": "Members of the committee responsible for nomination and governance should be NEDs, and a majority of them should be INEDs where possible.",
+      "sort_order": 1340,
+      "page": 24,
+      "cites": null
+    },
+    {
+      "reference": "11.2.3",
+      "parent_reference": "11.2",
+      "level": "practice",
+      "heading": null,
+      "text": "The chairman of the committee should be a NED.",
+      "sort_order": 1350,
+      "page": 24,
+      "cites": null
+    },
+    {
+      "reference": "11.2.4",
+      "parent_reference": "11.2",
+      "level": "practice",
+      "heading": null,
+      "text": "The committee should meet at least twice a year or such number of times as may be appropriate to discharge its duties.",
+      "sort_order": 1360,
+      "page": 24,
+      "cites": null
+    },
+    {
+      "reference": "11.2.5",
+      "parent_reference": "11.2",
+      "level": "practice",
+      "heading": null,
+      "text": "Among other things, the committee should have the duty to:",
+      "sort_order": 1370,
+      "page": 24,
+      "cites": null
+    },
+    {
+      "reference": "11.2.5.1",
+      "parent_reference": "11.2.5",
+      "level": "practice",
+      "heading": null,
+      "text": "Review the structure, size, composition and commitment of the Board at least annually and make recommendations on any proposed changes to the Board;",
+      "sort_order": 1380,
+      "page": 24,
+      "cites": null
+    },
+    {
+      "reference": "11.2.5.2",
+      "parent_reference": "11.2.5",
+      "level": "practice",
+      "heading": null,
+      "text": "Establish a formal and transparent process for Board appointments, including establishing the criteria for appointment to the Board and Board committees, reviewing prospective candidates’ qualifications and any potential conflict of interest; assessing the contribution of current Directors against their re-nomination suitability, and making appropriate recommendations to the Board;",
+      "sort_order": 1390,
+      "page": 24,
+      "cites": null
+    },
+    {
+      "reference": "11.2.5.3",
+      "parent_reference": "11.2.5",
+      "level": "practice",
+      "heading": null,
+      "text": "Identify individuals suitably qualified to become Board members and make recommendations to the Board for nomination and appointment as Directors;",
+      "sort_order": 1400,
+      "page": 24,
+      "cites": null
+    },
+    {
+      "reference": "11.2.5.4",
+      "parent_reference": "11.2.5",
+      "level": "practice",
+      "heading": null,
+      "text": "Periodically determine the skills, knowledge and experience required on the Board and its committees;",
+      "sort_order": 1410,
+      "page": 24,
+      "cites": null
+    },
+    {
+      "reference": "11.2.5.5",
+      "parent_reference": "11.2.5",
+      "level": "practice",
+      "heading": null,
+      "text": "Ensure that the Company has a formal programme for the induction and training of Directors;",
+      "sort_order": 1420,
+      "page": 24,
+      "cites": null
+    },
+    {
+      "reference": "11.2.5.6",
+      "parent_reference": "11.2.5",
+      "level": "practice",
+      "heading": null,
+      "text": "Undertake the annual assessment of the independent status of each INED;",
+      "sort_order": 1430,
+      "page": 24,
+      "cites": null
+    },
+    {
+      "reference": "11.2.5.7",
+      "parent_reference": "11.2.5",
+      "level": "practice",
+      "heading": null,
+      "text": "Ensure that the Company has a succession policy and plan in place for the Chairman of the Board, the MD/CEO and all other EDs, NEDs and senior management positions to ensure leadership continuity. Succession planning should be reviewed periodically, with provision made for succession in emergency situations as well as long-term vacancies;",
+      "sort_order": 1440,
+      "page": 24,
+      "cites": null
+    },
+    {
+      "reference": "11.2.5.8",
+      "parent_reference": "11.2.5",
+      "level": "practice",
+      "heading": null,
+      "text": "Deal with all matters pertaining to executive management selection and performance, including an annual evaluation of the performance of the MD/CEO and executive management.",
+      "sort_order": 1450,
+      "page": 25,
+      "cites": null
+    },
+    {
+      "reference": "11.2.5.9",
+      "parent_reference": "11.2.5",
+      "level": "practice",
+      "heading": null,
+      "text": "Develop a process for, and ensure that the Board undertakes, an annual performance evaluation of itself, its committees, the Chairman and individual Directors, as well as the Company’s corporate governance practices.",
+      "sort_order": 1460,
+      "page": 25,
+      "cites": null
+    },
+    {
+      "reference": "11.2.5.10",
+      "parent_reference": "11.2.5",
+      "level": "practice",
+      "heading": null,
+      "text": "Ensure the development and periodic review of Board charters, Board committee charters and other governance policies, such as the code of ethics, conflict of interest and whistleblowing policies among others.",
+      "sort_order": 1470,
+      "page": 25,
+      "cites": null
+    },
+    {
+      "reference": "11.3",
+      "parent_reference": "11",
+      "level": "practice",
+      "heading": "Committee responsible for Remuneration",
+      "text": "",
+      "sort_order": 1480,
+      "page": 25,
+      "cites": null
+    },
+    {
+      "reference": "11.3.1",
+      "parent_reference": "11.3",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should consider assigning the responsibilities for the determination of remuneration policy and its application to executive management, performance evaluation, the adoption of incentive plans, and various governance responsibilities related to remuneration to a stand-alone committee, or to any other committee capable of combining it with their existing functions, as is appropriate.",
+      "sort_order": 1490,
+      "page": 25,
+      "cites": null
+    },
+    {
+      "reference": "11.3.2",
+      "parent_reference": "11.3",
+      "level": "practice",
+      "heading": null,
+      "text": "Members of the committee responsible for remuneration should be NEDs, and a majority of them should be INEDs where possible.",
+      "sort_order": 1500,
+      "page": 25,
+      "cites": null
+    },
+    {
+      "reference": "11.3.3",
+      "parent_reference": "11.3",
+      "level": "practice",
+      "heading": null,
+      "text": "It is desirable that the chairman of the committee be an INED.",
+      "sort_order": 1510,
+      "page": 25,
+      "cites": null
+    },
+    {
+      "reference": "11.3.4",
+      "parent_reference": "11.3",
+      "level": "practice",
+      "heading": null,
+      "text": "The committee should meet at least once a year or such number of times as may be appropriate to discharge its duties.",
+      "sort_order": 1520,
+      "page": 25,
+      "cites": null
+    },
+    {
+      "reference": "11.3.5",
+      "parent_reference": "11.3",
+      "level": "practice",
+      "heading": null,
+      "text": "The duties of the committee responsible for remuneration should include, among others:",
+      "sort_order": 1530,
+      "page": 25,
+      "cites": null
+    },
+    {
+      "reference": "11.3.5.1",
+      "parent_reference": "11.3.5",
+      "level": "practice",
+      "heading": null,
+      "text": "Development of a formal, clear and transparent framework for the Company’s remuneration policies and procedures;",
+      "sort_order": 1540,
+      "page": 25,
+      "cites": null
+    },
+    {
+      "reference": "11.3.5.2",
+      "parent_reference": "11.3.5",
+      "level": "practice",
+      "heading": null,
+      "text": "Recommendation to the Board on the Company’s remuneration policy and structure for all Directors and senior management employees.",
+      "sort_order": 1550,
+      "page": 25,
+      "cites": null
+    },
+    {
+      "reference": "11.4",
+      "parent_reference": "11",
+      "level": "practice",
+      "heading": "Committee responsible for Audit",
+      "text": "",
+      "sort_order": 1560,
+      "page": 26,
+      "cites": null
+    },
+    {
+      "reference": "11.4.1",
+      "parent_reference": "11.4",
+      "level": "practice",
+      "heading": null,
+      "text": "Without prejudice to the provision of extant laws on the Statutory Audit Committee, it is desirable for every Company to have a Board committee responsible for audit.",
+      "sort_order": 1570,
+      "page": 26,
+      "cites": null
+    },
+    {
+      "reference": "11.4.2",
+      "parent_reference": "11.4",
+      "level": "practice",
+      "heading": null,
+      "text": "All members of the committee should be financially literate and should be able to read and understand financial statements. At least one member of the committee should be a financial expert, have current knowledge in accounting and financial management and be able to interpret financial statements.",
+      "sort_order": 1580,
+      "page": 26,
+      "cites": null
+    },
+    {
+      "reference": "11.4.3",
+      "parent_reference": "11.4",
+      "level": "practice",
+      "heading": null,
+      "text": "For private companies, members of the committee responsible for audit should be NEDs, and a majority of them should be INEDs where possible.",
+      "sort_order": 1590,
+      "page": 26,
+      "cites": null
+    },
+    {
+      "reference": "11.4.4",
+      "parent_reference": "11.4",
+      "level": "practice",
+      "heading": null,
+      "text": "In the case of the statutory audit committee, a chairman should be elected from amongst its members, and should have financial literacy.",
+      "sort_order": 1600,
+      "page": 26,
+      "cites": null
+    },
+    {
+      "reference": "11.4.5",
+      "parent_reference": "11.4",
+      "level": "practice",
+      "heading": null,
+      "text": "The committee should meet at least once every quarter.",
+      "sort_order": 1610,
+      "page": 26,
+      "cites": null
+    },
+    {
+      "reference": "11.4.6",
+      "parent_reference": "11.4",
+      "level": "practice",
+      "heading": null,
+      "text": "Subject to the provisions of extant laws, every public company should establish a statutory audit committee which shall perform the following functions:",
+      "sort_order": 1620,
+      "page": 26,
+      "cites": null
+    },
+    {
+      "reference": "11.4.6.1",
+      "parent_reference": "11.4.6",
+      "level": "practice",
+      "heading": null,
+      "text": "Ascertain whether the accounting and reporting policies of the Company are in accordance with legal requirements and agreed ethical practices.",
+      "sort_order": 1630,
+      "page": 26,
+      "cites": null
+    },
+    {
+      "reference": "11.4.6.2",
+      "parent_reference": "11.4.6",
+      "level": "practice",
+      "heading": null,
+      "text": "Review the scope and planning of audit requirements.",
+      "sort_order": 1640,
+      "page": 26,
+      "cites": null
+    },
+    {
+      "reference": "11.4.6.3",
+      "parent_reference": "11.4.6",
+      "level": "practice",
+      "heading": null,
+      "text": "Review the findings in management letter in conjunction with the external auditor and management responses thereon.",
+      "sort_order": 1650,
+      "page": 26,
+      "cites": null
+    },
+    {
+      "reference": "11.4.6.4",
+      "parent_reference": "11.4.6",
+      "level": "practice",
+      "heading": null,
+      "text": "Keep under review the effectiveness of the Company's system of accounting and internal control.",
+      "sort_order": 1660,
+      "page": 26,
+      "cites": null
+    },
+    {
+      "reference": "11.4.6.5",
+      "parent_reference": "11.4.6",
+      "level": "practice",
+      "heading": null,
+      "text": "Make recommendations to the Board regarding the appointment, removal and remuneration of the external auditors of the Company.",
+      "sort_order": 1670,
+      "page": 26,
+      "cites": null
+    },
+    {
+      "reference": "11.4.6.6",
+      "parent_reference": "11.4.6",
+      "level": "practice",
+      "heading": null,
+      "text": "Authorise the internal auditor to carry out investigations into any activities of the Company which may be of interest or concern to the committee.",
+      "sort_order": 1680,
+      "page": 26,
+      "cites": null
+    },
+    {
+      "reference": "11.4.7",
+      "parent_reference": "11.4",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board audit committee should have the following additional responsibilities:",
+      "sort_order": 1690,
+      "page": 26,
+      "cites": null
+    },
+    {
+      "reference": "11.4.7.1",
+      "parent_reference": "11.4.7",
+      "level": "practice",
+      "heading": null,
+      "text": "Exercise oversight over management’s processes to ascertain the integrity of the Company’s financial statements, compliance with all applicable legal and other regulatory requirements; and assess the qualifications and independence of the external auditors, and the performance of the Company’s internal audit function as well as that of the external auditors;",
+      "sort_order": 1700,
+      "page": 26,
+      "cites": null
+    },
+    {
+      "reference": "11.4.7.2",
+      "parent_reference": "11.4.7",
+      "level": "practice",
+      "heading": null,
+      "text": "Ensure the establishment of and exercise oversight on the internal audit function which provides assurance on the effectiveness of the internal controls. On a quarterly basis, obtain and review a report by the internal auditor describing the strength and quality of internal controls including identification of any issues or recommendations for improvement raised by the most recent internal audit review of the Company;",
+      "sort_order": 1710,
+      "page": 27,
+      "cites": null
+    },
+    {
+      "reference": "11.4.7.3",
+      "parent_reference": "11.4.7",
+      "level": "practice",
+      "heading": null,
+      "text": "Ensure the development of a comprehensive internal control framework for the Company, obtain appropriate (internal and/or external) assurance and report annually in the Company’s audited financial report, on the design and operating effectiveness of the Company’s internal controls over the financial reporting systems;",
+      "sort_order": 1720,
+      "page": 27,
+      "cites": null
+    },
+    {
+      "reference": "11.4.7.4",
+      "parent_reference": "11.4.7",
+      "level": "practice",
+      "heading": null,
+      "text": "Oversee the process for the identification of fraud risks across the Company and ensure that adequate prevention, detection and reporting mechanisms are in place;",
+      "sort_order": 1730,
+      "page": 27,
+      "cites": null
+    },
+    {
+      "reference": "11.4.7.5",
+      "parent_reference": "11.4.7",
+      "level": "practice",
+      "heading": null,
+      "text": "Discuss the interim or annual audited financial statements as well as significant financial reporting findings and recommendations with management and external auditors prior to recommending same to the Board for their consideration and appropriate action;",
+      "sort_order": 1740,
+      "page": 27,
+      "cites": null
+    },
+    {
+      "reference": "11.4.7.6",
+      "parent_reference": "11.4.7",
+      "level": "practice",
+      "heading": null,
+      "text": "Maintain oversight of financial and non-financial reporting.",
+      "sort_order": 1750,
+      "page": 27,
+      "cites": null
+    },
+    {
+      "reference": "11.4.7.7",
+      "parent_reference": "11.4.7",
+      "level": "practice",
+      "heading": null,
+      "text": "Review and ensure that adequate whistle-blowing policies and procedures are in place and that the issues reported through the whistle-blowing mechanism are summarised and presented to the board;",
+      "sort_order": 1760,
+      "page": 27,
+      "cites": null
+    },
+    {
+      "reference": "11.4.7.8",
+      "parent_reference": "11.4.7",
+      "level": "practice",
+      "heading": null,
+      "text": "Review, with the external auditors, any audit scope limitations or significant matters encountered and management’s responses to same;",
+      "sort_order": 1770,
+      "page": 27,
+      "cites": null
+    },
+    {
+      "reference": "11.4.7.9",
+      "parent_reference": "11.4.7",
+      "level": "practice",
+      "heading": null,
+      "text": "Develop a policy on the nature, extent and terms under which the external auditors may perform non-audit services;",
+      "sort_order": 1780,
+      "page": 28,
+      "cites": null
+    },
+    {
+      "reference": "11.4.7.10",
+      "parent_reference": "11.4.7",
+      "level": "practice",
+      "heading": null,
+      "text": "Review the independence of the external auditors in line with the policy referred to in Section 11.4.7.9 above prior to their appointment to perform non-audit services to ensure that where approved non-audit services are provided by the external auditors, there is no real or perceived conflict of interest, or other legal or ethical impediment;",
+      "sort_order": 1790,
+      "page": 28,
+      "cites": null
+    },
+    {
+      "reference": "11.4.7.11",
+      "parent_reference": "11.4.7",
+      "level": "practice",
+      "heading": null,
+      "text": "Preserve auditor independence, by setting clear hiring policies for employees or former employees of external auditors;",
+      "sort_order": 1800,
+      "page": 28,
+      "cites": null
+    },
+    {
+      "reference": "11.4.7.12",
+      "parent_reference": "11.4.7",
+      "level": "practice",
+      "heading": null,
+      "text": "Ensure the development of a Related Party Transactions policy and monitor its implementation by management. The Committee should consider any related party transaction that may arise within the Company.",
+      "sort_order": 1810,
+      "page": 28,
+      "cites": null
+    },
+    {
+      "reference": "11.4.8",
+      "parent_reference": "11.4",
+      "level": "practice",
+      "heading": null,
+      "text": "At least once in a year, the committee should hold a discussion with the head of the internal audit function and the external auditors without the presence of management, to facilitate an exchange of views and concerns that may not be appropriate for open discussion.",
+      "sort_order": 1820,
+      "page": 28,
+      "cites": null
+    },
+    {
+      "reference": "11.5",
+      "parent_reference": "11",
+      "level": "practice",
+      "heading": "Committee responsible for Risk Management",
+      "text": "",
+      "sort_order": 1830,
+      "page": 28,
+      "cites": null
+    },
+    {
+      "reference": "11.5.1",
+      "parent_reference": "11.5",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should consider assigning the responsibilities for oversight of matters relating to risk management to a stand-alone committee, or to any other committee capable of combining it with their existing functions, as is appropriate.",
+      "sort_order": 1840,
+      "page": 28,
+      "cites": null
+    },
+    {
+      "reference": "11.5.2",
+      "parent_reference": "11.5",
+      "level": "practice",
+      "heading": null,
+      "text": "Members of the committee responsible for risk management should include EDs and NEDs, a majority of whom should be NEDs.",
+      "sort_order": 1850,
+      "page": 28,
+      "cites": null
+    },
+    {
+      "reference": "11.5.3",
+      "parent_reference": "11.5",
+      "level": "practice",
+      "heading": null,
+      "text": "Where the committees responsible for audit and risk management are separate, the Board should consider for one or more members to have joint membership of both committees for more effective functioning as this will enhance the discussions at meetings of both committees – the risk implication of audit matters will be discussed more extensively, and a knowledge of findings from the Company’s internal audit activities will bring a unique perspective to the discussion of risk issues.",
+      "sort_order": 1860,
+      "page": 28,
+      "cites": null
+    },
+    {
+      "reference": "11.5.4",
+      "parent_reference": "11.5",
+      "level": "practice",
+      "heading": null,
+      "text": "The chairman of the committee should be a NED.",
+      "sort_order": 1870,
+      "page": 28,
+      "cites": null
+    },
+    {
+      "reference": "11.5.5",
+      "parent_reference": "11.5",
+      "level": "practice",
+      "heading": null,
+      "text": "The committee should meet at least twice every financial year or such number of times as may be appropriate to discharge its duties.",
+      "sort_order": 1880,
+      "page": 29,
+      "cites": null
+    },
+    {
+      "reference": "11.5.6",
+      "parent_reference": "11.5",
+      "level": "practice",
+      "heading": null,
+      "text": "The committee should:",
+      "sort_order": 1890,
+      "page": 29,
+      "cites": null
+    },
+    {
+      "reference": "11.5.6.1",
+      "parent_reference": "11.5.6",
+      "level": "practice",
+      "heading": null,
+      "text": "Review and recommend for approval of the Board, the risk management policies and framework, as well as assist the Board in its oversight of risk management strategy;",
+      "sort_order": 1900,
+      "page": 29,
+      "cites": null
+    },
+    {
+      "reference": "11.5.6.2",
+      "parent_reference": "11.5.6",
+      "level": "practice",
+      "heading": null,
+      "text": "Review the adequacy and effectiveness of risk management and controls in the Company;",
+      "sort_order": 1910,
+      "page": 29,
+      "cites": null
+    },
+    {
+      "reference": "11.5.6.3",
+      "parent_reference": "11.5.6",
+      "level": "practice",
+      "heading": null,
+      "text": "Exercise oversight over the process for the identification and assessment of risks across the Company and the adequacy of prevention, detection and reporting mechanisms;",
+      "sort_order": 1920,
+      "page": 29,
+      "cites": null
+    },
+    {
+      "reference": "11.5.6.4",
+      "parent_reference": "11.5.6",
+      "level": "practice",
+      "heading": null,
+      "text": "Review the level of the Company’s compliance with applicable laws and regulatory requirements which may impact the Company’s risk profile;",
+      "sort_order": 1930,
+      "page": 29,
+      "cites": null
+    },
+    {
+      "reference": "11.5.6.5",
+      "parent_reference": "11.5.6",
+      "level": "practice",
+      "heading": null,
+      "text": "Periodically review changes in the economic and business environment, including emerging trends and other factors relevant to the Company’s risk profile and those trends which may threaten the Company’s business model, key strategies, future performance, solvency and liquidity and make recommendations to the Board as appropriate;",
+      "sort_order": 1940,
+      "page": 29,
+      "cites": null
+    },
+    {
+      "reference": "11.5.6.6",
+      "parent_reference": "11.5.6",
+      "level": "practice",
+      "heading": null,
+      "text": "Review and recommend for approval of the Board, at least annually, the Company’s Information Technology (IT) data governance framework to ensure that IT data risks are adequately mitigated and relevant assets are managed effectively. The framework may include:\n(a) Development of IT strategy and policy;\n(b) Proactive monitoring and management of cyber threats and attacks as well as adverse social media incidents;\n(c) Management of risks relating to third-party and outsourced IT service providers;\n(d) Assessment of value delivered to the Company through investments in IT; and\n(e) Periodic independent assurance on the effectiveness of the Company’s IT arrangements.",
+      "sort_order": 1950,
+      "page": 29,
+      "cites": null
+    },
+    {
+      "reference": "11.5.7",
+      "parent_reference": "11.5",
+      "level": "practice",
+      "heading": null,
+      "text": "The person charged with the responsibility for risk management should be a member of senior management of the Company, a professional with relevant qualifications and experience and should be in attendance at meetings of the committee. The direct reporting line of this person should be to the MD/CEO and there should be an indirect reporting line to the committee responsible for risk management.",
+      "sort_order": 1960,
+      "page": 29,
+      "cites": null
+    },
+    {
+      "reference": "12",
+      "parent_reference": "Part A",
+      "level": "principle",
+      "heading": "Appointment to the Board",
+      "text": "A written, clearly defined, rigorous, formal and transparent procedure serves as a guide for the selection of Directors to ensure the appointment of high quality individuals to the Board.",
+      "sort_order": 1970,
+      "page": 30,
+      "cites": null
+    },
+    {
+      "reference": "12.1",
+      "parent_reference": "12",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should approve the criteria for appointing Directors, as recommended by the committee responsible for nomination and governance. Such criteria should take into careful consideration the strengths and weaknesses of the existing Board, integrity, required competence and skills, knowledge and experience, capacity to undertake the responsibility as well as diversity, including gender diversity. In the case of specialised businesses, possession of requisite technical skill should be taken into account.",
+      "sort_order": 1980,
+      "page": 30,
+      "cites": null
+    },
+    {
+      "reference": "12.2",
+      "parent_reference": "12",
+      "level": "practice",
+      "heading": null,
+      "text": "The committee responsible for nomination and governance should ensure that proposed Directors are fit and proper persons before recommending them to the Board for consideration for directorship positions.",
+      "sort_order": 1990,
+      "page": 30,
+      "cites": null
+    },
+    {
+      "reference": "12.3",
+      "parent_reference": "12",
+      "level": "practice",
+      "heading": null,
+      "text": "Shareholders should be provided with biographical information of proposed Directors to guide their decision. Such information should include:\n(a) name, age, qualifications, country of primary residence and the ownership interest represented, if any;\n(b) whether the appointment is for ED, NED or INED, and any proposed specific area of responsibility or Board committee roles if any;\n(c) work experience and occupation;\n(d) current directorships and appointments;\n(e) direct and/or indirect shareholding in the Company and/or its subsidiaries; and\n(f) any other relevant information.",
+      "sort_order": 2000,
+      "page": 30,
+      "cites": null
+    },
+    {
+      "reference": "12.4",
+      "parent_reference": "12",
+      "level": "practice",
+      "heading": null,
+      "text": "Every Director should receive a letter of appointment or contract of employment, specifying the terms and conditions of his appointment or employment.",
+      "sort_order": 2010,
+      "page": 30,
+      "cites": null
+    },
+    {
+      "reference": "12.5",
+      "parent_reference": "12",
+      "level": "practice",
+      "heading": null,
+      "text": "The letter of appointment or contract of employment should cover the following issues:\n(a) duration of the appointment or tenure;\n(b) details of the remuneration;\n(c) summary of the rights, fiduciary duties and other responsibilities of the Director;\n(d) requirement to disclose any material interests in the Company and other entities carrying on business or providing services to the Company;\n(e) specific requirements, such as Board or Board committee meeting attendance;\n(f) formal induction programme or training for the Director to attend;\n(g) Board Charter, Code of Business Conduct and Ethics (attached as separate documents) and the Director’s responsibility to observe same;\n(h) Board performance evaluation process used by the Company; and\n(i) any other relevant information.",
+      "sort_order": 2020,
+      "page": 30,
+      "cites": null
+    },
+    {
+      "reference": "12.6",
+      "parent_reference": "12",
+      "level": "practice",
+      "heading": null,
+      "text": "The Company should state the processes used in relation to all Board appointments in its annual report.",
+      "sort_order": 2030,
+      "page": 31,
+      "cites": null
+    },
+    {
+      "reference": "12.7",
+      "parent_reference": "12",
+      "level": "practice",
+      "heading": null,
+      "text": "Subject to the provisions of extant laws and the recommendation of the committee responsible for nomination and governance based on the results of the individual Directors’ performance appraisal, Board members may offer themselves for re-election.",
+      "sort_order": 2040,
+      "page": 31,
+      "cites": null
+    },
+    {
+      "reference": "12.8",
+      "parent_reference": "12",
+      "level": "practice",
+      "heading": null,
+      "text": "NEDs should serve for a reasonable period on the Board. However, it is necessary to reinforce the Board by continually injecting new energy, fresh ideas and perspectives. The Board should ensure the periodic appointment of new Directors to replace existing NEDs.",
+      "sort_order": 2050,
+      "page": 31,
+      "cites": null
+    },
+    {
+      "reference": "12.9",
+      "parent_reference": "12",
+      "level": "practice",
+      "heading": null,
+      "text": "The tenure for the MD/CEO and the EDs should be determined by the Board. In determining the tenure of an ED, the Board should take into account his performance, the existing succession planning mechanism, continuity of the Board and the need for continuous refreshing of the Board.",
+      "sort_order": 2060,
+      "page": 31,
+      "cites": null
+    },
+    {
+      "reference": "12.10",
+      "parent_reference": "12",
+      "level": "practice",
+      "heading": null,
+      "text": "The tenure for INEDs should not exceed three terms of three years each.",
+      "sort_order": 2070,
+      "page": 31,
+      "cites": null
+    },
+    {
+      "reference": "12.11",
+      "parent_reference": "12",
+      "level": "practice",
+      "heading": null,
+      "text": "To resign, Directors should submit a written notice of resignation addressed to the Chairman.",
+      "sort_order": 2080,
+      "page": 31,
+      "cites": null
+    },
+    {
+      "reference": "12.12",
+      "parent_reference": "12",
+      "level": "practice",
+      "heading": null,
+      "text": "Where a Director has concerns about the running of the Company which cannot be resolved and he elects to resign from the Board, such concerns should be detailed in a written statement to the Chairman for circulation to the Board.",
+      "sort_order": 2090,
+      "page": 31,
+      "cites": null
+    },
+    {
+      "reference": "13",
+      "parent_reference": "Part A",
+      "level": "principle",
+      "heading": "Induction and Continuing Education",
+      "text": "A formal induction programme on joining the Board as well as regular training assists Directors to effectively discharge their duties to the Company.",
+      "sort_order": 2100,
+      "page": 32,
+      "cites": null
+    },
+    {
+      "reference": "13.1",
+      "parent_reference": "13",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should establish a formal induction programme for new Directors of the Company to familiarise them with the Company’s, strategic plan, operations, business environment, senior management, and the Directors’ fiduciary responsibilities. The induction of new Directors should take place as soon as feasible after their appointment.",
+      "sort_order": 2110,
+      "page": 32,
+      "cites": null
+    },
+    {
+      "reference": "13.2",
+      "parent_reference": "13",
+      "level": "practice",
+      "heading": null,
+      "text": "All Directors should participate in periodic, relevant, continuing education programmes to update their knowledge and skills and keep them informed of new developments in the Company’s business and operating environment.",
+      "sort_order": 2120,
+      "page": 32,
+      "cites": null
+    },
+    {
+      "reference": "13.3",
+      "parent_reference": "13",
+      "level": "practice",
+      "heading": null,
+      "text": "The outcome of the performance evaluation of the individual Directors should be taken into account in developing the Board training programme.",
+      "sort_order": 2130,
+      "page": 32,
+      "cites": null
+    },
+    {
+      "reference": "13.4",
+      "parent_reference": "13",
+      "level": "practice",
+      "heading": null,
+      "text": "The training programmes should be at the Company’s expense but should not be such that put undue strain on the Company’s finances.",
+      "sort_order": 2140,
+      "page": 32,
+      "cites": null
+    },
+    {
+      "reference": "14",
+      "parent_reference": "Part A",
+      "level": "principle",
+      "heading": "Board Evaluation",
+      "text": "Annual Board evaluation assesses how each Director, the committees of the Board and the Board are committed to their roles, work together and continue to contribute effectively to the achievement of the Company’s objectives.",
+      "sort_order": 2150,
+      "page": 32,
+      "cites": null
+    },
+    {
+      "reference": "14.1",
+      "parent_reference": "14",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should establish a system to undertake a formal and rigorous annual evaluation of its own performance, that of its committees, the Chairman and individual Directors. This process should be externally facilitated by an independent external consultant at least once in three years.",
+      "sort_order": 2160,
+      "page": 32,
+      "cites": null
+    },
+    {
+      "reference": "14.2",
+      "parent_reference": "14",
+      "level": "practice",
+      "heading": null,
+      "text": "The evaluation system should include the criteria and key performance indicators and targets for the Board, its committees, the Chairman and each individual Board member.",
+      "sort_order": 2170,
+      "page": 32,
+      "cites": null
+    },
+    {
+      "reference": "14.3",
+      "parent_reference": "14",
+      "level": "practice",
+      "heading": null,
+      "text": "The evaluation of the Board should consider the mix of skills, experience, objectivity, competence of members of the Board, its diversity (including gender), knowledge of the Company and its strategic direction, attendance at meetings, how the Board works together and other factors relevant to its effectiveness.",
+      "sort_order": 2180,
+      "page": 32,
+      "cites": null
+    },
+    {
+      "reference": "14.4",
+      "parent_reference": "14",
+      "level": "practice",
+      "heading": null,
+      "text": "The result of the Board performance evaluation should be communicated to and discussed by the Board as a whole, while those of individual Directors should be communicated to and discussed with them individually by the Chairman.",
+      "sort_order": 2190,
+      "page": 33,
+      "cites": null
+    },
+    {
+      "reference": "14.5",
+      "parent_reference": "14",
+      "level": "practice",
+      "heading": null,
+      "text": "Where the performance of a Director is considered to be unsatisfactory, the Board should provide appropriate training to address the identified gaps.",
+      "sort_order": 2200,
+      "page": 33,
+      "cites": null
+    },
+    {
+      "reference": "14.6",
+      "parent_reference": "14",
+      "level": "practice",
+      "heading": null,
+      "text": "The results of a Director’s performance evaluation should be considered in the Director re-election process.",
+      "sort_order": 2210,
+      "page": 33,
+      "cites": null
+    },
+    {
+      "reference": "15",
+      "parent_reference": "Part A",
+      "level": "principle",
+      "heading": "Corporate Governance Evaluation",
+      "text": "Institutionalising a system for evaluating the Company’s corporate governance practices ensures that its governance standards, practices and processes are adequate and effective.",
+      "sort_order": 2220,
+      "page": 33,
+      "cites": null
+    },
+    {
+      "reference": "15.1",
+      "parent_reference": "15",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should ensure that an annual corporate governance evaluation, including the extent of application of this Code, is carried out. The evaluation should be facilitated by an independent external consultant at least once in three years.",
+      "sort_order": 2230,
+      "page": 33,
+      "cites": null
+    },
+    {
+      "reference": "15.2",
+      "parent_reference": "15",
+      "level": "practice",
+      "heading": null,
+      "text": "The summary of the report of this evaluation should be included in the Company’s annual report and on the investors’ portal of the Company.",
+      "sort_order": 2240,
+      "page": 33,
+      "cites": null
+    },
+    {
+      "reference": "16",
+      "parent_reference": "Part A",
+      "level": "principle",
+      "heading": "Remuneration Governance",
+      "text": "The Board ensures that the Company remunerates fairly, responsibly and transparently so as to promote the achievement of strategic objectives and positive outcomes in the short, medium and long term.",
+      "sort_order": 2250,
+      "page": 33,
+      "cites": null
+    },
+    {
+      "reference": "16.1",
+      "parent_reference": "16",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should assume responsibility for the governance of remuneration by setting the direction for how remuneration should be addressed on a Company-wide basis.",
+      "sort_order": 2260,
+      "page": 33,
+      "cites": null
+    },
+    {
+      "reference": "16.2",
+      "parent_reference": "16",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should approve policies that articulate and give effect to its direction on fair, responsible and transparent remuneration.",
+      "sort_order": 2270,
+      "page": 33,
+      "cites": null
+    },
+    {
+      "reference": "16.3",
+      "parent_reference": "16",
+      "level": "practice",
+      "heading": null,
+      "text": "The remuneration policy should be designed to attract, motivate, reward and retain high performing human capital.",
+      "sort_order": 2280,
+      "page": 33,
+      "cites": null
+    },
+    {
+      "reference": "16.4",
+      "parent_reference": "16",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should periodically confirm that the implementation and execution of the remuneration policy achieves its objectives.",
+      "sort_order": 2290,
+      "page": 33,
+      "cites": null
+    },
+    {
+      "reference": "16.5",
+      "parent_reference": "16",
+      "level": "practice",
+      "heading": null,
+      "text": "Remuneration for NEDs should be fixed by the Board and approved by shareholders in the General Meeting.",
+      "sort_order": 2300,
+      "page": 34,
+      "cites": null
+    },
+    {
+      "reference": "16.6",
+      "parent_reference": "16",
+      "level": "practice",
+      "heading": null,
+      "text": "The remuneration of the MD/CEO and EDs should be structured to link rewards to corporate and individual performances and include a significant component that is related to long-term corporate performance, such as stock options and bonuses. Mechanisms may be considered to align payment of certain components of the remuneration of the MD/CEO and EDs with the achievement of longer-term goals.",
+      "sort_order": 2310,
+      "page": 34,
+      "cites": null
+    },
+    {
+      "reference": "16.7",
+      "parent_reference": "16",
+      "level": "practice",
+      "heading": null,
+      "text": "The MD/CEO and EDs should not be involved in the determination of their remuneration.",
+      "sort_order": 2320,
+      "page": 34,
+      "cites": null
+    },
+    {
+      "reference": "16.8",
+      "parent_reference": "16",
+      "level": "practice",
+      "heading": null,
+      "text": "The Company’s Remuneration Policy as well as remuneration of all Directors should be disclosed in the Company’s annual report.",
+      "sort_order": 2330,
+      "page": 34,
+      "cites": null
+    },
+    {
+      "reference": "16.9",
+      "parent_reference": "16",
+      "level": "practice",
+      "heading": null,
+      "text": "Companies should implement a clawback policy to recover excess or undeserved reward, such as bonuses, incentives, share of profits, stock options, or any performance-based reward, from Directors and senior employees.",
+      "sort_order": 2340,
+      "page": 34,
+      "cites": null
+    },
+    {
+      "reference": "16.10",
+      "parent_reference": "16",
+      "level": "practice",
+      "heading": null,
+      "text": "Clawback can be triggered if the account or financial performance on which the reward was based is later found to be materially false, misstated, misleading, erroneous, etc. or in instances of misdemeanour, fraud, material violation of Company policy or material regulatory infractions.",
+      "sort_order": 2350,
+      "page": 34,
+      "cites": null
+    },
+    {
+      "reference": "16.11",
+      "parent_reference": "16",
+      "level": "practice",
+      "heading": null,
+      "text": "The MD/CEO and EDs should not receive sitting allowances for attending meetings of the Board or its committees and Director’s fees from the Company, its holding company or subsidiaries. Their remuneration should however encompass recompense for time spent on the Board, its committees, and related work.",
+      "sort_order": 2360,
+      "page": 34,
+      "cites": null
+    },
+    {
+      "reference": "16.12",
+      "parent_reference": "16",
+      "level": "practice",
+      "heading": null,
+      "text": "NEDs should not receive performance-based compensation as it may lead to bias in their decision-making and compromise their objectivity.",
+      "sort_order": 2370,
+      "page": 34,
+      "cites": null
+    },
+    {
+      "reference": "16.13",
+      "parent_reference": "16",
+      "level": "practice",
+      "heading": null,
+      "text": "NEDs may be paid sitting allowances, Directors’ fees and reimbursable travel and hotel expenses. These payments, in addition to any other allowances and benefits made to NEDs, should be disclosed in the Company’s annual report.",
+      "sort_order": 2380,
+      "page": 34,
+      "cites": null
+    },
+    {
+      "reference": "16.14",
+      "parent_reference": "16",
+      "level": "practice",
+      "heading": null,
+      "text": "Subject to the provisions of extant laws, the Company may pay compensation for loss of office or retirement to Directors. In the case of the MD/CEO, EDs and senior management, the compensation payable for any loss of office or termination of appointment should be consistent with their contractual terms, fair and not excessive.",
+      "sort_order": 2390,
+      "page": 34,
+      "cites": null
+    },
+    {
+      "reference": "Part B",
+      "parent_reference": null,
+      "level": "part",
+      "heading": "Assurance",
+      "text": "",
+      "sort_order": 2400,
+      "page": 35,
+      "cites": null
+    },
+    {
+      "reference": "17",
+      "parent_reference": "Part B",
+      "level": "principle",
+      "heading": "Risk Management",
+      "text": "A sound framework for managing risk and ensuring an effective internal control system is essential for achieving the strategic objectives of the Company. The Board should:",
+      "sort_order": 2410,
+      "page": 35,
+      "cites": null
+    },
+    {
+      "reference": "17.1",
+      "parent_reference": "17",
+      "level": "practice",
+      "heading": null,
+      "text": "ensure the establishment of a risk management framework that:",
+      "sort_order": 2420,
+      "page": 35,
+      "cites": null
+    },
+    {
+      "reference": "17.1.1",
+      "parent_reference": "17.1",
+      "level": "practice",
+      "heading": null,
+      "text": "defines the Company’s risk policy, risk appetite and risk limits; and",
+      "sort_order": 2430,
+      "page": 35,
+      "cites": null
+    },
+    {
+      "reference": "17.1.2",
+      "parent_reference": "17.1",
+      "level": "practice",
+      "heading": null,
+      "text": "identifies, assesses, monitors and manages key business risks to safeguard shareholders’ investments and the Company’s assets;",
+      "sort_order": 2440,
+      "page": 35,
+      "cites": null
+    },
+    {
+      "reference": "17.2",
+      "parent_reference": "17",
+      "level": "practice",
+      "heading": null,
+      "text": "formally approve the risk management framework and ensure that it is communicated in simple and clear language to all employees;",
+      "sort_order": 2450,
+      "page": 35,
+      "cites": null
+    },
+    {
+      "reference": "17.3",
+      "parent_reference": "17",
+      "level": "practice",
+      "heading": null,
+      "text": "ensure that the risk management framework is integrated into the day-to-day operations of the business and provide guidelines and standards for management of key risks;",
+      "sort_order": 2460,
+      "page": 35,
+      "cites": null
+    },
+    {
+      "reference": "17.4",
+      "parent_reference": "17",
+      "level": "practice",
+      "heading": null,
+      "text": "articulate, implement and review the Company’s internal control systems to strengthen the risk management framework;",
+      "sort_order": 2470,
+      "page": 35,
+      "cites": null
+    },
+    {
+      "reference": "17.5",
+      "parent_reference": "17",
+      "level": "practice",
+      "heading": null,
+      "text": "conduct at least annually, or more often in companies with complex operations, a thorough risk assessment covering all aspects of the Company’s business and ensure that mitigating strategies have been put in place to manage identified risks;",
+      "sort_order": 2480,
+      "page": 35,
+      "cites": null
+    },
+    {
+      "reference": "17.6",
+      "parent_reference": "17",
+      "level": "practice",
+      "heading": null,
+      "text": "obtain and review relevant reports periodically to ensure the ongoing effectiveness of the Company’s risk management framework;",
+      "sort_order": 2490,
+      "page": 35,
+      "cites": null
+    },
+    {
+      "reference": "17.7",
+      "parent_reference": "17",
+      "level": "practice",
+      "heading": null,
+      "text": "ensure that the Company’s risk management framework is disclosed in the annual report; and",
+      "sort_order": 2500,
+      "page": 35,
+      "cites": null
+    },
+    {
+      "reference": "17.8",
+      "parent_reference": "17",
+      "level": "practice",
+      "heading": null,
+      "text": "ensure that the risk management function is headed by a member of senior management who is a professional with relevant qualifications, competence, objectivity and experience.",
+      "sort_order": 2510,
+      "page": 35,
+      "cites": null
+    },
+    {
+      "reference": "18",
+      "parent_reference": "Part B",
+      "level": "principle",
+      "heading": "Internal Audit Function",
+      "text": "An effective internal audit function provides assurance to the Board on the effectiveness of the governance, risk management and internal control systems.",
+      "sort_order": 2520,
+      "page": 36,
+      "cites": null
+    },
+    {
+      "reference": "18.1",
+      "parent_reference": "18",
+      "level": "practice",
+      "heading": null,
+      "text": "The purpose, authority and responsibility of the internal audit function should be clearly and formally defined in an internal audit charter approved by the Board.",
+      "sort_order": 2530,
+      "page": 36,
+      "cites": null
+    },
+    {
+      "reference": "18.2",
+      "parent_reference": "18",
+      "level": "practice",
+      "heading": null,
+      "text": "Where the Board decides not to establish such a function, internally or outsourced, sufficient reasons should be disclosed in the Company’s annual report with an explanation as to how the Board has obtained adequate assurance on the effectiveness of the internal processes and systems such as risk management and internal control.",
+      "sort_order": 2540,
+      "page": 36,
+      "cites": null
+    },
+    {
+      "reference": "18.3",
+      "parent_reference": "18",
+      "level": "practice",
+      "heading": null,
+      "text": "The internal audit function should be headed by a member of senior management who is a professional with relevant qualifications, competence, objectivity and experience; and is registered with a recognised professional body.",
+      "sort_order": 2550,
+      "page": 36,
+      "cites": null
+    },
+    {
+      "reference": "18.4",
+      "parent_reference": "18",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should ensure that the internal audit function is sufficiently skilled and resourced to address the complexity and volume of risk faced by the organisation.",
+      "sort_order": 2560,
+      "page": 36,
+      "cites": null
+    },
+    {
+      "reference": "18.5",
+      "parent_reference": "18",
+      "level": "practice",
+      "heading": null,
+      "text": "The head of the internal audit function should:",
+      "sort_order": 2570,
+      "page": 36,
+      "cites": null
+    },
+    {
+      "reference": "18.5.1",
+      "parent_reference": "18.5",
+      "level": "practice",
+      "heading": null,
+      "text": "Report directly to the committee responsible for audit while having a line of communication with the MD/CEO.",
+      "sort_order": 2580,
+      "page": 36,
+      "cites": null
+    },
+    {
+      "reference": "18.5.2",
+      "parent_reference": "18.5",
+      "level": "practice",
+      "heading": null,
+      "text": "Have unrestricted access to the chairman of the committee responsible for audit as well as the Chairman of the Board.",
+      "sort_order": 2590,
+      "page": 36,
+      "cites": null
+    },
+    {
+      "reference": "18.5.3",
+      "parent_reference": "18.5",
+      "level": "practice",
+      "heading": null,
+      "text": "Report at least once every quarter to the committee responsible for audit, on the adequacy and effectiveness of management, governance, risk and control environment; deficiencies observed and management mitigation plans.",
+      "sort_order": 2600,
+      "page": 36,
+      "cites": null
+    },
+    {
+      "reference": "18.5.4",
+      "parent_reference": "18.5",
+      "level": "practice",
+      "heading": null,
+      "text": "Provide assurance to the Board by conducting periodic evaluations to determine the effectiveness and efficiency of the Company’s internal control systems and make recommendations for enhancement or improvement.",
+      "sort_order": 2610,
+      "page": 36,
+      "cites": null
+    },
+    {
+      "reference": "18.5.5",
+      "parent_reference": "18.5",
+      "level": "practice",
+      "heading": null,
+      "text": "Develop an annual risk-based internal audit plan which should be approved by the committee responsible for audit.",
+      "sort_order": 2620,
+      "page": 36,
+      "cites": null
+    },
+    {
+      "reference": "18.5.6",
+      "parent_reference": "18.5",
+      "level": "practice",
+      "heading": null,
+      "text": "Liaise with other internal and external providers of assurance in order to ensure proper coverage and to minimise duplication of efforts.",
+      "sort_order": 2630,
+      "page": 36,
+      "cites": null
+    },
+    {
+      "reference": "18.6",
+      "parent_reference": "18",
+      "level": "practice",
+      "heading": null,
+      "text": "There should be an external assessment of the effectiveness of the internal audit function at least once every three years by a qualified independent reviewer to be appointed by the Board.",
+      "sort_order": 2640,
+      "page": 36,
+      "cites": null
+    },
+    {
+      "reference": "18.7",
+      "parent_reference": "18",
+      "level": "practice",
+      "heading": null,
+      "text": "The evaluation of the head of the internal audit function should be performed by the committee responsible for audit, and he may only be removed by the Board on the recommendation of the committee responsible for audit.",
+      "sort_order": 2650,
+      "page": 37,
+      "cites": null
+    },
+    {
+      "reference": "19",
+      "parent_reference": "Part B",
+      "level": "principle",
+      "heading": "Whistle-blowing",
+      "text": "An effective whistle-blowing framework for reporting any illegal or unethical behaviour minimises the Company's exposure and prevents recurrence.",
+      "sort_order": 2660,
+      "page": 37,
+      "cites": null
+    },
+    {
+      "reference": "19.1",
+      "parent_reference": "19",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should establish a whistle-blowing framework to encourage stakeholders to bring unethical conduct and violations of laws and regulations to the attention of an internal and/or external authority so that action can be taken to verify the allegation and apply appropriate sanctions or take remedial action to correct any harm done. This framework should be known to employees and external stakeholders.",
+      "sort_order": 2670,
+      "page": 37,
+      "cites": null
+    },
+    {
+      "reference": "19.2",
+      "parent_reference": "19",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should ensure the existence of a whistle-blowing mechanism that is reliable, accessible and guarantees the anonymity of the whistle-blower, and that all disclosures resulting from whistle-blowing are treated in a confidential manner. The identity of the whistle-blower should be kept confidential.",
+      "sort_order": 2680,
+      "page": 37,
+      "cites": null
+    },
+    {
+      "reference": "19.3",
+      "parent_reference": "19",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should accord priority to the effectiveness of the whistle-blowing mechanism and continually affirm publicly, its support for and commitment to the Company’s whistle-blower protection mechanism.",
+      "sort_order": 2690,
+      "page": 37,
+      "cites": null
+    },
+    {
+      "reference": "19.4",
+      "parent_reference": "19",
+      "level": "practice",
+      "heading": null,
+      "text": "The team responsible for managing disclosures obtained through the whistle-blowing mechanism should:",
+      "sort_order": 2700,
+      "page": 37,
+      "cites": null
+    },
+    {
+      "reference": "19.4.1",
+      "parent_reference": "19.4",
+      "level": "practice",
+      "heading": null,
+      "text": "Review reported cases and bring them to the notice of the committee responsible for audit",
+      "sort_order": 2710,
+      "page": 37,
+      "cites": null
+    },
+    {
+      "reference": "19.4.2",
+      "parent_reference": "19.4",
+      "level": "practice",
+      "heading": null,
+      "text": "Provide the committee responsible for audit with a summary of reported cases, cases investigated, the process of investigation and the results of the investigations.",
+      "sort_order": 2720,
+      "page": 37,
+      "cites": null
+    },
+    {
+      "reference": "19.5",
+      "parent_reference": "19",
+      "level": "practice",
+      "heading": null,
+      "text": "A whistle-blower can disclose any information related to a violation or suspected violation of any laws, internal policies, etc. connected with the business of the Company, its employees or stakeholders.",
+      "sort_order": 2730,
+      "page": 37,
+      "cites": null
+    },
+    {
+      "reference": "19.6",
+      "parent_reference": "19",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should ensure that no whistle-blower is subject to any detriment on the grounds that he has made a disclosure. Where a whistle-blower has been subjected to any detriment, he may present a complaint to the Board and/or regulators. A whistle-blower who has suffered any detriment by reason of disclosure may be entitled to compensation and/or reinstatement as appropriate.",
+      "sort_order": 2740,
+      "page": 37,
+      "cites": null
+    },
+    {
+      "reference": "20",
+      "parent_reference": "Part B",
+      "level": "principle",
+      "heading": "External Auditors",
+      "text": "An external auditor is appointed to provide an independent opinion on the true and fair view of the financial statements of the Company to give assurance to stakeholders on the reliability of the financial statements.",
+      "sort_order": 2750,
+      "page": 38,
+      "cites": null
+    },
+    {
+      "reference": "20.1",
+      "parent_reference": "20",
+      "level": "practice",
+      "heading": null,
+      "text": "Subject to the provisions of any extant laws, the recommendation for the appointment, re-appointment or removal of an external auditor should be made to the Board by the committee responsible for audit.",
+      "sort_order": 2760,
+      "page": 38,
+      "cites": null
+    },
+    {
+      "reference": "20.2",
+      "parent_reference": "20",
+      "level": "practice",
+      "heading": null,
+      "text": "External audit firms may be retained for no longer than ten years continuously. External audit firms disengaged after ten years continuous service may not be considered for reappointment until seven years after their disengagement. Where an external auditor’s aggregate or cumulative tenure has already exceeded ten years at the date of commencement of this Code, such auditor should cease to hold office as an auditor of the Company at the Annual General Meeting to be held immediately after this Code comes into effect.",
+      "sort_order": 2770,
+      "page": 38,
+      "cites": null
+    },
+    {
+      "reference": "20.3",
+      "parent_reference": "20",
+      "level": "practice",
+      "heading": null,
+      "text": "An external auditor may provide to the Company only such other services as are approved by the Board on the recommendation of the committee responsible for audit and such as does not create a self-review threat in line with the provisions of international auditing standards.",
+      "sort_order": 2780,
+      "page": 38,
+      "cites": null
+    },
+    {
+      "reference": "20.4",
+      "parent_reference": "20",
+      "level": "practice",
+      "heading": null,
+      "text": "In order to preserve independence, there should be a rotation of the audit engagement partner every five years.",
+      "sort_order": 2790,
+      "page": 38,
+      "cites": null
+    },
+    {
+      "reference": "20.5",
+      "parent_reference": "20",
+      "level": "practice",
+      "heading": null,
+      "text": "In order to preserve independence, there should be an appropriate cooling off period spanning at least three years between the retirement of a partner from an audit firm and his appointment to the Board of an audit client. Similarly, there should be a cooling off period before a Company can engage any member of the audit team as a staff member in the financial reporting function.",
+      "sort_order": 2800,
+      "page": 38,
+      "cites": null
+    },
+    {
+      "reference": "20.6",
+      "parent_reference": "20",
+      "level": "practice",
+      "heading": null,
+      "text": "In order to ensure quality audit outcomes, the engagement partner and audit team should possess the knowledge, relevant skills and experience. Additionally, they should demonstrate a good understanding of the Company’s business, be independent of the Company and approach their work with a high level of objectivity and professionalism – including applying internationally accepted audit standards in their work.",
+      "sort_order": 2810,
+      "page": 38,
+      "cites": null
+    },
+    {
+      "reference": "20.7",
+      "parent_reference": "20",
+      "level": "practice",
+      "heading": null,
+      "text": "Where the Board is satisfied that the external auditor has abused its office, acted in a fraudulent manner, colluded in any fraud or engaged in any unethical practice, it may recommend the removal of such external auditor in accordance with the provisions of extant laws. Where a Regulator is satisfied that the external auditor of a Company has abused its office as auditor, it may request the Company to remove such external auditor in line with the provisions of extant laws.",
+      "sort_order": 2820,
+      "page": 39,
+      "cites": null
+    },
+    {
+      "reference": "20.8",
+      "parent_reference": "20",
+      "level": "practice",
+      "heading": null,
+      "text": "Where external auditors discover or acquire information during an audit that leads them to believe that the Company or anyone associated with it has committed an indictable offence under any law, they should report this to the Regulator, whether or not such matter is or will be included in the Management Letter issued to the committee responsible for audit and/or the Board.",
+      "sort_order": 2830,
+      "page": 39,
+      "cites": null
+    },
+    {
+      "reference": "Part C",
+      "parent_reference": null,
+      "level": "part",
+      "heading": "Relationship with Shareholders",
+      "text": "",
+      "sort_order": 2840,
+      "page": 40,
+      "cites": null
+    },
+    {
+      "reference": "21",
+      "parent_reference": "Part C",
+      "level": "principle",
+      "heading": "General Meetings",
+      "text": "General Meetings are important platforms for the Board to engage shareholders to facilitate greater understanding of the Company’s business, governance and performance. They provide shareholders with an opportunity to exercise their ownership rights and express their views to the Board on any areas of interest.",
+      "sort_order": 2850,
+      "page": 40,
+      "cites": null
+    },
+    {
+      "reference": "21.1",
+      "parent_reference": "21",
+      "level": "practice",
+      "heading": null,
+      "text": "General Meetings should be conducted in an open manner allowing for free discussions on all issues on the agenda. Sufficient time should be allocated to shareholders, particularly minorities, to participate fully and contribute effectively at such meetings.",
+      "sort_order": 2860,
+      "page": 40,
+      "cites": null
+    },
+    {
+      "reference": "21.2",
+      "parent_reference": "21",
+      "level": "practice",
+      "heading": null,
+      "text": "The chairmen of all Board committees and of the Statutory Audit Committee should be present at General Meetings of the Company to respond to shareholders’ inquiries.",
+      "sort_order": 2870,
+      "page": 40,
+      "cites": null
+    },
+    {
+      "reference": "21.3",
+      "parent_reference": "21",
+      "level": "practice",
+      "heading": null,
+      "text": "The venue of a General Meeting should be accessible to shareholders, to ensure that shareholders are not disenfranchised on account of the choice of venue.",
+      "sort_order": 2880,
+      "page": 40,
+      "cites": null
+    },
+    {
+      "reference": "21.4",
+      "parent_reference": "21",
+      "level": "practice",
+      "heading": null,
+      "text": "Notices of General Meetings shall be at least 21 days from the date on which the meeting will be held. Copies of the annual reports, audited financial statements and all other information pertaining to any resolution to be voted upon – including voting or proxy instructions and relevant papers – that will enable members prepare adequately for the meeting should be despatched along with the notice.",
+      "sort_order": 2890,
+      "page": 40,
+      "cites": null
+    },
+    {
+      "reference": "21.5",
+      "parent_reference": "21",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should ensure that unrelated issues for consideration are not lumped together at General Meetings. All matters to be considered should be clearly and separately set out. Separate resolutions should be proposed and voted on for each substantive issue.",
+      "sort_order": 2900,
+      "page": 40,
+      "cites": null
+    },
+    {
+      "reference": "21.6",
+      "parent_reference": "21",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should ensure that decisions reached at General Meetings are properly and fully implemented as governance directives.",
+      "sort_order": 2910,
+      "page": 40,
+      "cites": null
+    },
+    {
+      "reference": "22",
+      "parent_reference": "Part C",
+      "level": "principle",
+      "heading": "Shareholder Engagement",
+      "text": "The establishment of a system of regular dialogue with shareholders balances their needs, interests and expectations with the objectives of the Company.",
+      "sort_order": 2920,
+      "page": 41,
+      "cites": null
+    },
+    {
+      "reference": "22.1",
+      "parent_reference": "22",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should develop a policy that ensures appropriate engagement with shareholders. The policy should be hosted on the website of the Company.",
+      "sort_order": 2930,
+      "page": 41,
+      "cites": null
+    },
+    {
+      "reference": "22.2",
+      "parent_reference": "22",
+      "level": "practice",
+      "heading": null,
+      "text": "The Chairman of the Board, or other designated persons as specified in the policy referred to in Section 22.1, may interact with shareholders in order to help develop a balanced understanding of shareholder issues and ensure that their views are communicated to the Board.",
+      "sort_order": 2940,
+      "page": 41,
+      "cites": null
+    },
+    {
+      "reference": "22.3",
+      "parent_reference": "22",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should encourage institutional investors to:",
+      "sort_order": 2950,
+      "page": 41,
+      "cites": null
+    },
+    {
+      "reference": "22.3.1",
+      "parent_reference": "22.3",
+      "level": "practice",
+      "heading": null,
+      "text": "Positively influence the standard of corporate governance and promote value creation in the companies in which they invest.",
+      "sort_order": 2960,
+      "page": 41,
+      "cites": null
+    },
+    {
+      "reference": "22.3.2",
+      "parent_reference": "22.3",
+      "level": "practice",
+      "heading": null,
+      "text": "Monitor conformance with the provisions of this Code and raise concerns as appropriate.",
+      "sort_order": 2970,
+      "page": 41,
+      "cites": null
+    },
+    {
+      "reference": "22.4",
+      "parent_reference": "22",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should ensure that dealings of the Company with shareholder associations are always transparent and in the best interest of the Company.",
+      "sort_order": 2980,
+      "page": 41,
+      "cites": null
+    },
+    {
+      "reference": "23",
+      "parent_reference": "Part C",
+      "level": "principle",
+      "heading": "Protection of Shareholder Rights",
+      "text": "Equitable treatment of shareholders and the protection of their statutory and general rights, particularly the interest of minority shareholders, promote good governance.",
+      "sort_order": 2990,
+      "page": 41,
+      "cites": null
+    },
+    {
+      "reference": "23.1",
+      "parent_reference": "23",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should ensure that:",
+      "sort_order": 3000,
+      "page": 41,
+      "cites": null
+    },
+    {
+      "reference": "23.1.1",
+      "parent_reference": "23.1",
+      "level": "practice",
+      "heading": null,
+      "text": "shareholders at annual general meetings preserve their effective powers to appoint and remove Directors of the Company;",
+      "sort_order": 3010,
+      "page": 41,
+      "cites": null
+    },
+    {
+      "reference": "23.1.2",
+      "parent_reference": "23.1",
+      "level": "practice",
+      "heading": null,
+      "text": "all shareholders are treated fairly and equitably. No shareholder, however large his shareholding or whether institutional or otherwise, should be given preferential treatment or superior access to information or other materials;",
+      "sort_order": 3020,
+      "page": 41,
+      "cites": null
+    },
+    {
+      "reference": "23.1.3",
+      "parent_reference": "23.1",
+      "level": "practice",
+      "heading": null,
+      "text": "minority shareholders are adequately protected from abusive actions by controlling shareholders;",
+      "sort_order": 3030,
+      "page": 41,
+      "cites": null
+    },
+    {
+      "reference": "23.1.4",
+      "parent_reference": "23.1",
+      "level": "practice",
+      "heading": null,
+      "text": "the Company promptly renders to shareholders documentary evidence of ownership interest in the Company and related instruments. Where these are rendered electronically, the Board should ensure that they are rendered to shareholders promptly and in a secure manner; and",
+      "sort_order": 3040,
+      "page": 42,
+      "cites": null
+    },
+    {
+      "reference": "23.1.5",
+      "parent_reference": "23.1",
+      "level": "practice",
+      "heading": null,
+      "text": "all shareholders understand the ownership structure of the Company, and support them in this by making available, current information on the ultimate beneficial owners of the major shareholdings or any shareholders owning, controlling or influencing five percent (5%) or more of the Company’s shares.",
+      "sort_order": 3050,
+      "page": 42,
+      "cites": null
+    },
+    {
+      "reference": "23.2",
+      "parent_reference": "23",
+      "level": "practice",
+      "heading": null,
+      "text": "At all times, Directors should act in good faith and with integrity in the best interests of all shareholders, and provide adequate information to shareholders to facilitate their investment decisions.",
+      "sort_order": 3060,
+      "page": 42,
+      "cites": null
+    },
+    {
+      "reference": "Part D",
+      "parent_reference": null,
+      "level": "part",
+      "heading": "Business Conduct and Ethics",
+      "text": "",
+      "sort_order": 3070,
+      "page": 43,
+      "cites": null
+    },
+    {
+      "reference": "24",
+      "parent_reference": "Part D",
+      "level": "principle",
+      "heading": "Business Conduct and Ethics",
+      "text": "The establishment of professional business and ethical standards underscores the values for the protection and enhancement of the reputation of the Company while promoting good conduct and investor confidence.",
+      "sort_order": 3080,
+      "page": 43,
+      "cites": null
+    },
+    {
+      "reference": "24.1",
+      "parent_reference": "24",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should clearly model a top-down commitment to professional business and ethical standards by formulating and periodically reviewing the Code of Business Conduct and Ethics.",
+      "sort_order": 3090,
+      "page": 43,
+      "cites": null
+    },
+    {
+      "reference": "24.2",
+      "parent_reference": "24",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should be responsible for monitoring adherence to the Code of Business Conduct and Ethics to ensure that breaches are effectively sanctioned. This may be delegated to the committee responsible for nomination and governance.",
+      "sort_order": 3100,
+      "page": 43,
+      "cites": null
+    },
+    {
+      "reference": "24.3",
+      "parent_reference": "24",
+      "level": "practice",
+      "heading": null,
+      "text": "The Code of Business Conduct and Ethics should include the following:",
+      "sort_order": 3110,
+      "page": 43,
+      "cites": null
+    },
+    {
+      "reference": "24.3.1",
+      "parent_reference": "24.3",
+      "level": "practice",
+      "heading": null,
+      "text": "Directors and senior management of the Company should act honestly, in good faith and in the best interests of the Company in accordance with legal requirements and agreed ethical standards;",
+      "sort_order": 3120,
+      "page": 43,
+      "cites": null
+    },
+    {
+      "reference": "24.3.2",
+      "parent_reference": "24.3",
+      "level": "practice",
+      "heading": null,
+      "text": "Directors owe a fiduciary duty to the Company, together with a duty of care, skill, diligence and loyalty in fulfilling the functions of their offices and exercising the powers attached to those offices;",
+      "sort_order": 3130,
+      "page": 43,
+      "cites": null
+    },
+    {
+      "reference": "24.3.3",
+      "parent_reference": "24.3",
+      "level": "practice",
+      "heading": null,
+      "text": "Directors should undertake diligent analysis of all proposals placed before the Board and act with the level of skill expected from Directors;",
+      "sort_order": 3140,
+      "page": 43,
+      "cites": null
+    },
+    {
+      "reference": "24.3.4",
+      "parent_reference": "24.3",
+      "level": "practice",
+      "heading": null,
+      "text": "Directors should not make improper or prejudicial use of privileged information and should not disclose non-public information except where disclosure is authorised or legally mandated;",
+      "sort_order": 3150,
+      "page": 43,
+      "cites": null
+    },
+    {
+      "reference": "24.3.5",
+      "parent_reference": "24.3",
+      "level": "practice",
+      "heading": null,
+      "text": "Directors should not take advantage of their position for personal gain or to compete with the Company;",
+      "sort_order": 3160,
+      "page": 43,
+      "cites": null
+    },
+    {
+      "reference": "24.3.6",
+      "parent_reference": "24.3",
+      "level": "practice",
+      "heading": null,
+      "text": "Directors should not engage in conduct likely to discredit the Company, and should encourage fair dealing by all employees with the Company’s customers, suppliers and competitors;",
+      "sort_order": 3170,
+      "page": 43,
+      "cites": null
+    },
+    {
+      "reference": "24.3.7",
+      "parent_reference": "24.3",
+      "level": "practice",
+      "heading": null,
+      "text": "Directors should encourage the reporting of unlawful or unethical behaviours and actively promote ethical behaviours and the protection of those who report violations in good faith; and",
+      "sort_order": 3180,
+      "page": 43,
+      "cites": null
+    },
+    {
+      "reference": "24.3.8",
+      "parent_reference": "24.3",
+      "level": "practice",
+      "heading": null,
+      "text": "Directors, management and other employees shall have an obligation to comply with the principles of the Code of Business Conduct and Ethics at all times.",
+      "sort_order": 3190,
+      "page": 44,
+      "cites": null
+    },
+    {
+      "reference": "24.4",
+      "parent_reference": "24",
+      "level": "practice",
+      "heading": null,
+      "text": "The Code of Business Conduct and Ethics should:\n(a) commit the Company, its Board, management and other employees, contractors, suppliers (under contractual terms) and other company-controlled entities to the highest standards of professional and ethical behaviour, business conduct and sustainable business practices;\n(b) be designed with due consideration of the interests of the Company, its management and employees;\n(c) receive its implementation commitment from the MD/CEO and executive management;\n(d) be sufficiently detailed as to give clear guidance to users; and\n(e) be formally communicated to all persons to whom it applies.",
+      "sort_order": 3200,
+      "page": 44,
+      "cites": null
+    },
+    {
+      "reference": "24.5",
+      "parent_reference": "24",
+      "level": "practice",
+      "heading": null,
+      "text": "Companies are encouraged to explore formal mechanisms for engagement and communication with stakeholders, including the use of alternative dispute resolution mechanisms and associated processes.",
+      "sort_order": 3210,
+      "page": 44,
+      "cites": null
+    },
+    {
+      "reference": "25",
+      "parent_reference": "Part D",
+      "level": "principle",
+      "heading": "Ethical Culture",
+      "text": "The establishment of policies and mechanisms for monitoring insider trading, related party transactions, conflict of interest and other corrupt activities, mitigates the adverse effects of these abuses on the Company and promotes good ethical conduct and investor confidence.",
+      "sort_order": 3220,
+      "page": 44,
+      "cites": null
+    },
+    {
+      "reference": "25.1",
+      "parent_reference": "25",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should ensure:",
+      "sort_order": 3230,
+      "page": 44,
+      "cites": null
+    },
+    {
+      "reference": "25.1.1",
+      "parent_reference": "25.1",
+      "level": "practice",
+      "heading": null,
+      "text": "The establishment of policies on insider trading, related party transactions and conflict of interest.",
+      "sort_order": 3240,
+      "page": 44,
+      "cites": null
+    },
+    {
+      "reference": "25.1.2",
+      "parent_reference": "25.1",
+      "level": "practice",
+      "heading": null,
+      "text": "That insiders are precluded from buying and selling any security in breach of their fiduciary duty and other relationship of trust and confidence while in possession of material, privileged, non-public and price-sensitive information about the Company.",
+      "sort_order": 3250,
+      "page": 44,
+      "cites": null
+    },
+    {
+      "reference": "25.1.3",
+      "parent_reference": "25.1",
+      "level": "practice",
+      "heading": null,
+      "text": "That insiders are precluded from engaging in unlawful or improper transfers of assets and profits out of companies for their personal benefits or for the benefit of those who control the companies.",
+      "sort_order": 3260,
+      "page": 44,
+      "cites": null
+    },
+    {
+      "reference": "25.1.4",
+      "parent_reference": "25.1",
+      "level": "practice",
+      "heading": null,
+      "text": "The disclosure of all transactions between related parties, whether natural persons or bodies corporate, including whether such transactions have been executed at arm’s length and on normal market terms. This disclosure should be made prior to the conclusion of the transaction, if they exceed a disclosure threshold as determined by the Board.",
+      "sort_order": 3270,
+      "page": 45,
+      "cites": null
+    },
+    {
+      "reference": "25.2",
+      "parent_reference": "25",
+      "level": "practice",
+      "heading": null,
+      "text": "The policy on conflict of interest should be communicated, supported and monitored to provide reasonable assurance that all potential conflict of interest situations will be disclosed. The policy should be guided by the following:",
+      "sort_order": 3280,
+      "page": 45,
+      "cites": null
+    },
+    {
+      "reference": "25.2.1",
+      "parent_reference": "25.2",
+      "level": "practice",
+      "heading": null,
+      "text": "Directors should promptly disclose any real or potential conflict of interest that they may have by virtue of their membership of the Board.",
+      "sort_order": 3290,
+      "page": 45,
+      "cites": null
+    },
+    {
+      "reference": "25.2.2",
+      "parent_reference": "25.2",
+      "level": "practice",
+      "heading": null,
+      "text": "A Director may not be present during the time any matter in which he has an interest is being decided and should not seek to participate or influence any discussions or negotiations relating to that matter.",
+      "sort_order": 3300,
+      "page": 45,
+      "cites": null
+    },
+    {
+      "reference": "25.2.3",
+      "parent_reference": "25.2",
+      "level": "practice",
+      "heading": null,
+      "text": "If a Director is not certain whether he is in a conflict of interest situation, the Director concerned should discuss the matter with the Chairman of the Board, the Company Secretary or the chairman of the committee responsible for nomination and governance for advice and guidance.",
+      "sort_order": 3310,
+      "page": 45,
+      "cites": null
+    },
+    {
+      "reference": "25.2.4",
+      "parent_reference": "25.2",
+      "level": "practice",
+      "heading": null,
+      "text": "If any question arises before the Board as to the existence of a real or perceived conflict, the Board should by a simple majority determine if a conflict exists. The Director or Directors potentially in the conflict of interest situation should not be present during any discussion and voting on the issue.",
+      "sort_order": 3320,
+      "page": 45,
+      "cites": null
+    },
+    {
+      "reference": "25.2.5",
+      "parent_reference": "25.2",
+      "level": "practice",
+      "heading": null,
+      "text": "Directors who are aware of a real, potential or perceived conflict of interest on the part of a fellow Director, have a responsibility to raise the issue promptly for clarification, either with the Director concerned, the Chairman of the Board or the chairman of the committee responsible for nomination and governance.",
+      "sort_order": 3330,
+      "page": 45,
+      "cites": null
+    },
+    {
+      "reference": "25.2.6",
+      "parent_reference": "25.2",
+      "level": "practice",
+      "heading": null,
+      "text": "Disclosure by a Director of a real, potential or perceived conflict of interest or a decision by the Board as to whether or not a conflict of interest exists should be recorded in the minutes of the meeting.",
+      "sort_order": 3340,
+      "page": 45,
+      "cites": null
+    },
+    {
+      "reference": "25.2.7",
+      "parent_reference": "25.2",
+      "level": "practice",
+      "heading": null,
+      "text": "All directors should declare any conflict of interest on appointment and annually thereafter. In the event that they become aware of any potential conflict of interest at any other point, they should disclose this to the Board at the first possible opportunity. Actions following disclosure should be subject to the Company’s conflict of interest policy.",
+      "sort_order": 3350,
+      "page": 45,
+      "cites": null
+    },
+    {
+      "reference": "25.2.8",
+      "parent_reference": "25.2",
+      "level": "practice",
+      "heading": null,
+      "text": "No person who has served at directorate level or above, leaving the services of a relevant regulatory institution, for any reason, should be appointed as a Director or top management staff of an institution that has been directly supervised or regulated by the said regulatory institution until after three years of the disengagement of such executive or senior management staff from that regulatory institution.",
+      "sort_order": 3360,
+      "page": 46,
+      "cites": null
+    },
+    {
+      "reference": "Part E",
+      "parent_reference": null,
+      "level": "part",
+      "heading": "Sustainability",
+      "text": "",
+      "sort_order": 3370,
+      "page": 47,
+      "cites": null
+    },
+    {
+      "reference": "26",
+      "parent_reference": "Part E",
+      "level": "principle",
+      "heading": "Sustainability",
+      "text": "Paying adequate attention to sustainability issues including environment, social, occupational and community health and safety ensures successful long term business performance and projects the Company as a responsible corporate citizen contributing to economic development.",
+      "sort_order": 3380,
+      "page": 47,
+      "cites": null
+    },
+    {
+      "reference": "26.1",
+      "parent_reference": "26",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should establish policies and practices regarding its social, ethical, safety, working conditions, health and environmental responsibilities as well as policies addressing corruption.",
+      "sort_order": 3390,
+      "page": 47,
+      "cites": null
+    },
+    {
+      "reference": "26.2",
+      "parent_reference": "26",
+      "level": "practice",
+      "heading": null,
+      "text": "The policies should include the following:",
+      "sort_order": 3400,
+      "page": 47,
+      "cites": null
+    },
+    {
+      "reference": "26.2.1",
+      "parent_reference": "26.2",
+      "level": "practice",
+      "heading": null,
+      "text": "the Company’s business principles, practices and efforts towards achieving sustainability;",
+      "sort_order": 3410,
+      "page": 47,
+      "cites": null
+    },
+    {
+      "reference": "26.2.2",
+      "parent_reference": "26.2",
+      "level": "practice",
+      "heading": null,
+      "text": "the management of safety issues including workplace accidents, fatalities, occupational and safety incidents;",
+      "sort_order": 3420,
+      "page": 47,
+      "cites": null
+    },
+    {
+      "reference": "26.2.3",
+      "parent_reference": "26.2",
+      "level": "practice",
+      "heading": null,
+      "text": "plans and strategy for addressing and managing the impact of serious diseases on the Company’s employees and their families;",
+      "sort_order": 3430,
+      "page": 47,
+      "cites": null
+    },
+    {
+      "reference": "26.2.4",
+      "parent_reference": "26.2",
+      "level": "practice",
+      "heading": null,
+      "text": "the most environmentally beneficial options particularly for companies operating in disadvantaged regions or in regions with delicate ecology, in order to minimise environmental impact of the Company’s operations;",
+      "sort_order": 3440,
+      "page": 47,
+      "cites": null
+    },
+    {
+      "reference": "26.2.5",
+      "parent_reference": "26.2",
+      "level": "practice",
+      "heading": null,
+      "text": "the nature and extent of employment equity and diversity (gender and other issues);",
+      "sort_order": 3450,
+      "page": 47,
+      "cites": null
+    },
+    {
+      "reference": "26.2.6",
+      "parent_reference": "26.2",
+      "level": "practice",
+      "heading": null,
+      "text": "training initiatives, employee development and the associated financial investment;",
+      "sort_order": 3460,
+      "page": 47,
+      "cites": null
+    },
+    {
+      "reference": "26.2.7",
+      "parent_reference": "26.2",
+      "level": "practice",
+      "heading": null,
+      "text": "opportunities created for physically challenged persons or disadvantaged individuals;",
+      "sort_order": 3470,
+      "page": 47,
+      "cites": null
+    },
+    {
+      "reference": "26.2.8",
+      "parent_reference": "26.2",
+      "level": "practice",
+      "heading": null,
+      "text": "the environmental, social and governance principles and practices of the Company; and",
+      "sort_order": 3480,
+      "page": 47,
+      "cites": null
+    },
+    {
+      "reference": "26.2.9",
+      "parent_reference": "26.2",
+      "level": "practice",
+      "heading": null,
+      "text": "corruption and related issues.",
+      "sort_order": 3490,
+      "page": 47,
+      "cites": null
+    },
+    {
+      "reference": "26.3",
+      "parent_reference": "26",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should monitor the implementation of sustainability policies and report on the extent of compliance with the policies.",
+      "sort_order": 3500,
+      "page": 47,
+      "cites": null
+    },
+    {
+      "reference": "Part F",
+      "parent_reference": null,
+      "level": "part",
+      "heading": "Transparency",
+      "text": "",
+      "sort_order": 3510,
+      "page": 48,
+      "cites": null
+    },
+    {
+      "reference": "27",
+      "parent_reference": "Part F",
+      "level": "principle",
+      "heading": "Stakeholder Communication",
+      "text": "Communicating and interacting with stakeholders keeps them conversant with the activities of the Company and assists them in making informed decisions.",
+      "sort_order": 3520,
+      "page": 48,
+      "cites": null
+    },
+    {
+      "reference": "27.1",
+      "parent_reference": "27",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should adopt and implement a stakeholder management and communication policy.",
+      "sort_order": 3530,
+      "page": 48,
+      "cites": null
+    },
+    {
+      "reference": "27.2",
+      "parent_reference": "27",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should ensure that the reports and other communication issued to stakeholders are in clear and easily understood language and are posted on the Company’s web portal. This information may include description of structures of the Board and management among others, frameworks, policies and other material information about the Company.",
+      "sort_order": 3540,
+      "page": 48,
+      "cites": null
+    },
+    {
+      "reference": "27.3",
+      "parent_reference": "27",
+      "level": "practice",
+      "heading": null,
+      "text": "Communication with stakeholders and the general public should be governed by the principle of timely, accurate and continuous disclosure of material information on the activities of the Company so as to give a balanced and fair view of the Company, including its non-financial matters.",
+      "sort_order": 3550,
+      "page": 48,
+      "cites": null
+    },
+    {
+      "reference": "27.4",
+      "parent_reference": "27",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should establish an investors’ portal on the Company’s website, where the communication policy as well as the Company’s annual reports for a minimum of five immediately preceding years and other relevant information about the Company should be published and made accessible to the public in downloadable format.",
+      "sort_order": 3560,
+      "page": 48,
+      "cites": null
+    },
+    {
+      "reference": "28",
+      "parent_reference": "Part F",
+      "level": "principle",
+      "heading": "Disclosures",
+      "text": "Full and comprehensive disclosure of all matters material to investors and stakeholders, and of matters set out in this Code, ensures proper monitoring of its implementation which engenders good corporate governance practice.",
+      "sort_order": 3570,
+      "page": 48,
+      "cites": null
+    },
+    {
+      "reference": "28.1",
+      "parent_reference": "28",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should ensure that the Company’s annual report includes a corporate governance report that provides clear information on the Company’s governance structures, policies and practices as well as environmental and social risks and opportunities.",
+      "sort_order": 3580,
+      "page": 48,
+      "cites": null
+    },
+    {
+      "reference": "28.2",
+      "parent_reference": "28",
+      "level": "practice",
+      "heading": null,
+      "text": "The Company’s corporate governance report should include the following:\n(a) composition of the Board of Directors, stating the names and classification of the Chairman, the MD/CEO, EDs and NEDs as well as INEDs. This information should also be on the Company’s website and other publications of the Company;\n(b) the plan for achieving gender diversity set by the Board in accordance with its diversity policy, the progress towards achieving them and the proportion of women employees in the whole organisation, including women in executive management positions and women on the Board;\n(c) Board appointment process including a summary statement on induction and training of Board members;\n(d) evaluation process for the Board, its Committees and individual Directors as well as the assessment of the corporate governance practices in the Company;\n(e) Directors standing for re-election;\n(f) composition of Board committees including names of chairmen and members of each committee;\n(g) description of the roles and responsibilities of the Board committees and how the committees have discharged those responsibilities;\n(h) the number of meetings held by the Board and its committees during the year and the attendance of individual Directors at those meetings;\n(i) cumulative years of service of each Director, the external auditor and the external consultant who performs the Board Evaluation or Corporate Governance Evaluation at the end of the reporting period;\n(j) statement on the availability or otherwise of the Code of Business Conduct and Ethics for Directors, management and other employees;\n(k) highlights of human resource policies and internal management structure, including relations with employees, employee share-ownership schemes and other workplace development initiatives;\n(l) highlights of sustainability policies and programmes covering social issues such as corruption, community service, including environmental protection, serious diseases and matters of general environmental, social and governance (ESG) initiatives;\n(m) highlights of the policy and cases of clawback being pursued by the Company; and\n(n) a list of all the fines and penalties (including date, amount, and subject matter) imposed on the Company by regulators at the end of the reporting period.",
+      "sort_order": 3590,
+      "page": 48,
+      "cites": null
+    },
+    {
+      "reference": "28.3",
+      "parent_reference": "28",
+      "level": "practice",
+      "heading": null,
+      "text": "The report should specify the nature of any related party relationships and transactions as follows:",
+      "sort_order": 3600,
+      "page": 50,
+      "cites": null
+    },
+    {
+      "reference": "28.3.1",
+      "parent_reference": "28.3",
+      "level": "practice",
+      "heading": null,
+      "text": "their purpose and financial magnitude necessary to understand whether the transactions have been at arm’s length and that the Company has not suffered any loss or disadvantage from such transactions.",
+      "sort_order": 3610,
+      "page": 50,
+      "cites": null
+    },
+    {
+      "reference": "28.3.2",
+      "parent_reference": "28.3",
+      "level": "practice",
+      "heading": null,
+      "text": "any Director’s interest in contracts either directly or indirectly with the Company or its subsidiaries and holding companies.",
+      "sort_order": 3620,
+      "page": 50,
+      "cites": null
+    },
+    {
+      "reference": "28.3.3",
+      "parent_reference": "28.3",
+      "level": "practice",
+      "heading": null,
+      "text": "the name of the Director, his classification, the nature and details of the transaction and the Director’s interest therein: provided that the disclosures required do not include the Director’s service contract.",
+      "sort_order": 3630,
+      "page": 50,
+      "cites": null
+    },
+    {
+      "reference": "28.3.4",
+      "parent_reference": "28.3",
+      "level": "practice",
+      "heading": null,
+      "text": "any contracts with controlling shareholder(s), their group networks and associates.",
+      "sort_order": 3640,
+      "page": 50,
+      "cites": null
+    },
+    {
+      "reference": "28.3.5",
+      "parent_reference": "28.3",
+      "level": "practice",
+      "heading": null,
+      "text": "The names of the parties and the nature of the transaction, and the value (monetary or other value) involved in the transaction.",
+      "sort_order": 3650,
+      "page": 50,
+      "cites": null
+    },
+    {
+      "reference": "28.4",
+      "parent_reference": "28",
+      "level": "practice",
+      "heading": null,
+      "text": "The Board should use its best judgment to disclose any material matter even though not specifically required by this Code to be disclosed if in the opinion of the Board such matter is capable of affecting the present or anticipated financial condition of the Company or its status as a going concern. The onus of proof of such possible negative effect is on the Board.",
+      "sort_order": 3660,
+      "page": 50,
+      "cites": null
+    },
+    {
+      "reference": "28.5",
+      "parent_reference": "28",
+      "level": "practice",
+      "heading": null,
+      "text": "The annual report should contain a statement by the Board on the Company’s level of application of this Code arising from the results of its corporate governance evaluation.",
+      "sort_order": 3670,
+      "page": 50,
+      "cites": null
+    },
+    {
+      "reference": "28.6",
+      "parent_reference": "28",
+      "level": "practice",
+      "heading": null,
+      "text": "Where the Board has engaged independent experts in evaluating and reporting on the extent of application of this Code, they should name the consultant and include a summary of the report (provided by the consultant) in the Company’s annual report.",
+      "sort_order": 3680,
+      "page": 50,
+      "cites": null
+    },
+    {
+      "reference": "28.7",
+      "parent_reference": "28",
+      "level": "practice",
+      "heading": null,
+      "text": "A Director who has serious concerns about the activities of a Company should ensure that the following are promptly raised to the Board for resolution:\na. (a) any unreported cases of conflict of interest, insider trading, related party transactions, fraud or any illegal or suspected illegal activities;\n(b) the impairment of the external auditor’s independence and objectivity, or failure to approach his work with an acceptable degree of professional scepticism;\n(c) any violation of this Code, extant laws and regulations, and disregard for accounting standards, auditing standards or financial reporting requirements;\n(d) the impairment of the independence of the Board or any of its committees; or\n(e) condoning of unethical behaviour and conduct in the Company.",
+      "sort_order": 3690,
+      "page": 50,
+      "cites": null
+    },
+    {
+      "reference": "28.8",
+      "parent_reference": "28",
+      "level": "practice",
+      "heading": null,
+      "text": "The annual report should contain a statement by the Board on the Company’s ESG activities. This should be reviewed by an appropriate Board committee and may be subject to independent review.",
+      "sort_order": 3700,
+      "page": 51,
+      "cites": null
+    },
+    {
+      "reference": "28.9",
+      "parent_reference": "28",
+      "level": "practice",
+      "heading": null,
+      "text": "The Company should establish policies and procedures for the identification, communication and response to concerns from stakeholders.\na.",
+      "sort_order": 3710,
+      "page": 51,
+      "cites": null
+    },
+    {
+      "reference": "Part G",
+      "parent_reference": null,
+      "level": "part",
+      "heading": "Definitions",
+      "text": "",
+      "sort_order": 3720,
+      "page": 52,
+      "cites": null
+    },
+    {
+      "reference": "29",
+      "parent_reference": "Part G",
+      "level": "principle",
+      "heading": "Definitions",
+      "text": "",
+      "sort_order": 3730,
+      "page": 52,
+      "cites": null
+    },
+    {
+      "reference": "29.1",
+      "parent_reference": "29",
+      "level": "practice",
+      "heading": null,
+      "text": "In this Code, unless the context otherwise requires:",
+      "sort_order": 3740,
+      "page": 52,
+      "cites": null
+    },
+    {
+      "reference": "29.1.1",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“chief financial officer” means a person appointed as the chief financial officer of a Company by whatever name designated;",
+      "sort_order": 3750,
+      "page": 52,
+      "cites": null
+    },
+    {
+      "reference": "29.1.2",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“close family member” means those persons who may be expected to influence, or be influenced by, that person in his dealing with a Company;",
+      "sort_order": 3760,
+      "page": 52,
+      "cites": null
+    },
+    {
+      "reference": "29.1.3",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“Company” means a Company incorporated under the Companies and Allied Matters Act, Cap. C20, Laws of the Federation of Nigeria 2004;",
+      "sort_order": 3770,
+      "page": 52,
+      "cites": null
+    },
+    {
+      "reference": "29.1.4",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“concessioned” or “privatised” companies means companies hitherto owned or operated by a government (Federal or State) and ceded or sold to private investors;",
+      "sort_order": 3780,
+      "page": 52,
+      "cites": null
+    },
+    {
+      "reference": "29.1.5",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“control” refers to a situation where a person is exposed, or has rights, to variable returns from his involvement with a Company and has the ability to affect those returns through his powers over the Company;",
+      "sort_order": 3790,
+      "page": 52,
+      "cites": null
+    },
+    {
+      "reference": "29.1.6",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“corporate citizenship” means the social responsibility of businesses and the extent to which they meet legal, ethical, economic and environmental responsibilities;",
+      "sort_order": 3800,
+      "page": 52,
+      "cites": null
+    },
+    {
+      "reference": "29.1.7",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“detriment” includes dismissal, termination, demotion, retirement, redundancy, undue influence, duress, withholding of benefits and/or entitlements, blacklisting, withdrawal of patronage and any other act that has a negative impact on the whistle-blower;",
+      "sort_order": 3810,
+      "page": 52,
+      "cites": null
+    },
+    {
+      "reference": "29.1.8",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“Director” means a person duly appointed by the Company to direct and manage the affairs of the Company;",
+      "sort_order": 3820,
+      "page": 52,
+      "cites": null
+    },
+    {
+      "reference": "29.1.9",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“ethics” means moral principles that govern a person’s behaviour or the conduct of an activity;",
+      "sort_order": 3830,
+      "page": 52,
+      "cites": null
+    },
+    {
+      "reference": "29.1.10",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“executive management” means the Chief Executive Officer and other persons having authority and responsibility for planning, directing and controlling the day-to-day activities of the Company, whether or not they are members of the Board of Directors of the Company;",
+      "sort_order": 3840,
+      "page": 52,
+      "cites": null
+    },
+    {
+      "reference": "29.1.11",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“extant laws” means any law or statute in force in the Federal Republic of Nigeria;",
+      "sort_order": 3850,
+      "page": 52,
+      "cites": null
+    },
+    {
+      "reference": "29.1.12",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“financial expert” means a person who understands and interprets generally accepted accounting principles and financial statements;",
+      "sort_order": 3860,
+      "page": 52,
+      "cites": null
+    },
+    {
+      "reference": "29.1.13",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“financial literacy” means the possession of the basic set of skills and knowledge that allows an individual to understand financial statements to make effective and informed decisions;",
+      "sort_order": 3870,
+      "page": 53,
+      "cites": null
+    },
+    {
+      "reference": "29.1.14",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“general meeting” includes the Annual General Meeting, Statutory Meeting and the Extraordinary General Meeting;",
+      "sort_order": 3880,
+      "page": 53,
+      "cites": null
+    },
+    {
+      "reference": "29.1.15",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“insider” means the following:\n(a) any person who is connected with the Company in one or more of the following capacities:\n(i) a Director of the Company or a related Company;\n(ii) an officer of the Company or a related Company;\n(iii) an employee of the Company or a related Company;\n(iv) any shareholder of the Company who owns five percent (5%) or more of any class of securities or any person who is or can be deemed to have any relationship with the Company or member;\n(v) members of the statutory audit committee of a Company; and\n(vi) any person involved in a professional or business relationship who has access to inside information by virtue of his relationship to ( i) to (v) above.\n(b) any of the persons listed in paragraph (a), who by virtue of having been connected with any such person or connected with the Company in any other way, possesses unpublished price-sensitive information in relation to the securities of the Company, and any reference to unpublished price-sensitive information in relation to any securities of a Company is a reference to information which:\n(i) relates to specific matters relating or of concern (directly or indirectly) to that Company, that is, is not of a general nature relating or of concern to that Company; and\n(ii) is not generally known to those persons who are accustomed to or would be likely to deal in those securities but which would, if it were generally known to them be likely materially to affect the price of those securities;",
+      "sort_order": 3890,
+      "page": 53,
+      "cites": null
+    },
+    {
+      "reference": "29.1.16",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“joint control” refers to a situation where more than one person, working together, exercise control over a Company;",
+      "sort_order": 3900,
+      "page": 53,
+      "cites": null
+    },
+    {
+      "reference": "29.1.17",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“listed Company” means a Company which has any of its securities listed on any recognised stock exchange;",
+      "sort_order": 3910,
+      "page": 53,
+      "cites": null
+    },
+    {
+      "reference": "29.1.18",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“Managing Director/Chief Executive Officer” means the head of Management delegated by the Board to run the Company;",
+      "sort_order": 3920,
+      "page": 54,
+      "cites": null
+    },
+    {
+      "reference": "29.1.19",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“regulator” or “regulatory authority” means the Financial Reporting Council of Nigeria and other sectoral regulators as may be appropriate;",
+      "sort_order": 3930,
+      "page": 54,
+      "cites": null
+    },
+    {
+      "reference": "29.1.20",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“regulated private companies” means private companies that file returns to any regulatory authority other than the Federal Inland Revenue Service and the Corporate Affairs Commission;",
+      "sort_order": 3940,
+      "page": 54,
+      "cites": null
+    },
+    {
+      "reference": "29.1.21",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“related party/company” means a person or Company that is related to the Company that is preparing its financial statements.\na. A person or a close member of that person’s family is related to a reporting Company if that person:\ni. has control or joint control of the reporting Company;\nii. has significant influence over the reporting Company; or\niii. is a member of the key management personnel of the reporting Company or of a parent of the reporting Company\nb. An entity is related to a reporting Company if any of the conditions in IAS 24 applies.",
+      "sort_order": 3950,
+      "page": 54,
+      "cites": null
+    },
+    {
+      "reference": "29.1.22",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“significant influence” refers to the power to participate in the financial and operating policy decisions of a Company, but not control them;",
+      "sort_order": 3960,
+      "page": 54,
+      "cites": null
+    },
+    {
+      "reference": "29.1.23",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“significant shareholder” means a person whose shareholding, directly or indirectly, consists of at least five percent (5%) of the Company’s paid up capital or voting rights;",
+      "sort_order": 3970,
+      "page": 54,
+      "cites": null
+    },
+    {
+      "reference": "29.1.24",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“stakeholder” includes shareholders, employees, analysts, creditors, customers, regulators, vendors, host community, non-governmental organisations and government;",
+      "sort_order": 3980,
+      "page": 54,
+      "cites": null
+    },
+    {
+      "reference": "29.1.25",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“Statutory Audit Committee” refers to the committee responsible for audit, which public companies are required to constitute by extant laws;",
+      "sort_order": 3990,
+      "page": 54,
+      "cites": null
+    },
+    {
+      "reference": "29.1.26",
+      "parent_reference": "29.1",
+      "level": "practice",
+      "heading": null,
+      "text": "“whistle-blower” means any person(s) including the employee, management, Directors, customers, service providers, creditors and other stakeholder(s) of a Company who report any form of unethical behaviour or violations of laws and regulations to the appropriate internal authority or regulators.",
+      "sort_order": 4000,
+      "page": 54,
+      "cites": null
+    },
+    {
+      "reference": "29.2",
+      "parent_reference": "29",
+      "level": "practice",
+      "heading": null,
+      "text": "In this Code:",
+      "sort_order": 4010,
+      "page": 55,
+      "cites": null
+    },
+    {
+      "reference": "29.2.1",
+      "parent_reference": "29.2",
+      "level": "practice",
+      "heading": null,
+      "text": "words importing the masculine gender include females; and",
+      "sort_order": 4020,
+      "page": 55,
+      "cites": null
+    },
+    {
+      "reference": "29.2.2",
+      "parent_reference": "29.2",
+      "level": "practice",
+      "heading": null,
+      "text": "words in the singular include the plural and words in the plural include the singular.",
+      "sort_order": 4030,
+      "page": 55,
+      "cites": null
+    }
+  ]
+}
