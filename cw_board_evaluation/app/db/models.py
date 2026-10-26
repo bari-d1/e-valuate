@@ -19,11 +19,13 @@ Note:
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Dict, Optional
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
+    Date,
     DateTime,
     ForeignKey,
     Index,
@@ -729,4 +731,200 @@ class Response(Base):
         Index("ix_responses_evaluation", "evaluation_id"),
         Index("ix_responses_question", "question_id"),
         Index("ix_responses_participant", "participant_id"),
+    )
+
+
+# ----------------------------
+# Governance code library
+# ----------------------------
+
+class GovernanceCode(Base):
+    """
+    One edition of a corporate governance code (e.g. NCCG_2018). A new edition
+    is a new row with a new code, never an overwrite, so evaluations can record
+    exactly which version they used.
+    """
+
+    __tablename__ = "governance_codes"
+
+    code: Mapped[str] = mapped_column(String(32), primary_key=True)  # e.g. "NCCG_2018"
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    issuer: Mapped[str] = mapped_column(String(255), nullable=False)
+    jurisdiction: Mapped[str] = mapped_column(String(8), nullable=False, default="NG")
+
+    # NULL = cross-sector (e.g. NCCG)
+    sector: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+
+    version: Mapped[str] = mapped_column(String(32), nullable=False)
+    issued_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    effective_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+
+    # "current" | "historical" | "superseded"
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="current")
+
+    # Sector guidelines that are read together with a base code (e.g. NAICOM -> NCCG)
+    supplements_code: Mapped[Optional[str]] = mapped_column(
+        String(32),
+        ForeignKey("governance_codes.code", ondelete="RESTRICT"),
+        nullable=True,
+    )
+
+    source_filename: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    clauses_loaded: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('current', 'historical', 'superseded')",
+            name="ck_governance_codes_status",
+        ),
+    )
+
+
+class GovernanceClause(Base):
+    """
+    A numbered clause of a governance code, as printed (e.g. NCCG "2.7",
+    "11.1.6"; NAICOM "2.01"). Hierarchy via parent_id:
+      NCCG:   part > principle > practice (> practice)
+      NAICOM: section > subsection
+    """
+
+    __tablename__ = "governance_clauses"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    code: Mapped[str] = mapped_column(
+        String(32),
+        ForeignKey("governance_codes.code", ondelete="CASCADE"),
+        nullable=False,
+    )
+    reference: Mapped[str] = mapped_column(String(32), nullable=False)
+    parent_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("governance_clauses.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+
+    # "part" | "principle" | "practice" | "section" | "subsection"
+    level: Mapped[str] = mapped_column(String(16), nullable=False)
+    heading: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    text: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    # A clause in another code this one builds on ("In addition to Principle 2.7 of the NCCG 2018")
+    cites_clause_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("governance_clauses.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    theme_code: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        ForeignKey("themes.code", ondelete="RESTRICT"),
+        nullable=True,
+    )
+
+    subject_type_links: Mapped[list["GovernanceClauseSubjectType"]] = relationship(
+        back_populates="clause",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        order_by="GovernanceClauseSubjectType.subject_type_code",
+    )
+
+    @property
+    def subject_type_codes(self) -> list[str]:
+        return [link.subject_type_code for link in self.subject_type_links]
+
+    __table_args__ = (
+        UniqueConstraint("code", "reference", name="uq_governance_clause_code_reference"),
+        CheckConstraint(
+            "level IN ('part', 'principle', 'practice', 'section', 'subsection')",
+            name="ck_governance_clauses_level",
+        ),
+        Index("ix_governance_clauses_code_sort", "code", "sort_order"),
+        Index("ix_governance_clauses_parent", "parent_id"),
+        Index("ix_governance_clauses_theme", "theme_code"),
+    )
+
+
+class GovernanceClauseSubjectType(Base):
+    """Join table: which subject types a governance clause applies to."""
+
+    __tablename__ = "governance_clause_subject_types"
+
+    clause_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("governance_clauses.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    subject_type_code: Mapped[str] = mapped_column(
+        String(32),
+        ForeignKey("subject_types.code", ondelete="RESTRICT"),
+        primary_key=True,
+    )
+
+    clause: Mapped["GovernanceClause"] = relationship(back_populates="subject_type_links")
+
+    __table_args__ = (
+        Index("ix_governance_clause_subject_types_subject_type", "subject_type_code"),
+    )
+
+
+class SectorCodeDefault(Base):
+    """Which governance codes apply by default to a sector (optionally a sub-type)."""
+
+    __tablename__ = "sector_code_defaults"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    sector: Mapped[str] = mapped_column(String(64), nullable=False)  # normalised key, e.g. "insurance"
+    sub_type: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)  # e.g. "microfinance"
+    code: Mapped[str] = mapped_column(
+        String(32),
+        ForeignKey("governance_codes.code", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "sector", "sub_type", "code",
+            name="uq_sector_code_default",
+            postgresql_nulls_not_distinct=True,
+        ),
+        Index("ix_sector_code_defaults_sector", "sector"),
+    )
+
+
+class EvaluationGovernanceCode(Base):
+    """
+    The governance codes an evaluation is assessed against. Linking the
+    specific code row (e.g. NCCG_2018) records which edition was used.
+    """
+
+    __tablename__ = "evaluation_governance_codes"
+
+    evaluation_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("evaluations.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    code: Mapped[str] = mapped_column(
+        String(32),
+        ForeignKey("governance_codes.code", ondelete="RESTRICT"),
+        primary_key=True,
+    )
+
+    # "sector_default" | "manual"
+    source: Mapped[str] = mapped_column(String(16), nullable=False, default="manual")
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "source IN ('sector_default', 'manual')",
+            name="ck_evaluation_governance_codes_source",
+        ),
     )
