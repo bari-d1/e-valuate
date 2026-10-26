@@ -28,6 +28,7 @@ pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE = "2fb54b7b8545"
 TAGS_REVISION = "5e64dd55411f"  # question tags, before the backfill
+SUBJECTS_REVISION = "cd3b2611fb3d"  # evaluation_subjects
 
 
 def _integration_enabled() -> bool:
@@ -81,8 +82,8 @@ NEW_TABLES = {"subject_types", "themes", "evidence_sources", "question_subject_t
 
 def test_upgrade_downgrade_upgrade(migration_db) -> None:
     cfg, engine = migration_db
-    head = ScriptDirectory.from_config(cfg).get_current_head()
-    previous = ScriptDirectory.from_config(cfg).get_revision(head).down_revision
+    # Named revisions (not "head - 1") so later migrations don't change what this tests.
+    previous = ScriptDirectory.from_config(cfg).get_revision(SUBJECTS_REVISION).down_revision
 
     command.upgrade(cfg, "head")
     assert NEW_TABLES <= _tables(engine)

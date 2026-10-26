@@ -1,0 +1,344 @@
+{
+  "code": "NAICOM_2021",
+  "source_filename": "NAICOM-CORPORATE-GOVERNANCE-GUIDELINES.pdf",
+  "source_sha256": "96e1fb941df8df14f2441a66d12d97f44d88c83ba15c905705bcf4c83a0dbc4b",
+  "extracted_with": "scripts/governance/extract_clauses.py (PyMuPDF)",
+  "clause_count": 21,
+  "checks": {
+    "toc": {
+      "entries": 21
+    },
+    "extracted": {
+      "sections": 13,
+      "subsections": 8
+    },
+    "counts_by_section": {
+      "1.0": {
+        "heading": "INTRODUCTION",
+        "subsections": 0
+      },
+      "2.0": {
+        "heading": "BOARD OF DIRECTORS AND MANAGEMENT",
+        "subsections": 8
+      },
+      "3.0": {
+        "heading": "Induction and Continuing Education for Board Members",
+        "subsections": 0
+      },
+      "4.0": {
+        "heading": "Board Evaluation",
+        "subsections": 0
+      },
+      "5.0": {
+        "heading": "Internal Audit",
+        "subsections": 0
+      },
+      "6.0": {
+        "heading": "External Auditors",
+        "subsections": 0
+      },
+      "7.0": {
+        "heading": "Conflict of Interest",
+        "subsections": 0
+      },
+      "8.0": {
+        "heading": "Rights of the Shareholders",
+        "subsections": 0
+      },
+      "9.0": {
+        "heading": "Business Conduct & Ethics",
+        "subsections": 0
+      },
+      "10.0": {
+        "heading": "Disclosure Requirements",
+        "subsections": 0
+      },
+      "11.0": {
+        "heading": "Whistle Blowing",
+        "subsections": 0
+      },
+      "12.0": {
+        "heading": "Enforcement and Sanctions",
+        "subsections": 0
+      },
+      "13.0": {
+        "heading": "Scope and Effective Date of the Guidelines",
+        "subsections": 0
+      }
+    },
+    "toc_mismatches": [
+      {
+        "toc": "2.01 Structure and Composition of Board",
+        "extracted": "Structure and Composition of the Board",
+        "issue": "heading differs"
+      },
+      {
+        "toc": "2.04 Responsibility of the Board",
+        "extracted": "Responsibilities of the Board",
+        "issue": "heading differs"
+      },
+      {
+        "toc": "13.0 Scope and effective date of the Guideline",
+        "extracted": "Scope and Effective Date of the Guidelines",
+        "issue": "heading differs"
+      }
+    ],
+    "not_in_toc": [],
+    "references_normalised": [
+      {
+        "reference": "6.0",
+        "printed": "6. 0"
+      }
+    ],
+    "numbering_notes": [
+      "Section 2.0 numbers its subsections 2.01-2.06 and then 2.1, 2.2 (as printed and as in the table of contents); references are kept exactly as printed."
+    ],
+    "general_nccg_mentions_without_clause_number": [
+      "1.0",
+      "10.0",
+      "12.0"
+    ],
+    "numbering_gaps": [],
+    "review": [
+      {
+        "reference": "2.2",
+        "issue": "text does not end with punctuation (possibly truncated)",
+        "tail": "ttees responsible for:\ni. Finance, Investment and General Purpose\nii. Compliance"
+      },
+      {
+        "reference": "11.0",
+        "issue": "text does not end with punctuation (possibly truncated)",
+        "tail": " the right and be given the opportunity to present a complaint to the Commission"
+      }
+    ],
+    "sequence_anomalies": [],
+    "citations": {
+      "resolved": [
+        {
+          "reference": "2.01",
+          "cites": "NCCG_2018:2.7"
+        },
+        {
+          "reference": "2.2",
+          "cites": "NCCG_2018:11.1.6"
+        }
+      ],
+      "unresolved": []
+    }
+  },
+  "clauses": [
+    {
+      "reference": "1.0",
+      "parent_reference": null,
+      "level": "section",
+      "heading": "INTRODUCTION",
+      "text": "i. The principal object of the National Insurance Commission (hereinafter referred to as the Commission) is to ensure effective administration, supervision, regulation and control of the insurance business in Nigeria;\nii. Section 11C and 51C of the Financial Reporting Council of Nigeria (FRCN) Act, 2011 confers on the FRCN the power to ensure good Corporate Governance Practices in public and private sectors of the Nigerian economy;\niii. FRCN issued the Nigerian Code of Corporate Governance (NCCG) 2018 to institutionalize corporate governance best practices in all Companies in Nigeria and repealed all other sectorial codes;\niv. The Commission in exercise of its powers under the National Insurance Commission Act 1997 and in collaboration with FRCN hereby issues its Corporate Governance Guidelines (the Guidelines) to assist the implementation of the NCCG 2018.\nv. The Guidelines shall be read and interpreted in conjunction with the provision of NCCG 2018 and replaces the NAICOM Code of Good Corporate Governance for the Insurance Industry 2009.\nvi. All Insurance and Reinsurance Companies are to comply with this Guidelines and the Nigerian Code of Corporate Governance 2018.",
+      "sort_order": 10,
+      "page": 3,
+      "cites": null
+    },
+    {
+      "reference": "2.0",
+      "parent_reference": null,
+      "level": "section",
+      "heading": "BOARD OF DIRECTORS AND MANAGEMENT",
+      "text": "",
+      "sort_order": 20,
+      "page": 4,
+      "cites": null
+    },
+    {
+      "reference": "2.01",
+      "parent_reference": "2.0",
+      "level": "subsection",
+      "heading": "Structure and Composition of the Board",
+      "text": "i. The Structure and Composition of the Board shall be such as to maintain the confidence of the Shareholders and Management.\nii. The insurance/reinsurance company shall have not less than seven (7) members and not more than fifteen (15) members on its Board.\niii. The Board shall consist of Executive and Non-Executive Directors out of which not more than 40% of the members shall be in the executive capacity.\niv. In addition to the provision of Principle 2.7 of the NCCG 2018, no one person shall occupy the position of Chairman and Managing Director/CEO in related insurance companies at the same time.\nv. No two members of the same family (nuclear and extended) shall occupy the position of the Chairman and Managing Director/Chief Executive of any Insurance Company.\nvi. No member of the Board shall draw remunerations beyond the normal entitlements for such appointment.\nvii. Membership of the Board shall include at least one Independent Director, who does not represent any particular shareholding interest nor hold any business interest.\nviii. Non-Executive Directors shall not be re-nominated and appointed for more than 3 terms of 3 years each.\nix. Appointment of Non-Executive Directors shall be decided by the Board through a defined selection process.\nx. The Chief Executive Officer of the Company shall be the person approved by the Commission and shall be a member of the Board throughout his/her tenure.\nxi. Each Executive Director of the Company shall be a person approved by the Commission and shall be a member of the Board throughout his/her tenure.\nxii. For purposes of succession, every Insurance/Reinsurance Company shall have an Executive Director (Technical) who shall have minimum qualification and experience equivalent to that of Chief Executive Officer prescribed by the extant Rules.\nxiii. To represent minority interests, all Public Limited Liability Insurance/Reinsurance Companies shall provide a seat for minority shareholder on the Board;\nxiv. All nominated members of the Board shall complete and file with the Commission, Personal History Statement (PHS) Form at the point of application to the Commission.\nxv. All insurance institutions shall operate independently and the Board and Management shall be responsible and accountable for the conduct /operations of the company irrespective of any relationship with other companies or group.",
+      "sort_order": 30,
+      "page": 4,
+      "cites": "NCCG_2018:2.7"
+    },
+    {
+      "reference": "2.02",
+      "parent_reference": "2.0",
+      "level": "subsection",
+      "heading": "Qualities of the Members",
+      "text": "In selecting a Director, the following factors shall be considered:\ni. Relevance of the candidate’s experience and knowledge in the insurance industry.\nii. Record of diligence, integrity, willingness and ability to be independent and objective as well as to serve actively as a director.\niii. Limited insider relationships and links with competitors.\niv. A track record of success in business with familiarity and experience in performing the role of a Board member.",
+      "sort_order": 40,
+      "page": 6,
+      "cites": null
+    },
+    {
+      "reference": "2.03",
+      "parent_reference": "2.0",
+      "level": "subsection",
+      "heading": "Duties of the Board",
+      "text": "i. The Board shall conduct the business in line with high ethical and sound insurance best practices.\nii. Board members shall act on a fully informed basis, in good faith, with due diligence and care, and in the best interest of the company and the shareholders.\niii. Where Board decisions may affect shareholder groups differently, the Board shall treat all shareholders fairly.\niv. The Board shall exercise objective independent judgment on corporate affairs.\nv. It shall be the duty of the Board to formulate corporate policies, profile and monitor risks and impose internal controls in the case of group structure.\nvi. The Board must ensure it is not subject to undue influence from senior management or other parties and that it has access to all relevant information about the company at all times.",
+      "sort_order": 50,
+      "page": 6,
+      "cites": null
+    },
+    {
+      "reference": "2.04",
+      "parent_reference": "2.0",
+      "level": "subsection",
+      "heading": "Responsibilities of the Board",
+      "text": "The responsibilities of the Board shall include:\ni. Reviewing corporate strategy, major plans of actions, risk policy, business plans, setting performance objectives, monitoring implementation and corporate performance and overseeing major capital expenditures and acquisitions.\nii. Selecting, appointing, compensating, monitoring and where necessary, replacing Executives/Management and putting in place a succession plan for the company.\niii. Monitoring the effectiveness of the governance practices and make changes as may be necessary.\niv. Monitoring and managing potential conflicts of interest of management, Board members and shareholders, including misuse of corporate assets and abuses in related party transactions.\nv. Supervising and monitoring execution of policies and providing direction for the management.\nvi. Monitoring potential risks within the company including recognizing and encouraging honest whistle blowing.\nvii. Overseeing the process of disclosure and communication in the company.",
+      "sort_order": 60,
+      "page": 7,
+      "cites": null
+    },
+    {
+      "reference": "2.05",
+      "parent_reference": "2.0",
+      "level": "subsection",
+      "heading": "Organizational Structure",
+      "text": "The Board shall put in place the following:\ni. An organizational structure that effectively meets the needs of insurance business with job descriptions, authority levels and working relationships for members of the management.\nii. Well defined responsibilities of the top Management of a company.\niii. The company’s organogram shall be in line with the format approved by the Commission.\niv. Effective human resources management system that ensures staff welfare and objective assessment of individuals with more weight given to demonstrated performance on the job and individual career developments.\nv. Management control system that focuses on management processes including operational planning and control, computerization, productivity and management information system development.\nvi. Good security system with particular emphasis on checks and balances, dual control on operations and greater discipline to reduce incidence of malpractices.\nvii. Clearly thought out policies and strategies on marketing, business acquisition and claims administration.",
+      "sort_order": 70,
+      "page": 8,
+      "cites": null
+    },
+    {
+      "reference": "2.06",
+      "parent_reference": "2.0",
+      "level": "subsection",
+      "heading": "Governance and Remuneration of Directors",
+      "text": "i. Directors are expected to preserve and enhance shareholders’ value.\nii. The Board shall be empowered to make the needed time commitments, suitably compensated, receive proper minutes of meetings and be provided with appropriate information to enable them perform their functions and evaluate the performance of the management.\niii. Directors shall be pro-active and diligent in performing their assigned responsibilities.\niv. The Board of Directors will determine remuneration for Directors and seek approval at the AGM.",
+      "sort_order": 80,
+      "page": 9,
+      "cites": null
+    },
+    {
+      "reference": "2.1",
+      "parent_reference": "2.0",
+      "level": "subsection",
+      "heading": "Meetings of the Board",
+      "text": "i. Each member shall attend not less than 75% of the meetings of the Board annually.\nii. Report of attendance shall form part of the report to be presented at the AGM.",
+      "sort_order": 90,
+      "page": 9,
+      "cites": null
+    },
+    {
+      "reference": "2.2",
+      "parent_reference": "2.0",
+      "level": "subsection",
+      "heading": "Committees of the Board",
+      "text": "In addition to Principle 11.1.6 of NCCG 2018, the Board shall have Committees responsible for:\ni. Finance, Investment and General Purpose\nii. Compliance",
+      "sort_order": 100,
+      "page": 10,
+      "cites": "NCCG_2018:11.1.6"
+    },
+    {
+      "reference": "3.0",
+      "parent_reference": null,
+      "level": "section",
+      "heading": "Induction and Continuing Education for Board Members",
+      "text": "i. The Company shall, at least once in a year, arrange relevant training on insurance principles and practice, Director’s responsibilities and liabilities, and update on insurance market to which attendance by members of the Board shall be mandatory.\nii. The Commission may from time to time arrange trainings to which attendance by members of the Board shall be expected.",
+      "sort_order": 110,
+      "page": 10,
+      "cites": null
+    },
+    {
+      "reference": "4.0",
+      "parent_reference": null,
+      "level": "section",
+      "heading": "Board Evaluation",
+      "text": "i. There shall be annual Board performance evaluation to be carried out by an Independent consultant to be appointed at the AGM.\nii. The Evaluation Report shall be forwarded to the Commission before end of first quarter of the succeeding year.",
+      "sort_order": 120,
+      "page": 10,
+      "cites": null
+    },
+    {
+      "reference": "5.0",
+      "parent_reference": null,
+      "level": "section",
+      "heading": "Internal Audit",
+      "text": "i. Each Insurance/Reinsurance Company under an insurance group shall have a separate Internal Audit Unit.\nii. The Internal Audit Report of each Insurance/Reinsurance Company shall be filed with the Commission every quarter.\niii. The Internal Audit Unit shall be headed by a professionally qualified Accountant not below the rank of an Assistant General Manager (AGM) or its equivalent.\niv. The report of the external assessment of Internal Audit functions shall be submitted to the Commission not later than 2nd quarter of the succeeding year.",
+      "sort_order": 130,
+      "page": 11,
+      "cites": null
+    },
+    {
+      "reference": "6.0",
+      "parent_reference": null,
+      "level": "section",
+      "heading": "External Auditors",
+      "text": "i. Insurance/Reinsurance Companies shall seek and obtain approval of the Commission prior to appointment of External Auditors.\nii. The tenure of an appointed External Auditor shall be for a period of four (4) years in the first instance and may be re-appointed for a further period of four (4) years and no more.\niii. The audit teams shall be rotated at least once every two years.",
+      "sort_order": 140,
+      "page": 11,
+      "cites": null,
+      "printed_reference": "6. 0"
+    },
+    {
+      "reference": "7.0",
+      "parent_reference": null,
+      "level": "section",
+      "heading": "Conflict of Interest",
+      "text": "A. Each Director and employee of an Insurance/Reinsurance Company shall formally disclose to the Board of Directors or Shareholders his/her interest whatsoever in any:\ni. Reinsurance Company;\nii. Insurance Company;\niii. Takaful Insurance Company;\niv. Micro insurance Company;\nv. Insurance Broking firm;\nvi. Loss Adjusting firm;\nvii. Actuarial firm;\nviii. Accounting/Taxation firm/Audit firms; and\nix. Legal and Secretarial firm.\nB. Payment of commissions and/or fees to any of the above listed in which any Director or an employee has interest whatsoever shall be fully documented and the interest therein fully disclosed to the Board/Shareholders.",
+      "sort_order": 150,
+      "page": 12,
+      "cites": null
+    },
+    {
+      "reference": "8.0",
+      "parent_reference": null,
+      "level": "section",
+      "heading": "Rights of the Shareholders",
+      "text": "The shareholders of insurance and reinsurance companies in Nigeria shall have rights to:\ni. Participate in, and be sufficiently informed on, decisions concerning fundamental corporate changes including amendments to the statutes, or articles of incorporation or similar governing documents of the company; the authorization of additional shares; and extraordinary transactions, including the transfer of all or substantially all assets, that in effect result in the sale of the company.\nii. Make their views known on the remuneration policy for Board members and key executives of the company.\niii. Consult with each other on issues concerning their basic shareholders’ rights subject to exceptions to prevent abuse.\niv. Receive dividends when declared.",
+      "sort_order": 160,
+      "page": 13,
+      "cites": null
+    },
+    {
+      "reference": "9.0",
+      "parent_reference": null,
+      "level": "section",
+      "heading": "Business Conduct & Ethics",
+      "text": "Directors and Management are to ensure that high ethical standards for the conduct of insurance business are maintained at all times, including:\ni. Prompt payment of valid claims and institute a best practise alternative dispute resolution mechanism.\nii. Payment of commissions and/or fees to insurance intermediaries in which the Chief Executive Officer, directors and employee have interest.\niii. Disclosing to the Board and Management any matter in which the Chief Executive Officer, Director(s) or an Employee has interest whatsoever. Any such interest shall be fully documented.",
+      "sort_order": 170,
+      "page": 13,
+      "cites": null
+    },
+    {
+      "reference": "10.0",
+      "parent_reference": null,
+      "level": "section",
+      "heading": "Disclosure Requirements",
+      "text": "The Annual Report shall sufficiently disclose the following information:-\ni. The manner of its compliance with, or explain any deviation from NCCG 2018 and/or this Guideline.\nii. The Board Meeting’s attendance record of members.\niii. The deviation from applicable Corporate Governance Standards.\niv. The contraventions on which penalties have been imposed by the Commission and/or any other regulatory/supervisory body during the accounting year.",
+      "sort_order": 180,
+      "page": 14,
+      "cites": null
+    },
+    {
+      "reference": "11.0",
+      "parent_reference": null,
+      "level": "section",
+      "heading": "Whistle Blowing",
+      "text": "Where a whistle blower has been subjected to any detriment, he shall have the right and be given the opportunity to present a complaint to the Commission",
+      "sort_order": 190,
+      "page": 14,
+      "cites": null
+    },
+    {
+      "reference": "12.0",
+      "parent_reference": null,
+      "level": "section",
+      "heading": "Enforcement and Sanctions",
+      "text": "The non-compliance with the NCCG 2018 and this Guideline shall be a violation of Section 49(1) (b) of the National Insurance Commission Act 1997 and attracts penalty under section 49(5) of the Act.",
+      "sort_order": 200,
+      "page": 15,
+      "cites": null,
+      "extraction_note": "Transcribed from the scanned page 15 (no text layer). The effective date '1st June' is handwritten. The page ends: 'This Guidelines is issued by the National Insurance Commission on the 17th day of March 2021' (date handwritten)."
+    },
+    {
+      "reference": "13.0",
+      "parent_reference": null,
+      "level": "section",
+      "heading": "Scope and Effective Date of the Guidelines",
+      "text": "This Guideline applies to ALL Insurance and Reinsurance Companies. The Application of the Guidelines shall be effective from 1st June, 2021.",
+      "sort_order": 210,
+      "page": 15,
+      "cites": null,
+      "extraction_note": "Transcribed from the scanned page 15 (no text layer). The effective date '1st June' is handwritten. The page ends: 'This Guidelines is issued by the National Insurance Commission on the 17th day of March 2021' (date handwritten)."
+    }
+  ]
+}
