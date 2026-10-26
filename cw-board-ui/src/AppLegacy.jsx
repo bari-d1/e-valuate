@@ -104,21 +104,6 @@ const TASK_TO_PATH = {
   assessment_tracks: "/consultant/tracks",
 };
 
-function stepIndexFromPath(pathname) {
-  const p = String(pathname || "");
-
-  if (p.includes("/consultant/evaluations")) return 0;
-  if (p.includes("/consultant/questionnaire")) return 1;
-  if (p.includes("/consultant/participants")) return 2;
-  // Order must match the STEPS array in renderWorkflowBar
-  if (p.includes("/consultant/questions")) return 3;
-  if (p.includes("/consultant/tracks")) return 4;
-  if (p.includes("/consultant/analysis")) return 5;
-
-  return 0;
-}
-
-
 function renderFlowBar(opts) {
   const left = opts?.left ?? null;   // can be array OR JSX
   const right = opts?.right ?? null; // can be array OR JSX
@@ -541,7 +526,7 @@ function WorkspaceMenu({ disabled, onSoftReset, onReset, onPing }) {
               run(() => {
                 if (
                   window.confirm(
-                    "Reset the workspace?\n\nThis clears the evaluation in focus and everything on screen. Data saved on the server is not deleted."
+                    "Reset the workspace?\n\nThis closes the open evaluation and clears everything on screen. Data saved on the server is not deleted."
                   )
                 ) {
                   onReset();
@@ -550,7 +535,7 @@ function WorkspaceMenu({ disabled, onSoftReset, onReset, onPing }) {
             }
           >
             <div style={{ fontWeight: 800 }}>Reset workspace…</div>
-            <div style={{ fontSize: 12, color: "#64748B" }}>Clear the evaluation in focus and start over.</div>
+            <div style={{ fontSize: 12, color: "#64748B" }}>Close the open evaluation and start over.</div>
           </button>
           {onPing ? (
             <button
@@ -668,6 +653,15 @@ function navGroupHeadingStyle() {
     color: color.sidebarHeading,
   };
 }
+
+const visuallyHiddenStyle = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  overflow: "hidden",
+  clip: "rect(0 0 0 0)",
+  whiteSpace: "nowrap",
+};
 
 function tabLinkStyle(active) {
   return {
@@ -895,6 +889,10 @@ export default function AppLegacy() {
       return "";
     }
   });
+
+  // "Open" = make this the current evaluation, then go to its next step once its progress is known
+  const [progressLoadedFor, setProgressLoadedFor] = useState("");
+  const [openRequest, setOpenRequest] = useState("");
 
   useEffect(() => {
     try {
@@ -1265,25 +1263,7 @@ function taskToStepIndex(t) {
   return 0;
 }
 
-function flowTone(stepKey) {
-  // subtle but distinct (works on white background)
-  if (stepKey === "evaluation") return { bg: "#EFF6FF", fg: "#1D4ED8", bd: "#BFDBFE" }; // blue
-  if (stepKey === "questionnaire") return { bg: "#F5F3FF", fg: "#6D28D9", bd: "#DDD6FE" }; // purple
-  if (stepKey === "participants") return { bg: "#ECFDF5", fg: "#047857", bd: "#A7F3D0" }; // green
-  if (stepKey === "questions") return { bg: "#FFFBEB", fg: "#B45309", bd: "#FDE68A" }; // amber
-  if (stepKey === "tracks") return { bg: "#F0FDF4", fg: "#15803D", bd: "#BBF7D0" }; // green
-  if (stepKey === "report") return { bg: "#F1F5F9", fg: "#0F172A", bd: "#E2E8F0" }; // slate
-  return { bg: "#F1F5F9", fg: "#0F172A", bd: "#E2E8F0" };
-}
-
-function stepStatus(stepIndex, currentIndex, done) {
-  if (done) return "done";
-  if (stepIndex === currentIndex) return "current";
-  return "todo";
-}
-
-
-// Page-level secondary actions. Step-to-step navigation lives in the workflow bar only.
+// Page-level secondary actions. Step-to-step progress lives in the sidebar.
 function renderNextActionBar(opts = {}) {
   const refreshReason = opts.refreshReason || "";
   const refreshDisabled = busy || !!refreshReason || !!opts.refreshDisabled;
@@ -1395,6 +1375,7 @@ function renderNextActionBar(opts = {}) {
       } catch {
         /* keep zeros */
       }
+      if (!cancelled) setProgressLoadedFor(id);
     })();
 
     return () => {
@@ -2124,9 +2105,8 @@ function parseHintsCsv(hints) {
   // ✅ DROP-IN: Collapsible renderFocusHeader()
 
 
-function renderWorkflowBar() {
-      const currentIndex = stepIndexFromPath(location.pathname);
-
+// Setup progress for the evaluation in focus, shown as ✓/○ + counts in the sidebar
+function getWorkflowProgress() {
 
       // ---- Core prerequisites
       const hasEval = !!String(evalId || "").trim();
@@ -2188,6 +2168,7 @@ function renderWorkflowBar() {
           key: "evaluation",
           label: "Evaluation",
           hint: hasEval ? `Focused: ${evalId}` : "Pick/create an evaluation",
+          nextLabel: "Choose an evaluation",
           toTask: "list_evaluations",
           done: hasEval,
           lock: false,
@@ -2198,6 +2179,7 @@ function renderWorkflowBar() {
           hint: hasQuestionnaire
             ? `Using: ${String(selectedTemplate)} v${String(selectedVersion)}`
             : "Select template & version",
+          nextLabel: "Confirm the questionnaire",
           toTask: "select_questionnaire",
           done: hasQuestionnaire,
           lock: !hasEval,
@@ -2206,6 +2188,8 @@ function renderWorkflowBar() {
           key: "participants",
           label: "Participants",
           hint: hasParticipants ? `Count: ${participantsCount}` : "Invite / view participants",
+          count: hasParticipants ? participantsCount : null,
+          nextLabel: "Invite participants",
           toTask: "invite_participants",
           done: hasParticipants,
           lock: !hasEval,
@@ -2214,6 +2198,8 @@ function renderWorkflowBar() {
           key: "questions",
           label: "Questions",
           hint: hasQuestions ? `Count: ${questionsCount}` : "Seed / add / generate questions",
+          count: hasQuestions ? questionsCount : null,
+          nextLabel: "Add questions",
           toTask: "list_questions",
           done: hasQuestions,
           lock: !hasEval,
@@ -2224,6 +2210,8 @@ function renderWorkflowBar() {
           hint: hasTracksReady
             ? `Assignments: ${wfTracksMetrics.assignmentsCount}`
             : "Enable tracks & generate assignments",
+          count: hasTracksReady ? wfTracksMetrics.assignmentsCount : null,
+          nextLabel: "Set up tracks and tasks",
           toTask: "assessment_tracks",
           done: hasTracksReady,
           lock: !hasEval,
@@ -2232,6 +2220,7 @@ function renderWorkflowBar() {
           key: "report",
           label: "Report",
           hint: reportHint,
+          nextLabel: "Generate the report",
           toTask: "generate_report",
           done: hasReport,
           lock: !hasEval,
@@ -2256,145 +2245,7 @@ function renderWorkflowBar() {
 
       const nextStepObj = STEPS.find((x) => x.key === nextKey) || STEPS[0];
 
-      const nextDisabled = !!busy || !!nextStepObj.lock;
-      const nextDisabledTitle =
-        nextStepObj.lock ? "Select an evaluation first." : nextStepObj.hint;
-
-      return (
-        <div
-          style={{
-            marginTop: 12,
-            background: "white",
-            border: "1px solid #E5E7EB",
-            borderRadius: 14,
-            padding: 12,
-            boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            <div style={{ fontWeight: 900, color: "#0F172A" }}>Workflow</div>
-
-            {/* ✅ "Next" + a single CTA button */}
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <Badge tone="gray">Next: {String(nextStepObj?.label || "—")}</Badge>
-
-              <Button
-                variant="primary"
-                disabled={nextDisabled}
-                onClick={() => navigate(TASK_TO_PATH[nextStepObj.toTask] || "/consultant/evaluations")}
-
-                title={nextDisabled ? nextDisabledTitle : `Go to ${nextStepObj.label}`}
-              >
-                Go →
-              </Button>
-
-              {isNarrow ? null : (
-                <div style={{ fontSize: 12, color: color.textMuted }}>
-                  Click any step to jump • Current step is highlighted
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div
-            style={{
-              marginTop: 10,
-              ...(isNarrow
-                ? { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }
-                : { display: "flex", alignItems: "stretch", gap: 10, flexWrap: "wrap" }),
-            }}
-          >
-            {STEPS.map((s, idx) => {
-              const tone = flowTone(s.key);
-              const status = stepStatus(idx, currentIndex, s.done);
-
-              const isCurrent = status === "current";
-              const isDone = status === "done";
-
-              const disabled = !!busy || !!s.lock;
-
-              return (
-                <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                  <button
-                    onClick={() => navigate(TASK_TO_PATH[s.toTask] || "/consultant/evaluations")}
-
-                    disabled={disabled}
-                    title={disabled && s.lock ? "Select an evaluation first." : s.hint}
-                    style={{
-                      borderRadius: 12,
-                      border: `1px solid ${tone.bd}`,
-                      background: isCurrent ? tone.bg : "white",
-                      color: tone.fg,
-                      padding: isNarrow ? "8px 10px" : "10px 12px",
-                      minWidth: isNarrow ? 0 : 160,
-                      width: isNarrow ? "100%" : undefined,
-                      textAlign: "left",
-                      cursor: disabled ? "not-allowed" : "pointer",
-                      opacity: disabled ? 0.6 : 1,
-                      boxShadow: isCurrent ? "0 0 0 2px rgba(37,99,235,0.15)" : "none",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: 10,
-                      }}
-                    >
-                      <div style={{ fontWeight: 900, fontSize: 13 }}>
-                        {isDone ? "✓ " : isCurrent ? "• " : "○ "}
-                        {s.label}
-                      </div>
-
-                      {isNarrow ? null : (
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 900,
-                          padding: "3px 8px",
-                          borderRadius: 999,
-                          border: "1px solid #E5E7EB",
-                          background: isDone ? "#ECFDF5" : isCurrent ? "#EEF2FF" : "#F8FAFC",
-                          color: isDone ? "#065F46" : isCurrent ? "#1D4ED8" : "#64748B",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {isDone ? "Done" : isCurrent ? "Current" : "Next"}
-                      </span>
-                      )}
-                    </div>
-
-                    <div style={{ marginTop: 6, fontSize: 12, color: color.textMuted, fontWeight: 700 }}>
-                      {s.hint}
-                    </div>
-                  </button>
-
-                  {!isNarrow && idx < STEPS.length - 1 ? (
-                    <div
-                      aria-hidden
-                      style={{
-                        width: 18,
-                        height: 2,
-                        background: idx < currentIndex ? "#94A3B8" : "#E2E8F0",
-                        borderRadius: 999,
-                      }}
-                    />
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      );
+      return { steps: STEPS, next: nextStepObj, allDone: STEPS.every((x) => x.done) };
     }
 
 
@@ -2409,18 +2260,18 @@ function renderWorkflowBar() {
     {
       group: "Setup",
       items: [
-        { to: "/consultant/evaluations", label: "Evaluations" },
-        { to: "/consultant/questionnaire/select", label: "Questionnaire" },
-        { to: "/consultant/participants", label: "Participants" },
-        { to: "/consultant/questions", label: "Questions" },
-        { to: "/consultant/tracks", label: "Tracks & assignments" },
+        { to: "/consultant/evaluations", step: "evaluation", label: "Evaluations" },
+        { to: "/consultant/questionnaire/select", step: "questionnaire", label: "Questionnaire" },
+        { to: "/consultant/participants", step: "participants", label: "Participants" },
+        { to: "/consultant/questions", step: "questions", label: "Questions" },
+        { to: "/consultant/tracks", step: "tracks", label: "Tracks & assignments" },
       ],
     },
     {
       group: "Results",
       items: [
         { to: "/consultant/analysis/responses", label: "Responses & export" },
-        { to: "/consultant/analysis/report", label: "Report" },
+        { to: "/consultant/analysis/report", step: "report", label: "Report" },
       ],
     },
     ...(SHOW_DEV_TOOLS
@@ -2437,6 +2288,55 @@ function renderWorkflowBar() {
   const activeTabs = SECTION_TABS.find((s) => location.pathname.startsWith(s.base))?.tabs || null;
 
 
+
+  const hasFocus = !!String(evalId || "").trim();
+  const progress = getWorkflowProgress();
+
+  function openEvaluation(ev) {
+    const id = String(ev?.evaluation_id || ev?.id || "");
+    if (!id) return;
+    // Opening a different (or re-opened) evaluation must wait for its own progress, not stale values
+    if (id !== evalId) setProgressLoadedFor("");
+    setEvalId(id);
+    setOpenRequest(id);
+  }
+
+  function closeEvaluation() {
+    setProgressLoadedFor("");
+    setEvalId("");
+    setSelectedTemplate("");
+    setSelectedVersion("");
+    setTemplateCode("");
+    setVersion("");
+    navigate("/consultant/evaluations");
+  }
+
+  const nextStepPath = progress.allDone
+    ? TASK_TO_PATH.generate_report
+    : TASK_TO_PATH[progress.next.toTask] || "/consultant/evaluations";
+  const openReady =
+    !!openRequest &&
+    openRequest === evalId &&
+    progressLoadedFor === evalId &&
+    questionnaireSavedForEvalId === evalId;
+
+  useEffect(() => {
+    if (!openReady) return;
+    setOpenRequest("");
+    navigate(nextStepPath);
+  }, [openReady, nextStepPath, navigate]);
+
+  // Safety net: if loading stalls, still take the user in after a few seconds
+  useEffect(() => {
+    if (!openRequest) return;
+    const t = setTimeout(() => {
+      setOpenRequest("");
+      navigate(nextStepPath);
+    }, 4000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openRequest]);
+  const progressByKey = Object.fromEntries(progress.steps.map((x) => [x.key, x]));
 
   // The evaluation in focus is shown once, in the top bar; pages no longer render their own panel
   const focus = null;
@@ -2473,22 +2373,66 @@ function renderWorkflowBar() {
               <div style={navGroupHeadingStyle()}>{grp.group}</div>
 
               <div style={{ marginTop: 6 }}>
-                {grp.items.map((it) => (
-                  <NavLink
-                    key={it.to}
-                    to={it.to}
-                    style={({ isActive }) => ({
-                      ...subNavItemStyle(isActive),
-                      display: "block",
-                      textDecoration: "none",
-                    })}
-                  >
-                    {it.label}
-                  </NavLink>
-                ))}
+                {grp.items.map((it) => {
+                  const step = it.step ? progressByKey[it.step] : null;
+                  return (
+                    <NavLink
+                      key={it.to}
+                      to={it.to}
+                      title={step?.hint}
+                      style={({ isActive }) => ({
+                        ...subNavItemStyle(isActive),
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: space.sm,
+                        textDecoration: "none",
+                      })}
+                    >
+                      <span>{it.label}</span>
+                      {step && hasFocus ? (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: font.small }}>
+                          {step.count != null ? <span style={{ color: color.sidebarText }}>{step.count}</span> : null}
+                          <span aria-hidden style={{ color: step.done ? "#4ADE80" : color.sidebarHeading }}>
+                            {step.done ? "✓" : "○"}
+                          </span>
+                          <span style={visuallyHiddenStyle}>{step.done ? "(done)" : "(to do)"}</span>
+                        </span>
+                      ) : null}
+                    </NavLink>
+                  );
+                })}
               </div>
             </div>
           ))}
+
+          {hasFocus ? (
+            <div style={{ marginTop: 20, padding: "12px 0", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+              <div style={navGroupHeadingStyle()}>Next step</div>
+              {progress.allDone ? (
+                <div style={{ marginTop: 8, padding: "0 12px", fontSize: font.body, color: color.sidebarText }}>
+                  All steps done ✓
+                </div>
+              ) : (
+                <NavLink
+                  to={TASK_TO_PATH[progress.next.toTask] || "/consultant/evaluations"}
+                  style={{
+                    display: "block",
+                    margin: "8px 0 0",
+                    padding: "8px 12px",
+                    borderRadius: radius.sm,
+                    background: color.primary,
+                    color: "white",
+                    fontSize: font.body,
+                    fontWeight: font.weight.bold,
+                    textDecoration: "none",
+                  }}
+                >
+                  {progress.next.nextLabel} →
+                </NavLink>
+              )}
+            </div>
+          ) : null}
         </nav>
       </aside>
 
@@ -2546,6 +2490,28 @@ function renderWorkflowBar() {
                   </b>
                   <span aria-hidden style={{ color: "#64748B" }}>▾</span>
                 </button>
+                {evalId ? (
+                  <button
+                    type="button"
+                    onClick={closeEvaluation}
+                    aria-label="Close evaluation"
+                    title="Close evaluation"
+                    style={{
+                      width: 28,
+                      height: 28,
+                      marginLeft: -4,
+                      borderRadius: radius.pill,
+                      border: `1px solid ${color.border}`,
+                      background: color.surface,
+                      color: color.textMuted,
+                      fontSize: 16,
+                      lineHeight: 1,
+                      cursor: "pointer",
+                    }}
+                  >
+                    ×
+                  </button>
+                ) : null}
                 {selectedTemplate ? (
                   <span style={{ fontSize: 13, color: "#64748B" }}>
                     Questionnaire: {selectedTemplate} v{selectedVersion || "1"}
@@ -2564,7 +2530,6 @@ function renderWorkflowBar() {
             </div>
           </div>
 
-          {renderWorkflowBar()}
 
         {error ? (
           <div style={{ marginTop: 14, padding: 14, borderRadius: 14, border: "1px solid #FCA5A5", background: "#FEF2F2", color: "#7F1D1D", fontWeight: 700, whiteSpace: "pre-wrap" }}>
@@ -2621,6 +2586,8 @@ function renderWorkflowBar() {
                     // example: after choosing eval, go to questionnaire select
                     // navigate("/consultant/questionnaire/select");
                   }}
+                  openEvaluation={openEvaluation}
+                  openingId={openRequest}
                   lockReason={lockReason}
                   formatDateMaybe={formatDateMaybe}
                   tableWrapStyle={tableWrapStyle}

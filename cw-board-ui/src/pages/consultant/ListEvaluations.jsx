@@ -16,7 +16,8 @@ export default function ListEvaluationsPage({
 
   // actions
   listEvaluations,
-  setFocusFromEvaluationRow,
+  openEvaluation,
+  openingId,
 
   // router nav
   go, // ✅ required: go("/consultant/...")
@@ -63,7 +64,7 @@ export default function ListEvaluationsPage({
   return (
     <Card
       title="Evaluations"
-      subtitle="Select the evaluation you want to work on. The workflow above then guides you through it."
+      subtitle="Open an evaluation to work on it. The sidebar shows its progress and the next step."
       right={
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <Button onClick={listEvaluations} disabled={busy} variant="secondary">
@@ -127,14 +128,14 @@ export default function ListEvaluationsPage({
                         background: isFocused ? "#EEF2FF" : "transparent",
                         ...rowHoverStyle(),
                       }}
-                      onClick={() => setFocusFromEvaluationRow?.(ev)}
+                      onClick={() => openEvaluation?.(ev)}
                       onMouseEnter={(e) => {
                         if (!isFocused) e.currentTarget.style.background = "#F8FAFC";
                       }}
                       onMouseLeave={(e) => {
                         if (!isFocused) e.currentTarget.style.background = "transparent";
                       }}
-                      title="Click to work on this evaluation"
+                      title="Open this evaluation"
                     >
                       <td style={tdStyle()}>
                         <div style={{ fontWeight: 900, color: "#0F172A" }}>{ev.evaluation_id}</div>
@@ -148,20 +149,19 @@ export default function ListEvaluationsPage({
                       </td>
                       <td style={tdStyle()}>{formatDateMaybe?.(ev.created_at)}</td>
                       <td style={{ ...tdStyle(), textAlign: "right", whiteSpace: "nowrap" }}>
-                        {isFocused ? (
-                          <Badge tone="blue">In focus</Badge>
-                        ) : (
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+                          {isFocused ? <Badge tone="blue">Current</Badge> : null}
                           <Button
-                            variant="secondary"
-                            disabled={busy}
+                            variant={isFocused ? "primary" : "secondary"}
+                            disabled={busy || !!openingId}
                             onClick={(e) => {
-                              e.stopPropagation();
-                              setFocusFromEvaluationRow?.(ev);
+                              e.stopPropagation(); // the row click would open it a second time
+                              openEvaluation?.(ev);
                             }}
                           >
-                            Select
+                            {openingId === ev.evaluation_id ? "Opening…" : isFocused ? "Continue" : "Open"}
                           </Button>
-                        )}
+                        </div>
                       </td>
                     </tr>
                   );
