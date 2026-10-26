@@ -43,7 +43,7 @@ from app.questionnaires.presets import get_questions_for_preset, list_preset_nam
 from app.services.document_text import extract_text_from_upload
 from app.services.taxonomy import normalize_code, validate_tag_codes
 
-load_dotenv(find_dotenv(), override=True)
+load_dotenv(find_dotenv(), override=False)  # never replace already-set vars (e.g. a test DATABASE_URL)
 
 router = APIRouter()
 
