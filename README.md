@@ -4,33 +4,32 @@ Board evaluation app: FastAPI backend (`cw_board_evaluation/`) and React + Vite 
 
 ## Run the app (macOS)
 
+Requires Python 3.14, Node.js and PostgreSQL:
+
+```bash
+brew install python@3.14 node postgresql@18
+brew services start postgresql@18
+```
+
+Then, from a fresh clone:
+
 ```bash
 ./dev.sh
 ```
 
-Open http://127.0.0.1:5173/consultant. Ctrl+C stops everything.
+Open http://127.0.0.1:5173/consultant and open the demo evaluation `eval-002` (EMOK Express). Ctrl+C stops everything.
 
-`dev.sh` starts the backend on port 8000 and the frontend on port 5173, and applies any pending database migrations. On first run it also creates the Python environment (`cw_board_evaluation/.venv-mac`) and installs frontend dependencies.
+On first run `dev.sh` creates `cw_board_evaluation/.env` from `.env.example`, the Python environment and `node_modules`, creates the database, and seeds the demo evaluation `eval-002`. On every run it applies pending migrations, then starts the backend on port 8000 and the frontend on port 5173. Existing data is never changed.
 
-## First-time setup
+Add your `OPENAI_API_KEY` to `cw_board_evaluation/.env` for AI question generation and reports. Never commit `.env`.
 
-Requires Python 3.14, Node.js and PostgreSQL (`brew install python@3.14 node postgresql@18`).
+## Tests
 
-1. Start Postgres: `brew services start postgresql@18`
-2. Create `cw_board_evaluation/.env` with `DATABASE_URL`, `OPENAI_API_KEY` and the email settings. Never commit this file.
-3. Create the database user and database named in `DATABASE_URL`, for example:
-   ```bash
-   psql -d postgres -c "CREATE ROLE postgres LOGIN CREATEDB PASSWORD '<password>';"
-   createdb -O postgres cw_board_eval
-   ```
-4. Run `./dev.sh` once so it creates the Python environment and runs migrations, then stop it with Ctrl+C.
-5. Seed demo data:
-   ```bash
-   cd cw_board_evaluation
-   .venv-mac/bin/python scripts/seed_reference_data.py
-   .venv-mac/bin/python scripts/seed_demo_environment.py eval-002
-   ```
-   The consultant UI opens evaluation `eval-002` by default.
+See [cw_board_evaluation/TESTING.md](cw_board_evaluation/TESTING.md): unit and integration tests, the recorded baseline, and an end-to-end smoke test (`scripts/e2e_smoke.py`).
+
+## Branches
+
+`main` is kept demoable for client calls. Do new work on a feature branch and merge it into `main` once the tests and the end-to-end smoke test pass.
 
 ## Windows
 
@@ -49,20 +48,13 @@ The 11 tests skipped by default are the integration tests (marker `integration`)
 
 **Known failures:** none. Any failing test from here on is a regression.
 
-**Warning before running integration tests:** they drop and recreate every table in the database named by `DATABASE_URL`. `app/api/questions.py` and `app/util/initialiseLLM.py` load `cw_board_evaluation/.env` with `override=True`, which replaces a `DATABASE_URL` you set on the command line with the one in `.env`. If `.env` points at your dev database, the integration tests will wipe it. The baseline above was run from a checkout with no `.env`:
-
-```bash
-createdb -h localhost cw_board_eval_test   # once
-RUN_INTEGRATION_TESTS=1 \
-DATABASE_URL=postgresql+psycopg://localhost:5432/cw_board_eval_test \
-.venv-mac/bin/python -m pytest -q
-```
+**Integration tests and your data:** they drop and recreate every table in the database named by `DATABASE_URL`, so they refuse to run unless the database name ends in `_test`. See [cw_board_evaluation/TESTING.md](cw_board_evaluation/TESTING.md) for how to run them.
 
 ## Smoke test baseline
 
 Recorded 2026-10-22 on branch `chore/groundwork` (base `22b5392`). Fresh database migrated to head and seeded, backend and frontend started as `dev.sh` does, then the journey was driven in headless Chrome. OpenAI key configured.
 
-**Seeding:** `seed_demo_environment.py eval-002` on its own creates the evaluation and questions but **no tracks, tasks or responses** ("template missing"). It needs `seed_reference_data.py` to run first, as in First-time setup above. In that order: 12 participants, 10 questions, 28 tasks, 86 demo answers.
+**Seeding:** `seed_demo_environment.py eval-002` on its own creates the evaluation and questions but **no tracks, tasks or responses** ("template missing"). It needs `seed_reference_data.py` to run first; `dev.sh` now does both, in that order, on an empty database. In that order: 12 participants, 10 questions, 28 tasks, 86 demo answers.
 
 ### Consultant
 

@@ -18,13 +18,18 @@ if [ ! -d "$FRONTEND/node_modules" ]; then
   (cd "$FRONTEND" && npm ci)
 fi
 
+if [ ! -f "$BACKEND/.env" ]; then
+  cp "$BACKEND/.env.example" "$BACKEND/.env"
+  echo "Created cw_board_evaluation/.env from .env.example (add OPENAI_API_KEY for AI features)."
+fi
+
 if ! pg_isready -q -h localhost -p 5432; then
   echo "Postgres isn't running. Start it with: brew services start postgresql@18" >&2
   exit 1
 fi
 
-# Apply any new migrations
-(cd "$BACKEND" && "$VENV/bin/alembic" upgrade head >/dev/null 2>&1)
+# Create the database if needed, apply migrations, seed demo data on first run
+(cd "$BACKEND" && "$VENV/bin/python" scripts/dev_bootstrap.py)
 
 trap 'kill 0' EXIT
 
