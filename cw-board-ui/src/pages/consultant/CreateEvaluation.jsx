@@ -1,25 +1,20 @@
-import React, { useMemo } from "react";
-import RegulatorPicker from "./RegulatorPicker.jsx";
+import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { orgApi, sectorLabel } from "../../api/orgApi.js";
+import { color, font, space } from "../../theme.js";
+
+function yearOf(iso) {
+  const y = iso ? Number(String(iso).slice(0, 4)) : NaN;
+  return Number.isFinite(y) && y > 1900 ? y : new Date().getFullYear();
+}
 
 /**
  * Create Evaluation page (router-based)
- * - No setTask
- * - Uses go("/route") navigation helper passed from AppLegacy
+ * Step 1: the company (organisation) and the evaluation's own details.
+ * Step 2: the questionnaire template (kept for now; a later task removes it).
  */
 export default function CreateEvaluationPage({
   ui,
-
-  // state + setters
-  tenantName,
-  setTenantName,
-  sector,
-  setSector,
-  year,
-  setYear,
-  newEvalId,
-  setNewEvalId,
-  regulatorsText,
-  setRegulatorsText,
 
   // evaluation id sources / success cues
   evalId,
@@ -40,7 +35,7 @@ export default function CreateEvaluationPage({
   focus,
 
   // actions / navigation
-  createEvaluation,
+  createEvaluation, // async (fields) => created evaluation
   setEvaluationQuestionnaire,
   go,
 
@@ -48,18 +43,56 @@ export default function CreateEvaluationPage({
   inputStyle,
 }) {
   const { Card, Badge, Field, Button } = ui;
+  const [params] = useSearchParams();
+  const lockedOrgId = params.get("organisation") || "";
 
-  const canCreate = useMemo(() => {
-    return !!tenantName.trim() && !!sector.trim() && !!String(year || "").trim();
-  }, [tenantName, sector, year]);
+  const [orgs, setOrgs] = useState(null);
+  const [subjectTypes, setSubjectTypes] = useState([]);
+  const [loadError, setLoadError] = useState("");
+  const [organisationId, setOrganisationId] = useState(lockedOrgId);
+  const [periodStart, setPeriodStart] = useState("");
+  const [periodEnd, setPeriodEnd] = useState("");
+  const [deadline, setDeadline] = useState("");
+  const [brief, setBrief] = useState("");
+  const [scope, setScope] = useState(null); // null until subject types load: then all ticked
+  const [name, setName] = useState("");
+  const [nameEdited, setNameEdited] = useState(false);
+  const [newEvalId, setNewEvalId] = useState("");
+  const [created, setCreated] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    Promise.all([orgApi.list(), orgApi.taxonomy()])
+      .then(([o, t]) => {
+        if (!alive) return;
+        setOrgs(o.items);
+        setSubjectTypes(t.subject_types);
+        setScope((prev) => prev || t.subject_types.map((s) => s.code));
+      })
+      .catch((e) => alive && setLoadError(e?.message || String(e)));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const defaultName = `${yearOf(periodEnd || deadline)} Board Evaluation`;
+  const effectiveName = nameEdited ? name : defaultName;
+  const lockedOrg = lockedOrgId && orgs ? orgs.find((o) => o.organisation_id === lockedOrgId) : null;
+  const scopeCount = scope ? scope.length : 0;
+  const periodError = periodStart && periodEnd && periodEnd < periodStart ? "The review period ends before it starts." : "";
+
+  const reasonCreate = !organisationId
+    ? "Choose the company this evaluation is for."
+    : !scopeCount
+    ? "Tick at least one subject type."
+    : periodError;
+  const canCreate = !reasonCreate;
 
   // ✅ stable ID source (do not rely on `result.action`)
   const effectiveEvalId = useMemo(() => {
     return String(evalId || lastCreatedEvalId || "").trim();
   }, [evalId, lastCreatedEvalId]);
 
-  // Step locks
-  const reasonCreate = !canCreate ? "Tenant, Sector, and Year are required." : "";
   const reasonNeedsEval = !effectiveEvalId
     ? "Create an evaluation first (so an Evaluation ID exists)."
     : "";
@@ -69,90 +102,130 @@ export default function CreateEvaluationPage({
 
   // ✅ success cue for questionnaire save (Step 2)
   const savedForThisEval =
+    !!effectiveEvalId &&
     String(questionnaireSavedForEvalId || "").trim() === String(effectiveEvalId || "").trim();
+
+  const submit = async () => {
+    const data = await createEvaluation({
+      evaluation_id: newEvalId.trim() || undefined,
+      organisation_id: organisationId,
+      name: effectiveName.trim(),
+      review_period_start: periodStart || null,
+      review_period_end: periodEnd || null,
+      deadline: deadline || null,
+      brief: brief.trim() || null,
+      subject_type_codes: scope,
+    });
+    if (data) setCreated(data);
+  };
+
+  const toggleScope = (code) =>
+    setScope((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
 
   return (
     <Card
-      title="Create Evaluation"
-      subtitle="Create an evaluation cycle (client + sector + year + regulators)."
+      title="Create evaluation"
+      subtitle="Choose the company, then set this year's review period, deadline and scope."
     >
       {focus}
 
-      {/* ---------------- Step 1: Create Evaluation ---------------- */}
-      <div style={{ marginTop: 14, fontWeight: 900, color: "#0F172A" }}>
-        Step 1 — Evaluation Details
-      </div>
+      {/* ---------------- Step 1: Company and evaluation details ---------------- */}
+      <h2 style={{ margin: `${space.md}px 0 ${space.sm}px`, fontSize: 15, fontWeight: font.weight.heavy, color: color.text }}>
+        Step 1 — Company and details
+      </h2>
 
-      <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <Field label="Evaluation ID (optional)">
+      {loadError ? (
+        <div role="alert" style={{ marginBottom: space.md, color: color.danger, fontWeight: font.weight.bold }}>{loadError}</div>
+      ) : null}
+
+      <div style={{ display: "grid", gap: space.md, gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+        <div style={{ gridColumn: "1 / -1" }}>
+          {lockedOrgId ? (
+            <Field label="Company">
+              <div style={{ ...inputStyle(), background: color.surfaceMuted, display: "flex", justifyContent: "space-between", gap: space.sm, flexWrap: "wrap" }}>
+                <span style={{ fontWeight: font.weight.bold }}>{lockedOrg ? lockedOrg.name : orgs ? "Unknown company" : "Loading…"}</span>
+                {lockedOrg ? <span style={{ color: color.textMuted }}>{sectorLabel(lockedOrg.sector_key, lockedOrg.sector_sub_type)}</span> : null}
+              </div>
+            </Field>
+          ) : (
+            <Field label="Company" hint="Not listed? Add it on the Companies page first.">
+              <select value={organisationId} onChange={(e) => setOrganisationId(e.target.value)} style={inputStyle()} disabled={!orgs}>
+                <option value="">{orgs ? "Choose a company…" : "Loading…"}</option>
+                {(orgs || []).map((o) => (
+                  <option key={o.organisation_id} value={o.organisation_id}>
+                    {o.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
+        </div>
+
+        <Field label="Evaluation name">
           <input
-            value={newEvalId}
-            onChange={(e) => setNewEvalId(e.target.value)}
-            placeholder="Leave blank to auto-generate"
+            value={effectiveName}
+            onChange={(e) => {
+              setNameEdited(true);
+              setName(e.target.value);
+            }}
             style={inputStyle()}
             autoComplete="off"
-            spellCheck={false}
           />
         </Field>
 
-        <Field label="Year">
-          <input
-            inputMode="numeric"
-            value={year}
-            onChange={(e) => setYear(e.target.value)}
-            style={inputStyle()}
-          />
+        <Field label="Deadline">
+          <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} style={inputStyle()} />
         </Field>
 
-        <Field label="Tenant Name">
-          <input
-            value={tenantName}
-            onChange={(e) => setTenantName(e.target.value)}
-            placeholder="e.g. Acme Insurance Plc"
-            style={inputStyle()}
-            autoComplete="off"
-            spellCheck={false}
-          />
+        <Field label="Review period start">
+          <input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} style={inputStyle()} />
         </Field>
 
-        <Field label="Sector">
-          <input
-            value={sector}
-            onChange={(e) => setSector(e.target.value)}
-            placeholder="e.g. insurance"
-            style={inputStyle()}
-            autoComplete="off"
-            spellCheck={false}
-          />
+        <Field label="Review period end" hint={periodError || undefined}>
+          <input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} style={inputStyle()} />
         </Field>
 
         <div style={{ gridColumn: "1 / -1" }}>
-          <RegulatorPicker value={regulatorsText} onChange={setRegulatorsText} disabled={busy} />
+          <Field label="Brief" hint="What the client wants from this evaluation, in a few sentences.">
+            <textarea value={brief} onChange={(e) => setBrief(e.target.value)} rows={3} style={{ ...inputStyle(), resize: "vertical" }} />
+          </Field>
         </div>
+
+        <fieldset style={{ gridColumn: "1 / -1", margin: 0, padding: 0, border: 0, minWidth: 0 }}>
+          <legend style={{ padding: 0, fontSize: 13, fontWeight: font.weight.bold, color: color.text }}>Subject types in scope</legend>
+          <div style={{ marginTop: 2, fontSize: font.small, color: color.textMuted }}>Who or what this evaluation covers. All are included by default.</div>
+          <div style={{ marginTop: space.sm, display: "grid", gap: space.sm, gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
+            {subjectTypes.map((s) => (
+              <label key={s.code} style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: font.body, color: color.text, cursor: "pointer" }}>
+                <input type="checkbox" checked={!!scope && scope.includes(s.code)} onChange={() => toggleScope(s.code)} style={{ marginTop: 3 }} />
+                <span>{s.name}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <details style={{ gridColumn: "1 / -1" }}>
+          <summary style={{ cursor: "pointer", fontSize: 13, color: color.textMuted }}>Advanced: choose the evaluation ID</summary>
+          <div style={{ marginTop: space.sm, maxWidth: 320 }}>
+            <Field label="Evaluation ID (optional)">
+              <input value={newEvalId} onChange={(e) => setNewEvalId(e.target.value)} placeholder="Leave blank to generate one" style={inputStyle()} autoComplete="off" spellCheck={false} />
+            </Field>
+          </div>
+        </details>
       </div>
 
       {/* Status */}
-      <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-        <Badge tone="gray">Open evaluation: {effectiveEvalId || "—"}</Badge>
-        {lastCreatedEvalId ? <Badge tone="green">Created: {lastCreatedEvalId}</Badge> : null}
-      </div>
-
-      {/* Step 1 buttons */}
-      <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <Button
-          onClick={createEvaluation}
-          disabled={busy || !canCreate}
-          variant="primary"
-          title={reasonCreate || "Create evaluation"}
-        >
-          {busy ? "Creating..." : "Create Evaluation"}
+      <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+        <Button onClick={submit} disabled={busy || !canCreate} variant="primary" title={reasonCreate || "Create evaluation"}>
+          {busy ? "Creating…" : "Create evaluation"}
         </Button>
-
-        <Button onClick={() => go("/consultant/evaluations")} disabled={busy} variant="soft">
-          Back to Evaluations →
+        <Button onClick={() => go(lockedOrgId ? `/consultant/companies/${lockedOrgId}/evaluations` : "/consultant/evaluations")} disabled={busy} variant="secondary">
+          Cancel
         </Button>
-
-        {!canCreate ? <Badge tone="amber">Locked: {reasonCreate}</Badge> : null}
+        {reasonCreate ? <span style={{ fontSize: 13, color: "#92400E" }}>{reasonCreate}</span> : null}
+        {created || lastCreatedEvalId ? (
+          <Badge tone="green">Created: {(created && created.name) || lastCreatedEvalId}</Badge>
+        ) : null}
       </div>
 
       {/* ---------------- Step 2: Questionnaire ---------------- */}

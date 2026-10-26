@@ -12,7 +12,7 @@ import uuid
 import pytest
 from sqlalchemy import select
 
-from app.db.models import AssessmentAssignment, Evaluation, Participant, Question
+from app.db.models import Organisation, AssessmentAssignment, Evaluation, Participant, Question
 from app.questionnaires.presets import get_questions_for_preset
 
 pytestmark = pytest.mark.integration
@@ -25,15 +25,18 @@ def auth_key(monkeypatch):
     return key
 
 
-def test_consultant_routes_require_api_key(api_client, auth_key) -> None:
+def test_consultant_routes_require_api_key(api_client, db_session, taxonomy_seeded, auth_key) -> None:
+    # New evaluations need an organisation (company); this test is about auth, not creation.
+    org = Organisation(name="Auth Test", sector_key="insurance", country="NG")
+    db_session.add(org)
+    db_session.flush()
+
     res = api_client.post(
         "/api/v1/evaluations",
         json={
             "evaluation_id": "eval-auth-test",
-            "tenant_name": "Auth Test",
-            "sector": "insurance",
+            "organisation_id": str(org.id),
             "year": 2025,
-            "regulators": [],
         },
     )
     assert res.status_code == 401
@@ -43,10 +46,8 @@ def test_consultant_routes_require_api_key(api_client, auth_key) -> None:
         headers={"X-Consultant-Key": auth_key},
         json={
             "evaluation_id": "eval-auth-test-ok",
-            "tenant_name": "Auth Test",
-            "sector": "insurance",
+            "organisation_id": str(org.id),
             "year": 2025,
-            "regulators": [],
         },
     )
     assert res2.status_code == 201, res2.text

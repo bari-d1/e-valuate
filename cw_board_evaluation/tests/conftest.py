@@ -150,3 +150,22 @@ def taxonomy_seeded(db_session: Session):
 
     seed_taxonomy(db_session)
     return db_session
+
+
+@pytest.fixture
+def reference_seeded(db_session: Session, taxonomy_seeded):
+    """Taxonomy plus governance codes and sector defaults."""
+    from app.services.governance import seed_governance_codes, seed_sector_code_defaults
+
+    seed_governance_codes(db_session)
+    seed_sector_code_defaults(db_session)
+    return db_session
+
+
+@pytest.fixture
+def tmp_storage(tmp_path, monkeypatch):
+    """Point document storage at a temporary directory."""
+    monkeypatch.setenv("STORAGE_DIR", str(tmp_path / "storage"))
+    from app.services.storage import get_storage
+
+    return get_storage()
