@@ -17,7 +17,7 @@ Then, from a fresh clone:
 ./dev.sh
 ```
 
-Open http://127.0.0.1:5173/consultant and click **Open** on `eval-002` (EMOK Express). Ctrl+C stops everything.
+Open http://127.0.0.1:5173/consultant and open the demo evaluation `eval-002` (EMOK Express). Ctrl+C stops everything.
 
 On first run `dev.sh` creates `cw_board_evaluation/.env` from `.env.example`, the Python environment and `node_modules`, creates the database, and seeds the demo evaluation `eval-002`. On every run it applies pending migrations, then starts the backend on port 8000 and the frontend on port 5173. Existing data is never changed.
 
@@ -48,20 +48,13 @@ The 11 tests skipped by default are the integration tests (marker `integration`)
 
 **Known failures:** none. Any failing test from here on is a regression.
 
-**Warning before running integration tests:** they drop and recreate every table in the database named by `DATABASE_URL`. `app/api/questions.py` and `app/util/initialiseLLM.py` load `cw_board_evaluation/.env` with `override=True`, which replaces a `DATABASE_URL` you set on the command line with the one in `.env`. If `.env` points at your dev database, the integration tests will wipe it. The baseline above was run from a checkout with no `.env`:
-
-```bash
-createdb -h localhost cw_board_eval_test   # once
-RUN_INTEGRATION_TESTS=1 \
-DATABASE_URL=postgresql+psycopg://localhost:5432/cw_board_eval_test \
-.venv-mac/bin/python -m pytest -q
-```
+**Integration tests and your data:** they drop and recreate every table in the database named by `DATABASE_URL`, so they refuse to run unless the database name ends in `_test`. See [cw_board_evaluation/TESTING.md](cw_board_evaluation/TESTING.md) for how to run them.
 
 ## Smoke test baseline
 
 Recorded 2026-10-22 on branch `chore/groundwork` (base `22b5392`). Fresh database migrated to head and seeded, backend and frontend started as `dev.sh` does, then the journey was driven in headless Chrome. OpenAI key configured.
 
-**Seeding:** `seed_demo_environment.py eval-002` on its own creates the evaluation and questions but **no tracks, tasks or responses** ("template missing"). It needs `seed_reference_data.py` to run first, as in First-time setup above. In that order: 12 participants, 10 questions, 28 tasks, 86 demo answers.
+**Seeding:** `seed_demo_environment.py eval-002` on its own creates the evaluation and questions but **no tracks, tasks or responses** ("template missing"). It needs `seed_reference_data.py` to run first; `dev.sh` now does both, in that order, on an empty database. In that order: 12 participants, 10 questions, 28 tasks, 86 demo answers.
 
 ### Consultant
 
