@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import RegulatorPicker from "./RegulatorPicker.jsx";
 
 /**
  * Create Evaluation page (router-based)
@@ -126,16 +127,7 @@ export default function CreateEvaluationPage({
         </Field>
 
         <div style={{ gridColumn: "1 / -1" }}>
-          <Field label="Regulators (comma-separated)" hint='Example: "NAICOM, FRC"'>
-            <input
-              value={regulatorsText}
-              onChange={(e) => setRegulatorsText(e.target.value)}
-              placeholder="e.g. NAICOM, FRC"
-              style={inputStyle()}
-              autoComplete="off"
-              spellCheck={false}
-            />
-          </Field>
+          <RegulatorPicker value={regulatorsText} onChange={setRegulatorsText} disabled={busy} />
         </div>
       </div>
 
