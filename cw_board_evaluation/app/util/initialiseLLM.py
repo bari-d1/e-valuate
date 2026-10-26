@@ -6,7 +6,7 @@ from dotenv import load_dotenv, find_dotenv
 
 # ---------- Env / defaults ----------
 
-load_dotenv(find_dotenv(), override=True)
+load_dotenv(find_dotenv(), override=False)  # never replace already-set vars (e.g. a test DATABASE_URL)
 
 def initialize_llm(context=None):
     chosen_model = os.getenv("LLM_MODEL", "gpt-4.1-mini")
