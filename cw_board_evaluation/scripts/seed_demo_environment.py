@@ -33,6 +33,7 @@ from app.db.models import (
 )
 from app.db.session import SessionLocal
 from app.questionnaires.presets import get_questions_for_preset
+from app.services.organisations import ensure_organisation_for_evaluation
 
 # Defaults match consultant UI (AppLegacy.jsx)
 PRESETS = {
@@ -88,6 +89,11 @@ def seed_evaluation(db, eval_id: str, meta: dict) -> None:
         ev.regulators = {"items": list(meta.get("regulators") or [])}
         db.commit()
         print(f"Evaluation exists {eval_id} ({meta['tenant_name']})")
+
+    # Link the evaluation to its organisation (company profile), as the backfill migration does
+    org = ensure_organisation_for_evaluation(db, ev)
+    db.commit()
+    print(f"  Organisation: {org.name} (sector {org.sector_key or 'not mapped'})")
 
     tc, ver = "DEFAULT", 1
     existing_texts = set(

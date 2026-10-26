@@ -7,6 +7,8 @@ Endpoints:
 - GET /api/v1/governance-codes
 - GET /api/v1/governance-codes/{code}
 - GET /api/v1/governance-codes/{code}/clauses?subject=&theme=&q=
+- GET  /api/v1/evaluations/{evaluation_id}/governance-codes
+- POST /api/v1/evaluations/{evaluation_id}/governance-codes/apply-defaults
 """
 
 from __future__ import annotations
@@ -18,6 +20,8 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db.models import (
+    Evaluation,
+    EvaluationGovernanceCode,
     GovernanceClause,
     GovernanceClauseSubjectType,
     GovernanceCode,
@@ -26,6 +30,7 @@ from app.db.models import (
     Theme,
 )
 from app.db.session import get_db
+from app.services.organisations import apply_evaluation_code_defaults
 
 router = APIRouter()
 
@@ -184,3 +189,39 @@ def list_governance_clauses(
         "count": len(items),
         "items": items,
     }
+
+
+# ----------------------------
+# Evaluation governance codes
+# ----------------------------
+
+def _evaluation_or_404(db: Session, evaluation_id: str) -> Evaluation:
+    ev = db.get(Evaluation, evaluation_id)
+    if not ev:
+        raise HTTPException(status_code=404, detail=f"Evaluation not found: {evaluation_id}")
+    return ev
+
+
+@router.get("/evaluations/{evaluation_id}/governance-codes")
+def list_evaluation_governance_codes(evaluation_id: str, db: Session = Depends(get_db)) -> Dict[str, Any]:
+    _evaluation_or_404(db, evaluation_id)
+    rows = db.execute(
+        select(EvaluationGovernanceCode, GovernanceCode)
+        .join(GovernanceCode, GovernanceCode.code == EvaluationGovernanceCode.code)
+        .where(EvaluationGovernanceCode.evaluation_id == evaluation_id)
+        .order_by(EvaluationGovernanceCode.code)
+    ).all()
+    items = [{"code": e.code, "source": e.source, "title": g.title, "status": g.status} for e, g in rows]
+    return {"evaluation_id": evaluation_id, "count": len(items), "items": items}
+
+
+@router.post("/evaluations/{evaluation_id}/governance-codes/apply-defaults")
+def apply_evaluation_governance_defaults(evaluation_id: str, db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """
+    Copy the organisation's governance codes onto the evaluation, or (for an
+    evaluation without an organisation) the sector defaults. Manual codes stay.
+    """
+    ev = _evaluation_or_404(db, evaluation_id)
+    result = apply_evaluation_code_defaults(db, ev)
+    db.commit()
+    return {"evaluation_id": evaluation_id, **result}

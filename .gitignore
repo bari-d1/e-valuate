@@ -16,6 +16,9 @@ dist/
 # Generated reports
 cw_board_evaluation/outputs/
 
+# Uploaded client documents (local storage; STORAGE_DIR)
+cw_board_evaluation/storage/
+
 # Editor / OS
 .idea/
 .vscode/

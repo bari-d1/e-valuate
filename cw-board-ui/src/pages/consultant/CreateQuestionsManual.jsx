@@ -118,7 +118,7 @@ export default function CreateQuestionsManualPage(props) {
             onClick: listQuestionsManual,
             disabled: busy || !!reasonLoad,
             variant: "secondary",
-            title: reasonLoad || "Load questions for the focused evaluation/questionnaire",
+            title: reasonLoad || "Load questions for the open evaluation",
           },
         ],
         meta: (

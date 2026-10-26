@@ -8,6 +8,7 @@ python-dotenv
 pydantic
 openpyxl
 python-docx
+pypdf
 langchain
 langchain-core
 langchain-openai

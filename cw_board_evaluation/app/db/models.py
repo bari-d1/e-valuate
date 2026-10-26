@@ -34,9 +34,10 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.ext.mutable import MutableDict
+from sqlalchemy.ext.mutable import MutableDict, MutableList
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -76,6 +77,22 @@ class Evaluation(Base):
         nullable=False,
     )
 
+    # Company context. tenant_name / sector / regulators above are kept in sync
+    # from the organisation (app.services.organisations.sync_evaluation_from_organisation)
+    # because reports, exports, the portal and emails still read them.
+    organisation_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("organisations.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    review_period_start: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    review_period_end: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    deadline: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    brief: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # "draft" | "in_review" | "live" | "closed"
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft", server_default="draft")
+
     # Relationships
     reports: Mapped[list["Report"]] = relationship(
         back_populates="evaluation",
@@ -105,6 +122,11 @@ class Evaluation(Base):
 
     __table_args__ = (
         Index("ix_evaluations_tenant_year", "tenant_name", "year"),
+        Index("ix_evaluations_organisation", "organisation_id"),
+        CheckConstraint(
+            "status IN ('draft', 'in_review', 'live', 'closed')",
+            name="ck_evaluations_status",
+        ),
     )
 
 
@@ -927,4 +949,215 @@ class EvaluationGovernanceCode(Base):
             "source IN ('sector_default', 'manual')",
             name="ck_evaluation_governance_codes_source",
         ),
+    )
+
+
+# ----------------------------
+# Company context: organisations, documents, profile facts, committees
+# ----------------------------
+
+class Organisation(Base):
+    """
+    A client company, created once and reused by every year's evaluation.
+    Its profile (facts + committees) is proposed (manually or by AI) and
+    confirmed by a consultant; marking it reviewed bumps profile_version.
+    """
+
+    __tablename__ = "organisations"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    # Sector keys from app.domain.governance (e.g. "insurance"); NULL when not known
+    sector_key: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    sector_sub_type: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)  # e.g. "microfinance"
+    country: Mapped[str] = mapped_column(String(8), nullable=False, default="NG")
+
+    # "draft" | "reviewed"
+    profile_status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")
+    profile_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    profile_reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        CheckConstraint("profile_status IN ('draft', 'reviewed')", name="ck_organisations_profile_status"),
+        Index("ix_organisations_name", "name"),
+    )
+
+
+class OrgDocument(Base):
+    """A document uploaded for an organisation. The file lives in storage under storage_key."""
+
+    __tablename__ = "org_documents"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organisation_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("organisations.id", ondelete="CASCADE"), nullable=False
+    )
+    # company_profile | board_structure | committee_tor | governance_policy | annual_report | public_info | other
+    doc_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    filename: Mapped[str] = mapped_column(String(255), nullable=False)  # sanitised original name, for display
+    content_type: Mapped[str] = mapped_column(String(127), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    storage_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    extracted_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # pending | done | failed
+    extraction_status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    extraction_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint(
+            "doc_type IN ('company_profile', 'board_structure', 'committee_tor', 'governance_policy', "
+            "'annual_report', 'public_info', 'other')",
+            name="ck_org_documents_doc_type",
+        ),
+        CheckConstraint("extraction_status IN ('pending', 'done', 'failed')", name="ck_org_documents_extraction_status"),
+        UniqueConstraint("storage_key", name="uq_org_documents_storage_key"),
+        Index("ix_org_documents_organisation", "organisation_id"),
+    )
+
+
+class OrganisationFact(Base):
+    """
+    One profile fact (key from app.domain.org_profile.FACT_REGISTRY).
+    Every fact records its source (public | client | consultant). AI only
+    proposes; a consultant confirms. At most one confirmed and one proposed
+    fact per key.
+    """
+
+    __tablename__ = "organisation_facts"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organisation_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("organisations.id", ondelete="CASCADE"), nullable=False
+    )
+    key: Mapped[str] = mapped_column(String(64), nullable=False)
+    value: Mapped[Any] = mapped_column(JSONB, nullable=True)
+    source: Mapped[str] = mapped_column(String(16), nullable=False)  # public | client | consultant
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="proposed")  # proposed | confirmed | rejected
+    origin: Mapped[str] = mapped_column(String(16), nullable=False, default="manual")  # ai_extraction | manual
+    source_document_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("org_documents.id", ondelete="SET NULL"), nullable=True
+    )
+    source_excerpt: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # verbatim quote
+    note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    confirmed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("source IN ('public', 'client', 'consultant')", name="ck_organisation_facts_source"),
+        CheckConstraint("status IN ('proposed', 'confirmed', 'rejected')", name="ck_organisation_facts_status"),
+        CheckConstraint("origin IN ('ai_extraction', 'manual')", name="ck_organisation_facts_origin"),
+        Index("ix_organisation_facts_organisation", "organisation_id"),
+        Index(
+            "uq_organisation_facts_one_confirmed", "organisation_id", "key",
+            unique=True, postgresql_where=text("status = 'confirmed'"),
+        ),
+        Index(
+            "uq_organisation_facts_one_proposed", "organisation_id", "key",
+            unique=True, postgresql_where=text("status = 'proposed'"),
+        ),
+    )
+
+
+class OrgCommittee(Base):
+    """
+    A board committee as written in the client's documents (or entered by a
+    consultant). Members are names for now; linking them to participants
+    comes later.
+    """
+
+    __tablename__ = "org_committees"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organisation_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("organisations.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    # audit | risk | remuneration | nomination | finance | governance | other
+    committee_type: Mapped[str] = mapped_column(String(16), nullable=False, default="other")
+    chair_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    member_names: Mapped[list] = mapped_column(MutableList.as_mutable(JSONB), nullable=False, default=list)
+    terms_of_reference_document_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("org_documents.id", ondelete="SET NULL"), nullable=True
+    )
+    source: Mapped[str] = mapped_column(String(16), nullable=False)  # public | client | consultant
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="proposed")  # proposed | confirmed | rejected
+    # Provenance for AI proposals (same rules as facts)
+    origin: Mapped[str] = mapped_column(String(16), nullable=False, default="manual")  # ai_extraction | manual
+    source_document_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("org_documents.id", ondelete="SET NULL"), nullable=True
+    )
+    source_excerpt: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint(
+            "committee_type IN ('audit', 'risk', 'remuneration', 'nomination', 'finance', 'governance', 'other')",
+            name="ck_org_committees_type",
+        ),
+        CheckConstraint("source IN ('public', 'client', 'consultant')", name="ck_org_committees_source"),
+        CheckConstraint("status IN ('proposed', 'confirmed', 'rejected')", name="ck_org_committees_status"),
+        CheckConstraint("origin IN ('ai_extraction', 'manual')", name="ck_org_committees_origin"),
+        Index("ix_org_committees_organisation", "organisation_id"),
+    )
+
+
+class OrganisationGovernanceCode(Base):
+    """Governance codes that apply to an organisation (sector defaults plus manual additions)."""
+
+    __tablename__ = "organisation_governance_codes"
+
+    organisation_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("organisations.id", ondelete="CASCADE"), primary_key=True
+    )
+    code: Mapped[str] = mapped_column(
+        String(32), ForeignKey("governance_codes.code", ondelete="RESTRICT"), primary_key=True
+    )
+    source: Mapped[str] = mapped_column(String(16), nullable=False, default="manual")  # sector_default | manual
+
+    __table_args__ = (
+        CheckConstraint("source IN ('sector_default', 'manual')", name="ck_organisation_governance_codes_source"),
+    )
+
+
+class EvaluationScopeSubjectType(Base):
+    """Subject types in scope for an evaluation (default: all eight)."""
+
+    __tablename__ = "evaluation_scope_subject_types"
+
+    evaluation_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("evaluations.id", ondelete="CASCADE"), primary_key=True
+    )
+    subject_type_code: Mapped[str] = mapped_column(
+        String(32), ForeignKey("subject_types.code", ondelete="RESTRICT"), primary_key=True
+    )
+
+
+class EvaluationContextSnapshot(Base):
+    """
+    Frozen copy of the organisation context an evaluation used: confirmed
+    facts, committees, documents and governance codes at that moment.
+    """
+
+    __tablename__ = "evaluation_context_snapshots"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    evaluation_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("evaluations.id", ondelete="CASCADE"), nullable=False
+    )
+    profile_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    facts: Mapped[Any] = mapped_column(JSONB, nullable=False, default=list)
+    committees: Mapped[Any] = mapped_column(JSONB, nullable=False, default=list)
+    document_ids: Mapped[Any] = mapped_column(JSONB, nullable=False, default=list)
+    governance_codes: Mapped[Any] = mapped_column(JSONB, nullable=False, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_evaluation_context_snapshots_evaluation", "evaluation_id", "created_at"),
     )
