@@ -12,6 +12,7 @@ Endpoints:
 - POST /api/v1/evaluations/{evaluation_id}/questions
 - POST /api/v1/evaluations/{evaluation_id}/questions/bulk
 - PATCH /api/v1/questions/{question_id}
+  (create, bulk and patch accept optional theme_code, evidence_source_code, subject_type_codes)
 
 - POST /api/v1/evaluations/{evaluation_id}/seed/questions?preset=default|expanded
 - POST /api/v1/evaluations/{evaluation_id}/questionnaire/generate
@@ -36,10 +37,11 @@ from sqlalchemy.orm import Session
 
 from langchain.chat_models import init_chat_model
 
-from app.db.models import Evaluation, Question
+from app.db.models import Evaluation, Question, QuestionSubjectType
 from app.db.session import get_db
 from app.questionnaires.presets import get_questions_for_preset, list_preset_names
 from app.services.document_text import extract_text_from_upload
+from app.services.taxonomy import normalize_code, validate_tag_codes
 
 load_dotenv(find_dotenv(), override=True)
 
@@ -55,6 +57,45 @@ def _ensure_evaluation_exists(db: Session, evaluation_id: str) -> Evaluation:
     if not ev:
         raise HTTPException(status_code=404, detail=f"Evaluation not found: {evaluation_id}")
     return ev
+
+
+def _normalize_subject_codes(codes: Optional[List[str]]) -> List[str]:
+    out: List[str] = []
+    for c in codes or []:
+        n = normalize_code(c)
+        if n and n not in out:
+            out.append(n)
+    return out
+
+
+def _validate_tags_or_400(
+    db: Session,
+    *,
+    theme_codes: List[Optional[str]],
+    evidence_source_codes: List[Optional[str]],
+    subject_type_codes: List[str],
+    prefix: str = "",
+) -> None:
+    errors = validate_tag_codes(
+        db,
+        theme_codes=theme_codes,
+        evidence_source_codes=evidence_source_codes,
+        subject_type_codes=subject_type_codes,
+    )
+    if errors:
+        raise HTTPException(status_code=400, detail=prefix + " ".join(errors))
+
+
+def _apply_subject_types(q: Question, codes: List[str]) -> None:
+    q.subject_type_links = [QuestionSubjectType(subject_type_code=c) for c in codes]
+
+
+def _question_tags(q: Question) -> Dict[str, Any]:
+    return {
+        "theme_code": q.theme_code,
+        "evidence_source_code": q.evidence_source_code,
+        "subject_type_codes": q.subject_type_codes,
+    }
 
 
 def _clean_text_for_prompt(text: str, max_chars: int = 20_000) -> str:
@@ -167,6 +208,10 @@ class CreateQuestionRequest(BaseModel):
     answer_type: str = "rating"   # rating | yesno | comment
     weight: int = 1
     active: bool = True
+    # Optional taxonomy tags (codes from GET /taxonomy)
+    theme_code: Optional[str] = None
+    evidence_source_code: Optional[str] = None
+    subject_type_codes: Optional[List[str]] = None
 
 
 class UpdateQuestionRequest(BaseModel):
@@ -175,6 +220,11 @@ class UpdateQuestionRequest(BaseModel):
     answer_type: Optional[str] = None
     weight: Optional[int] = None
     active: Optional[bool] = None
+    # Taxonomy tags: omit to leave unchanged; send null (or [] for
+    # subject_type_codes) to clear.
+    theme_code: Optional[str] = None
+    evidence_source_code: Optional[str] = None
+    subject_type_codes: Optional[List[str]] = None
 
 
 class BulkQuestionItem(BaseModel):
@@ -183,6 +233,10 @@ class BulkQuestionItem(BaseModel):
     answer_type: str = Field(default="rating")  # rating|yesno|comment
     weight: int = Field(default=1, ge=1, le=100)
     active: bool = Field(default=True)
+    # Optional taxonomy tags (codes from GET /taxonomy)
+    theme_code: Optional[str] = None
+    evidence_source_code: Optional[str] = None
+    subject_type_codes: Optional[List[str]] = None
 
 
 class BulkCreateQuestionsRequest(BaseModel):
@@ -242,6 +296,7 @@ def list_questions(
                 "weight": q.weight,
                 "active": bool(q.active),
                 "created_at": q.created_at.isoformat() if q.created_at else None,
+                **_question_tags(q),
             }
             for q in rows
         ],
@@ -262,6 +317,16 @@ def create_question(evaluation_id: str, payload: CreateQuestionRequest, db: Sess
     if not text:
         raise HTTPException(status_code=400, detail="Question text is required.")
 
+    theme_code = normalize_code(payload.theme_code)
+    evidence_source_code = normalize_code(payload.evidence_source_code)
+    subject_type_codes = _normalize_subject_codes(payload.subject_type_codes)
+    _validate_tags_or_400(
+        db,
+        theme_codes=[theme_code],
+        evidence_source_codes=[evidence_source_code],
+        subject_type_codes=subject_type_codes,
+    )
+
     existing = db.execute(
         select(Question).where(
             Question.template_code == tc,
@@ -271,7 +336,8 @@ def create_question(evaluation_id: str, payload: CreateQuestionRequest, db: Sess
     ).scalar_one_or_none()
 
     if existing:
-        return {"created": False, "question_id": str(existing.id), "message": "Already exists."}
+        # Idempotent: an existing question is returned as-is (tags are not changed here; use PATCH).
+        return {"created": False, "question_id": str(existing.id), "message": "Already exists.", **_question_tags(existing)}
 
     q = Question(
         template_code=tc,
@@ -281,7 +347,10 @@ def create_question(evaluation_id: str, payload: CreateQuestionRequest, db: Sess
         answer_type=(payload.answer_type or "rating").strip().lower(),
         weight=int(payload.weight or 1),
         active=1 if payload.active else 0,
+        theme_code=theme_code,
+        evidence_source_code=evidence_source_code,
     )
+    _apply_subject_types(q, subject_type_codes)
     db.add(q)
     try:
         db.commit()
@@ -297,10 +366,10 @@ def create_question(evaluation_id: str, payload: CreateQuestionRequest, db: Sess
             )
         ).scalar_one_or_none()
         if existing2:
-            return {"created": False, "question_id": str(existing2.id), "message": "Already exists."}
+            return {"created": False, "question_id": str(existing2.id), "message": "Already exists.", **_question_tags(existing2)}
         raise HTTPException(status_code=409, detail="Question already exists.")
 
-    return {"created": True, "question_id": str(q.id), "message": "Question created."}
+    return {"created": True, "question_id": str(q.id), "message": "Question created.", **_question_tags(q)}
 
 
 # -------------------------
@@ -320,6 +389,22 @@ def bulk_create_questions(
 
     if not payload.items:
         raise HTTPException(status_code=400, detail="items cannot be empty")
+
+    item_tags = []
+    for idx, item in enumerate(payload.items):
+        tags = (
+            normalize_code(item.theme_code),
+            normalize_code(item.evidence_source_code),
+            _normalize_subject_codes(item.subject_type_codes),
+        )
+        _validate_tags_or_400(
+            db,
+            theme_codes=[tags[0]],
+            evidence_source_codes=[tags[1]],
+            subject_type_codes=tags[2],
+            prefix=f"items[{idx}]: ",
+        )
+        item_tags.append(tags)
 
     created = 0
     skipped_existing = 0
@@ -351,7 +436,10 @@ def bulk_create_questions(
             answer_type=(item.answer_type or "rating").strip().lower(),
             weight=int(item.weight or 1),
             active=1 if item.active else 0,
+            theme_code=item_tags[idx][0],
+            evidence_source_code=item_tags[idx][1],
         )
+        _apply_subject_types(q, item_tags[idx][2])
         db.add(q)
         try:
             db.flush()
@@ -390,6 +478,19 @@ def update_question(question_id: str, payload: UpdateQuestionRequest, db: Sessio
     if not q:
         raise HTTPException(status_code=404, detail="Question not found.")
 
+    # Tags: only fields present in the request are changed (null clears).
+    # Validate before changing anything, so a 400 leaves the question untouched.
+    sent = payload.model_fields_set
+    theme_code = normalize_code(payload.theme_code)
+    evidence_source_code = normalize_code(payload.evidence_source_code)
+    subject_type_codes = _normalize_subject_codes(payload.subject_type_codes)
+    _validate_tags_or_400(
+        db,
+        theme_codes=[theme_code] if "theme_code" in sent else [],
+        evidence_source_codes=[evidence_source_code] if "evidence_source_code" in sent else [],
+        subject_type_codes=subject_type_codes if "subject_type_codes" in sent else [],
+    )
+
     if payload.dimension is not None:
         q.dimension = payload.dimension.strip()
     if payload.text is not None:
@@ -400,6 +501,13 @@ def update_question(question_id: str, payload: UpdateQuestionRequest, db: Sessio
         q.weight = int(payload.weight)
     if payload.active is not None:
         q.active = 1 if payload.active else 0
+
+    if "theme_code" in sent:
+        q.theme_code = theme_code
+    if "evidence_source_code" in sent:
+        q.evidence_source_code = evidence_source_code
+    if "subject_type_codes" in sent:
+        _apply_subject_types(q, subject_type_codes)
 
     db.commit()
     db.refresh(q)
@@ -414,6 +522,7 @@ def update_question(question_id: str, payload: UpdateQuestionRequest, db: Sessio
         "answer_type": q.answer_type,
         "weight": q.weight,
         "active": bool(q.active),
+        **_question_tags(q),
     }
 
 

@@ -23,6 +23,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 from sqlalchemy import (
+    CheckConstraint,
     DateTime,
     ForeignKey,
     Index,
@@ -266,6 +267,56 @@ class Report(Base):
 
 
 # ----------------------------
+# Taxonomy lookup tables (see app.domain.taxonomy)
+# ----------------------------
+
+class SubjectType(Base):
+    """WHO or WHAT is being evaluated (e.g. BOARD, CHAIR, INED, COMMITTEE)."""
+
+    __tablename__ = "subject_types"
+
+    code: Mapped[str] = mapped_column(String(32), primary_key=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # "single" | "per_person" | "per_committee"
+    cardinality: Mapped[str] = mapped_column(String(16), nullable=False)
+
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+    __table_args__ = (
+        CheckConstraint(
+            "cardinality IN ('single', 'per_person', 'per_committee')",
+            name="ck_subject_types_cardinality",
+        ),
+    )
+
+
+class Theme(Base):
+    """WHICH ASPECT is being evaluated. Provisional list: names are data, not code."""
+
+    __tablename__ = "themes"
+
+    code: Mapped[str] = mapped_column(String(64), primary_key=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+
+class EvidenceSource(Base):
+    """WHAT KIND of evidence a question gathers (PERCEPTION, ROLE_SELF, ORG_FACT)."""
+
+    __tablename__ = "evidence_sources"
+
+    code: Mapped[str] = mapped_column(String(32), primary_key=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
+# ----------------------------
 # Participants / Assignments / Questions / Responses
 # ----------------------------
 
@@ -483,6 +534,19 @@ class Question(Base):
     # SQLite-friendly bool; for Postgres this is fine too
     active: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
+    # Taxonomy tags (optional). `dimension` above is unchanged and still drives
+    # analytics, portal ordering and exports.
+    theme_code: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        ForeignKey("themes.code", ondelete="RESTRICT"),
+        nullable=True,
+    )
+    evidence_source_code: Mapped[Optional[str]] = mapped_column(
+        String(32),
+        ForeignKey("evidence_sources.code", ondelete="RESTRICT"),
+        nullable=True,
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -491,10 +555,108 @@ class Question(Base):
 
     responses: Mapped[list["Response"]] = relationship(back_populates="question")
 
+    # Subject TYPES this question is about (e.g. COMMITTEE). Which committee or
+    # director a response is about is decided at assembly time, not here.
+    subject_type_links: Mapped[list["QuestionSubjectType"]] = relationship(
+        back_populates="question",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        order_by="QuestionSubjectType.subject_type_code",
+    )
+
+    @property
+    def subject_type_codes(self) -> list[str]:
+        return [link.subject_type_code for link in self.subject_type_links]
+
     __table_args__ = (
         Index("ix_questions_template_version", "template_code", "version"),
         Index("ix_questions_dimension", "dimension"),
+        Index("ix_questions_theme", "theme_code"),
+        Index("ix_questions_evidence_source", "evidence_source_code"),
         UniqueConstraint("template_code", "version", "text", name="uq_question_template_version_text"),
+    )
+
+
+class QuestionSubjectType(Base):
+    """Join table: which subject types a question relates to (many-to-many)."""
+
+    __tablename__ = "question_subject_types"
+
+    question_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("questions.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    subject_type_code: Mapped[str] = mapped_column(
+        String(32),
+        ForeignKey("subject_types.code", ondelete="RESTRICT"),
+        primary_key=True,
+    )
+
+    question: Mapped["Question"] = relationship(back_populates="subject_type_links")
+
+    __table_args__ = (
+        Index("ix_question_subject_types_subject_type", "subject_type_code"),
+    )
+
+
+class EvaluationSubject(Base):
+    """
+    A concrete subject within one evaluation: the board, a committee, or a
+    person in a role (e.g. "INED: Jane Doe"). Built from existing evaluation
+    data by app.services.evaluation_subjects.sync_evaluation_subjects.
+
+    Shape by cardinality of the subject type:
+      single        -> participant_id NULL (BOARD) or the one person (CHAIR, MD_CEO, COMPANY_SECRETARY)
+      per_person    -> participant_id set (ED, NED, INED)
+      per_committee -> committee_name set (COMMITTEE)
+    """
+
+    __tablename__ = "evaluation_subjects"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    evaluation_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("evaluations.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    subject_type_code: Mapped[str] = mapped_column(
+        String(32),
+        ForeignKey("subject_types.code", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    participant_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("participants.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    committee_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
+    label: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        # NULLS NOT DISTINCT so e.g. a second BOARD row (both NULLs) is rejected too.
+        UniqueConstraint(
+            "evaluation_id",
+            "subject_type_code",
+            "participant_id",
+            "committee_name",
+            name="uq_evaluation_subject",
+            postgresql_nulls_not_distinct=True,
+        ),
+        CheckConstraint(
+            "participant_id IS NULL OR committee_name IS NULL",
+            name="ck_evaluation_subjects_one_target",
+        ),
+        Index("ix_evaluation_subjects_evaluation", "evaluation_id"),
+        Index("ix_evaluation_subjects_participant", "participant_id"),
     )
 
 

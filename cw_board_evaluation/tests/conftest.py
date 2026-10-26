@@ -132,3 +132,12 @@ def track_templates_seeded(db_session: Session):
         out.append(row)
     db_session.flush()
     return out
+
+
+@pytest.fixture
+def taxonomy_seeded(db_session: Session):
+    """Subject types, themes and evidence sources (create_all doesn't run migrations)."""
+    from app.services.taxonomy import seed_taxonomy
+
+    seed_taxonomy(db_session)
+    return db_session

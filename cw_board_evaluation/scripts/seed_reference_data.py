@@ -1,5 +1,7 @@
 ﻿"""
-Seed global assessment_track_templates (idempotent by code).
+Seed global reference data (idempotent):
+- assessment_track_templates (by code; existing rows are updated)
+- taxonomy: subject_types, themes, evidence_sources (missing rows only)
 """
 from __future__ import annotations
 
@@ -15,6 +17,7 @@ load_dotenv(find_dotenv())
 from sqlalchemy import select
 from app.db.models import AssessmentTrackTemplate
 from app.db.session import SessionLocal
+from app.services.taxonomy import seed_taxonomy
 
 TRACK_TEMPLATES = [
     {"code": "BOARD_AS_WHOLE", "name": "Board as a whole", "description": "Collective assessment of the full board.", "assignment_type": "BOARD_AS_WHOLE", "subject_mode": "NONE", "subject_role": None, "respondent_rule": {"mode": "ALL"}},
@@ -42,10 +45,12 @@ def main():
             else:
                 db.add(AssessmentTrackTemplate(id=uuid.uuid4(), default_template_code="DEFAULT", default_version=1, active=1, **spec))
                 created += 1
+        taxonomy_created = seed_taxonomy(db)
         db.commit()
     finally:
         db.close()
     print(f"Track templates: {created} created, {updated} updated.")
+    print("Taxonomy rows created: " + ", ".join(f"{k} {v}" for k, v in taxonomy_created.items()) + ".")
 
 if __name__ == "__main__":
     main()
