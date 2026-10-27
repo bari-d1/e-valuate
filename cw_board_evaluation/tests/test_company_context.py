@@ -300,7 +300,8 @@ def _keys(storage):
     return [f"org-docs/{p.name}" for p in root.glob("*")] if root.exists() else []
 
 
-def test_api_review_flow(api_client, db_session, reference_seeded) -> None:
+def test_api_review_flow(api_client, db_session, reference_seeded, monkeypatch) -> None:
+    monkeypatch.delenv("AI_EXTRACTION_ENABLED", raising=False)  # the local .env may turn it on
     org = _new_org(api_client)
     base = f"/api/v1/organisations/{org['organisation_id']}"
     o = db_session.get(Organisation, __import__("uuid").UUID(org["organisation_id"]))

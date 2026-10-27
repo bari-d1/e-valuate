@@ -22,6 +22,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.models import (
+    BoardMember,
+    CommitteeMembership,
     Evaluation,
     EvaluationContextSnapshot,
     EvaluationGovernanceCode,
@@ -266,6 +268,13 @@ def reject_committee(db: Session, org: Organisation, c: OrgCommittee) -> OrgComm
 
 def delete_committee(db: Session, org: Organisation, c: OrgCommittee) -> None:
     was_confirmed = c.status == "confirmed"
+    # Members confirmed on this committee lose it, so their profiles go back to draft
+    linked = db.execute(
+        select(BoardMember).join(CommitteeMembership, CommitteeMembership.board_member_id == BoardMember.id)
+        .where(CommitteeMembership.committee_id == c.id, CommitteeMembership.status == "confirmed")
+    ).scalars().all()
+    for m in linked:
+        m.profile_status = "draft"
     db.delete(c)
     if was_confirmed:
         _profile_changed(db, org)
