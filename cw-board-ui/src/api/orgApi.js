@@ -7,7 +7,7 @@ import { getConsultantHeaders } from "./consultantAuth.js";
 export const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 const V1 = `${API_BASE}/api/v1`;
 
-async function request(path, { method = "GET", body, form } = {}) {
+export async function request(path, { method = "GET", body, form } = {}) {
   const headers = getConsultantHeaders({ Accept: "application/json" });
   let payload;
   if (form) {
@@ -26,9 +26,14 @@ async function request(path, { method = "GET", body, form } = {}) {
   }
   if (!res.ok) {
     const detail = data && typeof data === "object" ? data.detail : data;
-    const message = typeof detail === "string" ? detail : detail ? JSON.stringify(detail) : `Request failed (${res.status})`;
+    const message =
+      typeof detail === "string"
+        ? detail
+        : detail?.message || (detail ? JSON.stringify(detail) : `Request failed (${res.status})`);
     const err = new Error(message);
     err.status = res.status;
+    // Validation errors listed one by one (e.g. the question bank)
+    if (Array.isArray(detail?.errors)) err.errors = detail.errors;
     throw err;
   }
   return data;
