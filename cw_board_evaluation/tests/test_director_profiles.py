@@ -477,3 +477,34 @@ def test_api_board_members(api_client, db_session, org, tmp_storage, monkeypatch
     assert gone["active"] is False
     assert api_client.get(f"{base}?include_inactive=false").json()["count"] == 0
     assert api_client.get(f"/api/v1/organisations/{uuid.uuid4()}/board-members/{mid}").status_code == 404
+
+
+def test_invited_participants_link_by_email(api_client, db_session, org) -> None:
+    ev = _evaluation(db_session, org, "eval-invite-link")
+    m = _member(db_session, org)
+    db_session.commit()
+    res = api_client.post(f"/api/v1/evaluations/{ev.id}/participants/invite", json={"send_email": False, "participants": [
+        {"email": " MEMBER07@demo.test ", "full_name": "Board Member 07", "role": "NED"},
+        {"email": "outsider@demo.test", "full_name": "Outside Person", "role": "NED"},
+    ]})
+    assert res.status_code in (200, 201), res.text
+    rows = {p.full_name: p for p in db_session.execute(
+        select(Participant).where(Participant.evaluation_id == ev.id)).scalars()}
+    assert rows["Board Member 07"].board_member_id == m.id
+    assert rows["Outside Person"].board_member_id is None
+
+
+def test_profiles_carry_over_to_next_years_evaluation(api_client, db_session, org) -> None:
+    m = _ready_member(db_session, org)
+    version = m.profile_version
+    first = _evaluation(db_session, org, "eval-carry-2025")
+    db_session.commit()
+    api_client.post(f"/api/v1/evaluations/{first.id}/participants/from-board-members")
+    second = _evaluation(db_session, org, "eval-carry-2026")
+    db_session.commit()
+    assert api_client.post(f"/api/v1/evaluations/{second.id}/participants/from-board-members").json()["created"] == 1
+
+    for ev in (first, second):
+        [item] = api_client.get(f"/api/v1/evaluations/{ev.id}/readiness").json()["items"]
+        assert (item["board_member_id"], item["status"], item["profile_version"]) == (str(m.id), "ready", version)
+    assert db_session.execute(select(BoardMember).where(BoardMember.organisation_id == org.id)).scalars().all() == [m]

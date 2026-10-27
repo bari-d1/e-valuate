@@ -899,8 +899,16 @@ def _new_participant(
     Create a participant exactly as the invite endpoint always has: status
     "invited" and a hub access token. Never sends anything; emails are only sent
     by the callers that explicitly ask for them (invite with send_email=true,
-    notify-links).
+    notify-links). Linked to the company's board member with the same email
+    when no board member is given.
     """
+    if board_member_id is None:
+        ev = db.get(Evaluation, evaluation_id)
+        if ev is not None and ev.organisation_id:
+            board_member_id = db.execute(select(BoardMember.id).where(
+                BoardMember.organisation_id == ev.organisation_id,
+                func.lower(BoardMember.email) == (email or "").strip().lower(),
+            )).scalar_one_or_none()
     p = Participant(
         evaluation_id=evaluation_id,
         email=email,
