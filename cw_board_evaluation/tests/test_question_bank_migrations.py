@@ -1,6 +1,6 @@
 """
-Migration test for the question bank revision, on a throwaway database
-("<test database>_question_bank_migrations").
+Migration tests for the question bank and question assembly revisions, on a
+throwaway database ("<test database>_question_bank_migrations").
 
 Requires: RUN_INTEGRATION_TESTS=1 and PostgreSQL with CREATEDB rights.
 """
@@ -84,3 +84,38 @@ def test_upgrade_downgrade_upgrade(migration_db) -> None:
     assert not (NEW_TABLES & _tables(engine))
     command.upgrade(cfg, "head")
     assert NEW_TABLES <= _tables(engine)
+
+
+ASSEMBLY = "a7c4e19b2d58"
+
+
+def test_assembly_upgrade_downgrade_keeps_legacy_questions(migration_db) -> None:
+    cfg, engine = migration_db
+    command.upgrade(cfg, ASSEMBLY)
+    assert {"assembly_runs", "participant_question_sets", "question_suggestion_decisions"} <= _tables(engine)
+    with engine.begin() as conn:
+        conn.execute(text("INSERT INTO evaluations (id, tenant_name, sector, year, instrument_template_code, "
+                          "instrument_version, regulators, status) VALUES ('M-1', 'Co', 'insurance', 2025, 'DEFAULT', 1, '{}', 'draft')"))
+        pid = uuid.uuid4()
+        conn.execute(text("INSERT INTO participants (id, evaluation_id, email, status) VALUES (:id, 'M-1', 'P1@example.invalid', 'invited')"),
+                     {"id": pid})
+        legacy = "INSERT INTO questions (id, template_code, version, dimension, text, answer_type, weight, active) " \
+                 "VALUES (:id, 'DEFAULT', 1, 'Board', 'Same text', 'rating', 1, 1)"
+        conn.execute(text(legacy), {"id": uuid.uuid4()})
+        assembled = ("INSERT INTO questions (id, template_code, version, dimension, text, answer_type, weight, active, "
+                     "evaluation_id, participant_id, section, status, text_source) VALUES (:id, :tc, 1, 'Board', "
+                     "'Same text', 'rating', 1, 1, 'M-1', :p, 'colleagues', 'draft', 'bank')")
+        for _ in range(2):  # identical assembled text is allowed
+            conn.execute(text(assembled), {"id": uuid.uuid4(), "tc": f"P:{pid}", "p": pid})
+        with pytest.raises(Exception):  # legacy text is still unique per template and version
+            with conn.begin_nested():
+                conn.execute(text(legacy), {"id": uuid.uuid4()})
+
+    command.downgrade(cfg, BEFORE_ASSEMBLY)
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT count(*) FROM questions")).scalar() == 1  # assembled rows removed, legacy kept
+    assert "assembly_runs" not in _tables(engine)
+    command.upgrade(cfg, "head")
+
+
+BEFORE_ASSEMBLY = "f3b8d2c61a07"
