@@ -95,15 +95,18 @@ def create_member(db: Session, org: Organisation, *, full_name: str, email: Opti
 
 
 def update_member(db: Session, m: BoardMember, data: Dict[str, Any]) -> BoardMember:
+    """Edit name, email, display code or active. A changed name, email or code sets the profile back to draft."""
+    name = m.full_name
     if "full_name" in data:
         name = (data["full_name"] or "").strip()
         if not name:
             raise ReviewError("Name is required.")
-        m.full_name = name
     email = _clean_email(data["email"]) if "email" in data else m.email
     code = _clean_code(data["display_code"]) if "display_code" in data else m.display_code
     _check_unique(db, m.organisation_id, email, code, exclude_id=m.id)
-    m.email, m.display_code = email, code
+    if (name, email, code) != (m.full_name, m.email, m.display_code):
+        m.full_name, m.email, m.display_code = name, email, code
+        m.profile_status = "draft"
     if "active" in data and data["active"] is not None:
         m.active = bool(data["active"])
     db.flush()
