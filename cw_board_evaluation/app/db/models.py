@@ -378,6 +378,13 @@ class Participant(Base):
     # Examples: "Chair", "INED", "ED", "Company Secretary"
     role: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
+    # The organisation-level person this participant is (profiles carry over year to year)
+    board_member_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("board_members.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
     status: Mapped[str] = mapped_column(String(32), default="invited", nullable=False)
 
     invited_at: Mapped[datetime] = mapped_column(
@@ -999,7 +1006,12 @@ class OrgDocument(Base):
         UUID(as_uuid=True), ForeignKey("organisations.id", ondelete="CASCADE"), nullable=False
     )
     # company_profile | board_structure | committee_tor | governance_policy | annual_report | public_info | other
+    # | director_profile (board_member_id set)
     doc_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    # Set for a board member's own documents (doc_type director_profile)
+    board_member_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("board_members.id", ondelete="SET NULL"), nullable=True
+    )
     filename: Mapped[str] = mapped_column(String(255), nullable=False)  # sanitised original name, for display
     content_type: Mapped[str] = mapped_column(String(127), nullable=False)
     size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -1013,12 +1025,13 @@ class OrgDocument(Base):
     __table_args__ = (
         CheckConstraint(
             "doc_type IN ('company_profile', 'board_structure', 'committee_tor', 'governance_policy', "
-            "'annual_report', 'public_info', 'other')",
+            "'annual_report', 'public_info', 'other', 'director_profile')",
             name="ck_org_documents_doc_type",
         ),
         CheckConstraint("extraction_status IN ('pending', 'done', 'failed')", name="ck_org_documents_extraction_status"),
         UniqueConstraint("storage_key", name="uq_org_documents_storage_key"),
         Index("ix_org_documents_organisation", "organisation_id"),
+        Index("ix_org_documents_board_member", "board_member_id"),
     )
 
 
@@ -1160,4 +1173,123 @@ class EvaluationContextSnapshot(Base):
 
     __table_args__ = (
         Index("ix_evaluation_context_snapshots_evaluation", "evaluation_id", "created_at"),
+    )
+
+
+# ----------------------------
+# Board members (organisation-level people) and their profiles
+# ----------------------------
+
+class BoardMember(Base):
+    """
+    A person on the client's board, kept at organisation level so their profile,
+    documents and committee memberships carry over from one year's evaluation to
+    the next. Each evaluation's Participant links here.
+    """
+
+    __tablename__ = "board_members"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organisation_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("organisations.id", ondelete="CASCADE"), nullable=False
+    )
+    full_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    # Pseudonymous label for dry runs, e.g. "P001"
+    display_code: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    # "draft" | "reviewed"
+    profile_status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")
+    profile_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    profile_reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        CheckConstraint("profile_status IN ('draft', 'reviewed')", name="ck_board_members_profile_status"),
+        Index("ix_board_members_organisation", "organisation_id"),
+        Index(
+            "uq_board_members_org_email", "organisation_id", text("lower(email)"),
+            unique=True, postgresql_where=text("email IS NOT NULL"),
+        ),
+        Index(
+            "uq_board_members_org_display_code", "organisation_id", "display_code",
+            unique=True, postgresql_where=text("display_code IS NOT NULL"),
+        ),
+    )
+
+
+class BoardMemberFact(Base):
+    """
+    One profile fact about a board member (key from app.domain.board_member_profile).
+    Same rules as OrganisationFact: every fact has a source, AI only proposes,
+    at most one confirmed and one proposed fact per key.
+    """
+
+    __tablename__ = "board_member_facts"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    board_member_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("board_members.id", ondelete="CASCADE"), nullable=False
+    )
+    key: Mapped[str] = mapped_column(String(64), nullable=False)
+    value: Mapped[Any] = mapped_column(JSONB, nullable=True)
+    source: Mapped[str] = mapped_column(String(16), nullable=False)  # public | client | consultant
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="proposed")  # proposed | confirmed | rejected
+    origin: Mapped[str] = mapped_column(String(16), nullable=False, default="manual")  # ai_extraction | manual
+    source_document_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("org_documents.id", ondelete="SET NULL"), nullable=True
+    )
+    source_excerpt: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    confirmed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("source IN ('public', 'client', 'consultant')", name="ck_board_member_facts_source"),
+        CheckConstraint("status IN ('proposed', 'confirmed', 'rejected')", name="ck_board_member_facts_status"),
+        CheckConstraint("origin IN ('ai_extraction', 'manual')", name="ck_board_member_facts_origin"),
+        Index("ix_board_member_facts_member", "board_member_id"),
+        Index(
+            "uq_board_member_facts_one_confirmed", "board_member_id", "key",
+            unique=True, postgresql_where=text("status = 'confirmed'"),
+        ),
+        Index(
+            "uq_board_member_facts_one_proposed", "board_member_id", "key",
+            unique=True, postgresql_where=text("status = 'proposed'"),
+        ),
+    )
+
+
+class CommitteeMembership(Base):
+    """A board member's seat on an organisation committee (member or chair)."""
+
+    __tablename__ = "committee_memberships"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    committee_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("org_committees.id", ondelete="CASCADE"), nullable=False
+    )
+    board_member_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("board_members.id", ondelete="CASCADE"), nullable=False
+    )
+    membership_role: Mapped[str] = mapped_column(String(16), nullable=False, default="member")  # member | chair
+    source: Mapped[str] = mapped_column(String(16), nullable=False)  # public | client | consultant
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="proposed")  # proposed | confirmed | rejected
+    # name_match (proposed by matching committee names) | manual
+    origin: Mapped[str] = mapped_column(String(16), nullable=False, default="manual")
+    matched_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # the name as written on the committee
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint("membership_role IN ('member', 'chair')", name="ck_committee_memberships_role"),
+        CheckConstraint("source IN ('public', 'client', 'consultant')", name="ck_committee_memberships_source"),
+        CheckConstraint("status IN ('proposed', 'confirmed', 'rejected')", name="ck_committee_memberships_status"),
+        CheckConstraint("origin IN ('name_match', 'manual')", name="ck_committee_memberships_origin"),
+        UniqueConstraint("committee_id", "board_member_id", name="uq_committee_membership"),
+        Index("ix_committee_memberships_member", "board_member_id"),
     )
