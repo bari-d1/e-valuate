@@ -27,6 +27,7 @@ from sqlalchemy import (
     CheckConstraint,
     Date,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -1296,4 +1297,133 @@ class CommitteeMembership(Base):
         CheckConstraint("origin IN ('name_match', 'manual')", name="ck_committee_memberships_origin"),
         UniqueConstraint("committee_id", "board_member_id", name="uq_committee_membership"),
         Index("ix_committee_memberships_member", "board_member_id"),
+    )
+
+
+# ----------------------------
+# Question bank: the firm's approved methodology, held as data
+# ----------------------------
+
+class QuestionBankItem(Base):
+    """
+    One version of a question bank item (app.domain.question_bank). Editing an
+    approved item creates a new draft version; older versions stay for audit.
+    Selection uses, per code, the highest approved version (or the highest
+    draft when previewing drafts), and skips a code whose highest version is
+    retired.
+    """
+
+    __tablename__ = "question_bank_items"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    code: Mapped[str] = mapped_column(String(32), nullable=False)  # e.g. "BOARD-EFF-01"
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    # "draft" | "approved" | "retired"
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")
+
+    text: Mapped[str] = mapped_column(Text, nullable=False)  # may contain {placeholders}
+    # "rating" | "yesno" | "comment" | "single_select" | "multi_select"
+    answer_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    options: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)
+    scale: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)
+
+    theme_code: Mapped[str] = mapped_column(String(64), ForeignKey("themes.code", ondelete="RESTRICT"), nullable=False)
+    evidence_source_code: Mapped[str] = mapped_column(
+        String(32), ForeignKey("evidence_sources.code", ondelete="RESTRICT"), nullable=False
+    )
+
+    # "none" | "self" | "each_subject_instance" | "respondent_committees"
+    subject_binding: Mapped[str] = mapped_column(String(32), nullable=False)
+    respondent_rule: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)  # app.domain.question_rules
+    activation_rule: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)
+
+    # A fact key whose confirmed value answers the item; "skip" it or ask to "confirm" the stored value
+    known_from: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    known_from_behaviour: Mapped[str] = mapped_column(String(16), nullable=False, default="skip")
+    placeholders: Mapped[Any] = mapped_column(JSONB, nullable=False, default=list)  # fact keys used in the text
+
+    guidance: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # for later AI phrasing
+    source_refs: Mapped[Any] = mapped_column(JSONB, nullable=False, default=list)  # historical forms, never names
+    # Per tag: {"status": "suggested" | "confirmed", "reason": "..."}
+    tag_notes: Mapped[Any] = mapped_column(JSONB, nullable=False, default=dict)
+    weight: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    review_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    subject_type_links: Mapped[list["QuestionBankItemSubjectType"]] = relationship(
+        back_populates="item",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        order_by="QuestionBankItemSubjectType.subject_type_code",
+    )
+    clause_links: Mapped[list["QuestionBankItemClause"]] = relationship(
+        back_populates="item",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+    @property
+    def subject_type_codes(self) -> list[str]:
+        return [link.subject_type_code for link in self.subject_type_links]
+
+    __table_args__ = (
+        UniqueConstraint("code", "version", name="uq_question_bank_item_code_version"),
+        CheckConstraint("status IN ('draft', 'approved', 'retired')", name="ck_question_bank_items_status"),
+        CheckConstraint(
+            "answer_type IN ('rating', 'yesno', 'comment', 'single_select', 'multi_select')",
+            name="ck_question_bank_items_answer_type",
+        ),
+        CheckConstraint(
+            "subject_binding IN ('none', 'self', 'each_subject_instance', 'respondent_committees')",
+            name="ck_question_bank_items_subject_binding",
+        ),
+        CheckConstraint("known_from_behaviour IN ('skip', 'confirm')", name="ck_question_bank_items_known_from_behaviour"),
+        Index("ix_question_bank_items_code", "code"),
+        Index("ix_question_bank_items_status", "status"),
+    )
+
+
+class QuestionBankItemSubjectType(Base):
+    """Join table: which subject types a question bank item is about."""
+
+    __tablename__ = "question_bank_item_subject_types"
+
+    item_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("question_bank_items.id", ondelete="CASCADE"), primary_key=True
+    )
+    subject_type_code: Mapped[str] = mapped_column(
+        String(32), ForeignKey("subject_types.code", ondelete="RESTRICT"), primary_key=True
+    )
+
+    item: Mapped["QuestionBankItem"] = relationship(back_populates="subject_type_links")
+
+    __table_args__ = (Index("ix_question_bank_item_subject_types_subject_type", "subject_type_code"),)
+
+
+class QuestionBankItemClause(Base):
+    """A governance clause an item relates to; suggested by authoring, confirmed by a consultant."""
+
+    __tablename__ = "question_bank_item_clauses"
+
+    item_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("question_bank_items.id", ondelete="CASCADE"), primary_key=True
+    )
+    clause_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("governance_clauses.id", ondelete="CASCADE"), primary_key=True
+    )
+    # "suggested" | "confirmed"
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="suggested")
+
+    item: Mapped["QuestionBankItem"] = relationship(back_populates="clause_links")
+    clause: Mapped["GovernanceClause"] = relationship(lazy="joined")
+
+    __table_args__ = (
+        CheckConstraint("status IN ('suggested', 'confirmed')", name="ck_question_bank_item_clauses_status"),
+        Index("ix_question_bank_item_clauses_clause", "clause_id"),
     )
