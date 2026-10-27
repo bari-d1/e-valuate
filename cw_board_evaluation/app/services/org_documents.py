@@ -8,10 +8,11 @@ Document contents are never logged.
 from __future__ import annotations
 
 import logging
+from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from app.db.models import Organisation, OrgDocument
+from app.db.models import BoardMember, Organisation, OrgDocument
 from app.domain.org_profile import DOC_TYPE_KEYS
 from app.services.document_text import DocumentTextError, extract_document_text
 from app.services.storage import Storage, UploadRejected, sanitize_filename, validate_upload
@@ -27,6 +28,7 @@ def save_org_document(
     doc_type: str,
     filename: str,
     data: bytes,
+    board_member: Optional[BoardMember] = None,
 ) -> OrgDocument:
     """
     Validate, store and extract text from an uploaded document.
@@ -34,13 +36,18 @@ def save_org_document(
     reject the upload: the document is kept with extraction_status = failed.
     Flushes but does not commit.
     """
-    if doc_type not in DOC_TYPE_KEYS:
+    if board_member is not None:
+        # A board member's own documents (CV, director profile)
+        if doc_type != "director_profile" or board_member.organisation_id != org.id:
+            raise UploadRejected("Board member documents must be director profiles for that member's company.")
+    elif doc_type not in DOC_TYPE_KEYS:
         raise UploadRejected(f"Unknown document type: {doc_type}")
     ext, content_type = validate_upload(filename, data)
     key = storage.save(data, ext)
 
     doc = OrgDocument(
         organisation_id=org.id,
+        board_member_id=board_member.id if board_member is not None else None,
         doc_type=doc_type,
         filename=sanitize_filename(filename, ext),
         content_type=content_type,

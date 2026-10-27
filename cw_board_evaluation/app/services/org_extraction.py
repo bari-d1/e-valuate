@@ -215,24 +215,43 @@ def run_extraction(
     chunk_tokens: Optional[int] = None,
 ) -> ExtractionResult:
     """Propose facts and committees from the organisation's extracted documents. Flushes, doesn't commit."""
-    if not ai_extraction_enabled():
-        raise ExtractionDisabled(
-            "AI extraction is turned off (AI_EXTRACTION_ENABLED). Enter the profile manually, or enable it once "
-            "the client has agreed that their documents may be sent to the AI provider."
-        )
+    check_enabled()
     llm_call = llm_call or default_llm_call
-    cap = max_tokens or _int_env("AI_EXTRACTION_MAX_TOKENS", 60_000)
-    chunk_chars = (chunk_tokens or _int_env("AI_EXTRACTION_CHUNK_TOKENS", 6_000)) * CHARS_PER_TOKEN
+    cap, chunk_chars = run_settings(max_tokens, chunk_tokens)
     result = ExtractionResult(token_cap=cap)
 
     docs = db.execute(
-        select(OrgDocument).where(OrgDocument.organisation_id == org.id).order_by(OrgDocument.uploaded_at)
+        select(OrgDocument).where(OrgDocument.organisation_id == org.id, OrgDocument.board_member_id.is_(None))
+        .order_by(OrgDocument.uploaded_at)
     ).scalars().all()
     docs = sorted(docs, key=lambda d: DOC_TYPE_PRIORITY.index(d.doc_type) if d.doc_type in DOC_TYPE_PRIORITY else 99)
 
     fact_cands: Dict[str, List[_Candidate]] = {}
     committee_cands: Dict[str, List[_CommitteeCandidate]] = {}
 
+    def on_reply(reply, doc, doc_norm):
+        _collect_facts(reply, doc, doc_norm, fact_cands, result, ORG_FACT_RULES)
+        _collect_committees(reply, doc, doc_norm, committee_cands, result)
+
+    _process_documents(
+        docs, llm_call, result, cap, chunk_chars, SYSTEM_PROMPT,
+        lambda doc, part, chunk: build_user_prompt(FACT_REGISTRY, doc_type=doc.doc_type, filename=doc.filename,
+                                                   part=part, text=chunk),
+        on_reply,
+    )
+
+    _save_facts(db, OrganisationFact, "organisation_id", org.id, fact_cands, result, FACTS_BY_KEY)
+    _save_committees(db, org, committee_cands, result)
+    db.flush()
+    return result
+
+
+def _process_documents(docs, llm_call: LLMCall, result: "ExtractionResult", cap: int, chunk_chars: int,
+                       system_prompt: str, build_prompt, on_reply) -> None:
+    """
+    Shared loop: send each document's chunks (within the token cap) to the model
+    and hand each parsed reply to on_reply(reply, doc, doc_norm).
+    """
     for doc in docs:
         if doc.extraction_status != "done" or not (doc.extracted_text or "").strip():
             result.skipped.append({"document_id": str(doc.id), "filename": doc.filename,
@@ -243,8 +262,8 @@ def run_extraction(
         processed_any = False
         for i, chunk in enumerate(chunks, start=1):
             part = f"part {i} of {len(chunks)}"
-            user = build_user_prompt(FACT_REGISTRY, doc_type=doc.doc_type, filename=doc.filename, part=part, text=chunk)
-            cost = estimate_tokens(SYSTEM_PROMPT) + estimate_tokens(user)
+            user = build_prompt(doc, part, chunk)
+            cost = estimate_tokens(system_prompt) + estimate_tokens(user)
             if result.estimated_tokens_used + cost > cap:
                 result.skipped.append({"document_id": str(doc.id), "filename": doc.filename, "part": part,
                                        "reason": f"token cap reached ({cap} estimated input tokens per run)"})
@@ -253,7 +272,7 @@ def run_extraction(
             result.chunks_processed += 1
             processed_any = True
             try:
-                reply = _parse_reply(llm_call(SYSTEM_PROMPT, user))
+                reply = _parse_reply(llm_call(system_prompt, user))
             except (ValueError, ValidationError) as exc:  # json errors are ValueErrors
                 result.discarded.append({"document_id": str(doc.id), "filename": doc.filename, "part": part,
                                          "reason": f"unreadable AI reply ({type(exc).__name__})"})
@@ -263,15 +282,23 @@ def run_extraction(
                                        "reason": f"AI call failed ({type(exc).__name__})"})
                 log.warning("Extraction call failed for document %s: %s", doc.id, type(exc).__name__)
                 continue
-            _collect_facts(reply, doc, doc_norm, fact_cands, result)
-            _collect_committees(reply, doc, doc_norm, committee_cands, result)
+            on_reply(reply, doc, doc_norm)
         if processed_any:
             result.documents_processed += 1
 
-    _save_facts(db, org, fact_cands, result)
-    _save_committees(db, org, committee_cands, result)
-    db.flush()
-    return result
+
+def check_enabled() -> None:
+    if not ai_extraction_enabled():
+        raise ExtractionDisabled(
+            "AI extraction is turned off (AI_EXTRACTION_ENABLED). Enter the profile manually, or enable it once "
+            "the client has agreed that their documents may be sent to the AI provider."
+        )
+
+
+def run_settings(max_tokens: Optional[int], chunk_tokens: Optional[int]) -> Tuple[int, int]:
+    cap = max_tokens or _int_env("AI_EXTRACTION_MAX_TOKENS", 60_000)
+    chunk_chars = (chunk_tokens or _int_env("AI_EXTRACTION_CHUNK_TOKENS", 6_000)) * CHARS_PER_TOKEN
+    return cap, chunk_chars
 
 
 def _excerpt_ok(excerpt: str, doc_norm: str) -> Tuple[bool, str]:
@@ -285,7 +312,27 @@ def _excerpt_ok(excerpt: str, doc_norm: str) -> Tuple[bool, str]:
     return True, ex
 
 
-def _collect_facts(reply, doc, doc_norm, cands, result) -> None:
+@dataclass(frozen=True)
+class FactRules:
+    """How proposed facts are checked for one kind of profile."""
+    facts_by_key: Dict[str, Dict[str, Any]]
+    validate: Callable[[str, Any], Any]
+    # (key, spec, value, excerpt_norm, doc_norm) -> reason to drop, or None; runs after validation
+    extra_check: Optional[Callable[[str, Dict[str, Any], Any, str, str], Optional[str]]] = None
+    # (key, value) -> True to silently skip (e.g. an "unknown" answer)
+    skip_value: Optional[Callable[[str, Any], bool]] = None
+
+
+def _org_extra_check(key, spec, value, ex_norm, doc_norm):
+    if spec["type"] == "number" and not _number_in_excerpt(value, ex_norm):
+        return "number not stated in the excerpt"
+    return None
+
+
+ORG_FACT_RULES = FactRules(FACTS_BY_KEY, validate_fact_value, _org_extra_check)
+
+
+def _collect_facts(reply, doc, doc_norm, cands, result, rules: FactRules = ORG_FACT_RULES) -> None:
     for raw in reply.facts:
         try:
             item = ProposedFactIn.model_validate(raw)
@@ -293,7 +340,8 @@ def _collect_facts(reply, doc, doc_norm, cands, result) -> None:
             result.discarded.append({"filename": doc.filename, "reason": "fact missing key or excerpt"})
             continue
         what = {"key": item.key, "filename": doc.filename}
-        if item.key not in FACTS_BY_KEY:
+        spec = rules.facts_by_key.get(item.key)
+        if spec is None:
             result.discarded.append({**what, "reason": "unknown fact key"})
             continue
         if item.value is None:
@@ -303,12 +351,15 @@ def _collect_facts(reply, doc, doc_norm, cands, result) -> None:
             result.discarded.append({**what, "reason": ex_norm})
             continue
         try:
-            value = validate_fact_value(item.key, item.value)
+            value = rules.validate(item.key, item.value)
         except FactValueError as exc:
             result.discarded.append({**what, "reason": f"value doesn't fit: {exc}"})
             continue
-        if FACTS_BY_KEY[item.key]["type"] == "number" and not _number_in_excerpt(value, ex_norm):
-            result.discarded.append({**what, "reason": "number not stated in the excerpt"})
+        if rules.skip_value and rules.skip_value(item.key, value):
+            continue
+        reason = rules.extra_check(item.key, spec, value, ex_norm, doc_norm) if rules.extra_check else None
+        if reason:
+            result.discarded.append({**what, "reason": reason})
             continue
         cands.setdefault(item.key, []).append(_Candidate(value, item.source_excerpt.strip(), doc.id, doc.filename))
 
@@ -348,10 +399,10 @@ def _collect_committees(reply, doc, doc_norm, cands, result) -> None:
         ))
 
 
-def _merge_fact(key: str, cands: List[_Candidate]) -> Tuple[Any, _Candidate, Optional[str]]:
+def _merge_fact(key: str, cands: List[_Candidate], facts_by_key=FACTS_BY_KEY) -> Tuple[Any, _Candidate, Optional[str]]:
     """First candidate (most useful document first) wins; lists are unioned. Returns (value, primary, note)."""
     primary = cands[0]
-    if FACTS_BY_KEY[key]["type"] == "list":
+    if facts_by_key[key]["type"] == "list":
         merged: List[str] = []
         for c in cands:
             merged += [x for x in c.value if x not in merged]
@@ -364,10 +415,11 @@ def _merge_fact(key: str, cands: List[_Candidate]) -> Tuple[Any, _Candidate, Opt
     return primary.value, primary, note
 
 
-def _save_facts(db: Session, org: Organisation, cands: Dict[str, List[_Candidate]], result: ExtractionResult) -> None:
-    existing = db.execute(select(OrganisationFact).where(OrganisationFact.organisation_id == org.id)).scalars().all()
+def _save_facts(db: Session, model, owner_column: str, owner_id, cands: Dict[str, List[_Candidate]],
+                result: ExtractionResult, facts_by_key) -> None:
+    existing = db.execute(select(model).where(getattr(model, owner_column) == owner_id)).scalars().all()
     for key, items in cands.items():
-        value, primary, note = _merge_fact(key, items)
+        value, primary, note = _merge_fact(key, items, facts_by_key)
         same_key = [f for f in existing if f.key == key]
         confirmed = next((f for f in same_key if f.status == "confirmed"), None)
         proposed = next((f for f in same_key if f.status == "proposed"), None)
@@ -388,8 +440,8 @@ def _save_facts(db: Session, org: Organisation, cands: Dict[str, List[_Candidate
             )
             result.facts_updated += 1
         else:
-            db.add(OrganisationFact(
-                organisation_id=org.id, key=key, value=value, source="client", status="proposed",
+            db.add(model(
+                **{owner_column: owner_id}, key=key, value=value, source="client", status="proposed",
                 origin="ai_extraction", source_document_id=primary.document_id, source_excerpt=primary.excerpt,
                 note=note,
             ))
