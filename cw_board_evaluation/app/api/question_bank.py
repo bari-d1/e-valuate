@@ -38,6 +38,7 @@ from app.domain.org_profile import COMMITTEE_TYPES
 from app.domain.question_bank import (
     ANSWER_TYPES,
     KNOWN_FROM_BEHAVIOURS,
+    PRIORITIES,
     SCALES,
     SECONDS_PER_ANSWER,
     STATUSES,
@@ -94,6 +95,7 @@ def get_meta(db: Session = Depends(get_db)) -> Dict[str, Any]:
         "answer_types": list(ANSWER_TYPES),
         "subject_bindings": list(SUBJECT_BINDINGS),
         "known_from_behaviours": list(KNOWN_FROM_BEHAVIOURS),
+        "priorities": list(PRIORITIES),
         "scales": SCALES,
         "seconds_per_answer": SECONDS_PER_ANSWER,
         "fact_keys": all_fact_keys(),
@@ -135,6 +137,7 @@ class ItemIn(BaseModel):
     tag_notes: Dict[str, Any] = {}
     weight: float = 1
     sort_order: int = 0
+    priority: str = "standard"
     review_notes: Optional[str] = None
 
 
@@ -156,6 +159,7 @@ class ItemPatch(BaseModel):
     tag_notes: Optional[Dict[str, Any]] = None
     weight: Optional[float] = None
     sort_order: Optional[int] = None
+    priority: Optional[str] = None
     review_notes: Optional[str] = None
 
 

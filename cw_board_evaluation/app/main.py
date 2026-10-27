@@ -27,6 +27,7 @@ from app.api.governance import router as governance_router
 from app.api.organisations import router as organisations_router
 from app.api.board_members import router as board_members_router
 from app.api.question_bank import router as question_bank_router
+from app.api.assembly import router as assembly_router
 
 try:
     from app.api.debug import router as debug_router
@@ -63,6 +64,7 @@ def create_app() -> FastAPI:
     app.include_router(organisations_router, prefix="/api/v1", tags=["organisations"], dependencies=consultant_auth)
     app.include_router(board_members_router, prefix="/api/v1", tags=["board members"], dependencies=consultant_auth)
     app.include_router(question_bank_router, prefix="/api/v1", tags=["question bank"], dependencies=consultant_auth)
+    app.include_router(assembly_router, prefix="/api/v1", tags=["assembly"], dependencies=consultant_auth)
 
     if debug_router is not None:
         app.include_router(debug_router, prefix="/api/v1", tags=["debug"], dependencies=consultant_auth)

@@ -27,6 +27,14 @@ export const questionBankApi = {
   addClause: (id, code, reference) => request(`${item(id)}/clauses`, { method: "POST", body: { code, reference } }),
   confirmClause: (id, clauseId) => request(`${item(id)}/clauses/${clauseId}/confirm`, { method: "POST" }),
   removeClause: (id, clauseId) => request(`${item(id)}/clauses/${clauseId}`, { method: "DELETE" }),
+  options: (evalId) => request(`/evaluations/${encodeURIComponent(evalId)}/options`),
+  setOptions: (evalId, options) =>
+    request(`/evaluations/${encodeURIComponent(evalId)}/options`, { method: "PUT", body: { options } }),
+  assemble: (evalId, body) =>
+    request(`/evaluations/${encodeURIComponent(evalId)}/assembly`, { method: "POST", body: body || {} }),
+  runs: (evalId) => request(`/evaluations/${encodeURIComponent(evalId)}/assembly-runs`),
+  questionSet: (evalId, participantId) =>
+    request(`/evaluations/${encodeURIComponent(evalId)}/participants/${encodeURIComponent(participantId)}/question-set`),
   preview: (evalId, { participantId, includeDrafts } = {}) =>
     request(
       `/evaluations/${encodeURIComponent(evalId)}/question-preview${query({

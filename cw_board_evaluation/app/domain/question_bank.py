@@ -30,6 +30,8 @@ ANSWER_TYPES = ("rating", "yesno", "comment", "single_select", "multi_select")
 SELECT_TYPES = ("single_select", "multi_select")
 SUBJECT_BINDINGS = ("none", "self", "each_subject_instance", "respondent_committees")
 KNOWN_FROM_BEHAVIOURS = ("skip", "confirm")
+# How much an item matters when an assessment must be shortened (suggested, for consultant review)
+PRIORITIES = ("core", "standard", "optional")
 TAG_STATUSES = ("suggested", "confirmed")
 CLAUSE_LINK_STATUSES = ("suggested", "confirmed")
 
@@ -40,6 +42,11 @@ NONE_BINDING_SUBJECT_TYPES = ("BOARD", "COMPANY_SECRETARY")
 # Rough answering time, for preview estimates
 SECONDS_PER_ANSWER = {"rating": 20, "yesno": 10, "single_select": 20, "multi_select": 30, "comment": 90}
 SECONDS_TO_CONFIRM = 10
+# The core peer items are shown as one grid (colleagues x five items): each cell is a quick tap
+GRID_ITEM_PREFIX = "PEER-CORE-"
+SECONDS_PER_GRID_CELL = 6
+# Optional comments are often left blank
+SECONDS_FOR_OPTIONAL_COMMENT = 30
 
 # The two 1-5 scales the historical forms' wording maps onto
 SCALES: Dict[str, Dict[str, Any]] = {
@@ -205,6 +212,11 @@ def validate_item(data: Dict[str, Any]) -> Dict[str, Any]:
         errors.append("Weight must be a number >= 0.")
     out["weight"] = weight
 
+    priority = data.get("priority") or "standard"
+    if priority not in PRIORITIES:
+        errors.append(f"Priority must be one of: {', '.join(PRIORITIES)}.")
+    out["priority"] = priority
+
     sort_order = data.get("sort_order", 0)
     if isinstance(sort_order, bool) or not isinstance(sort_order, int):
         errors.append("Sort order must be a whole number.")
@@ -234,5 +246,11 @@ def validate_item(data: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
-def estimate_seconds(answer_type: str, confirm: bool = False) -> int:
-    return SECONDS_TO_CONFIRM if confirm else SECONDS_PER_ANSWER.get(answer_type, 30)
+def estimate_seconds(answer_type: str, confirm: bool = False, *, code: str = "", priority: str = "standard") -> int:
+    if confirm:
+        return SECONDS_TO_CONFIRM
+    if code.startswith(GRID_ITEM_PREFIX) and answer_type == "rating":
+        return SECONDS_PER_GRID_CELL
+    if priority == "optional" and answer_type == "comment":
+        return SECONDS_FOR_OPTIONAL_COMMENT
+    return SECONDS_PER_ANSWER.get(answer_type, 30)

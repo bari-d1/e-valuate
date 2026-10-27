@@ -39,15 +39,16 @@ from app.domain.board_member_profile import (
     governance_role_from_participant_role,
     tenure_years,
 )
+from app.domain.evaluation_options import effective_options
 from app.domain.governance import normalize_sector
 from app.domain.question_bank import estimate_seconds, fill_placeholders
 from app.domain.question_rules import evaluate, fact_label, format_fact_value, lookup_fact
 from app.domain.taxonomy import SUBJECT_TYPE_CODES
 from app.services.board_members import confirmed_facts, member_label
 
-# Previews longer than this are flagged for the consultant. The historical
-# methodology gives most directors 60-100 minutes, so this marks the outliers.
-LONG_PREVIEW_MINUTES = 90
+# Previews longer than this are flagged for the consultant. With the core peer
+# design most directors get 25-50 minutes, so this marks the outliers.
+LONG_PREVIEW_MINUTES = 50
 
 ROLE_TO_SUBJECT_TYPE = {"chair": "CHAIR", "md_ceo": "MD_CEO", "ed": "ED", "ned": "NED", "ined": "INED",
                         "company_secretary": "COMPANY_SECRETARY"}
@@ -88,6 +89,8 @@ def _get(item: Any, key: str) -> Any:
 def item_spec(item: QuestionBankItem) -> Dict[str, Any]:
     """The fields selection needs, as a plain dict."""
     return {
+        "id": str(item.id), "priority": item.priority, "guidance": item.guidance, "scale": item.scale,
+        "weight": item.weight,
         "code": item.code, "version": item.version, "status": item.status, "text": item.text,
         "answer_type": item.answer_type, "options": item.options, "subject_types": item.subject_type_codes,
         "subject_binding": item.subject_binding, "respondent_rule": item.respondent_rule,
@@ -175,7 +178,8 @@ def build_selection_context(db: Session, ev: Evaluation) -> Dict[str, Any]:
 
     return {
         "org": {"sector": sector, "codes": ev_codes or codes, "facts": org_facts},
-        "evaluation": {"id": ev.id, "scope": scope, "review_year": _review_year(ev)},
+        "evaluation": {"id": ev.id, "scope": scope, "review_year": _review_year(ev),
+                       "options": effective_options(ev.options)},
         "people": people,
         "committees": committees,
     }
@@ -243,7 +247,7 @@ def select_for_respondent(items: List[Dict[str, Any]], base: Dict[str, Any], res
             ctx = {"respondent": resp_ctx, "subject": subject, "org": base["org"], "evaluation": base["evaluation"]}
             results = [evaluate(item["respondent_rule"], ctx), evaluate(item["activation_rule"], ctx)]
             entry = {"code": item["code"], "version": item["version"], "status": item["status"],
-                     "subject": _subject_ref(subject)}
+                     "bank_item_id": item.get("id"), "subject": _subject_ref(subject)}
             if any(r.value is False for r in results):
                 entry["reasons"] = [x for r in results if r.value is False for x in r.reasons]
                 not_included.append(entry)
@@ -282,13 +286,17 @@ def select_for_respondent(items: List[Dict[str, Any]], base: Dict[str, Any], res
                         continue
                     confirm_value = stored
 
-            seconds = estimate_seconds(item["answer_type"], confirm=confirm_value is not None)
+            seconds = estimate_seconds(item["answer_type"], confirm=confirm_value is not None, code=item["code"],
+                                       priority=item.get("priority") or "standard")
             why = "Included: " + (" and ".join(reasons) if reasons else "no conditions")
             if confirm_value:
                 why += f"; asks them to confirm the stored {confirm_value['known_from_label'].lower()}"
             included.append({**entry, "text": text, "options": options, "answer_type": item["answer_type"],
                              "theme_code": item["theme_code"], "evidence_source_code": item["evidence_source_code"],
-                             "reasons": reasons, "why": why, "confirm": confirm_value, "seconds": seconds})
+                             "reasons": reasons, "why": why, "confirm": confirm_value, "seconds": seconds,
+                             "scale": item.get("scale"), "priority": item.get("priority"),
+                             "guidance": item.get("guidance"), "weight": item.get("weight"),
+                             "sort_order": item.get("sort_order") or 0})
 
     seconds = sum(i["seconds"] for i in included)
     minutes = round(seconds / 60)

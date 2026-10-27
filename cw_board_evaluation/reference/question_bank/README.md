@@ -4,7 +4,7 @@ The firm's evaluation methodology, held as data: approved question items, what e
 
 | File | What it is |
 |---|---|
-| `draft_bank.json` | The draft bank: 246 items, every one `draft`, every tag `suggested`. This is the source of truth and what the loader reads. |
+| `draft_bank.json` | The draft bank: 288 items (246 from the historical forms plus 42 for the firm's peer design), every one `draft`, every tag and priority `suggested`. This is the source of truth and what the loader reads. |
 | `draft_bank.csv` | The same items flattened for review in a spreadsheet, with each rule written out in plain English. Regenerate it after editing the JSON (see below). |
 
 The historical form PDFs are **not** in the repo. Four of them carried a real director's name in their header. They are referred to only as "NED peer assessment (BE 3B), named copy 1–4", and no name from them appears in the fixture.
@@ -21,6 +21,8 @@ python scripts/question_bank/load_bank.py --check            # validate only, no
 python scripts/question_bank/load_bank.py other_bank.json    # another fixture in the same format
 python scripts/question_bank/export_csv.py       # rewrite draft_bank.csv from draft_bank.json
 ```
+
+After the bank fixture changes, run `load_bank.py --update-drafts` so items still in draft pick up the changes (approved items are never touched).
 
 Loading is idempotent by `(code, version)`. An item that is already in the database is left alone, so edits made in the app are never overwritten. `--update-drafts` refreshes items that are still drafts. Every item is validated (content, both rules, tag codes) and its governance references are resolved. The loader lists anything that doesn't load and exits 1 if any item failed.
 
@@ -56,8 +58,48 @@ Code prefixes: `DIR-SELF` (every director about themselves), `BOARD-EFF/DYN/STR/
 | Four committee forms (BE 4A) | 104 | 41 (`COM-CORE` 21, `COM-AUDIT`/`COM-SAC`/`COM-ERMG`/`COM-FIN` 5 each) |
 | Secretariat questionnaire | 70 | 70 (`SEC`) |
 | **Total** | **405** | **246** |
+| Peer design (below), drawn from bank items | | 42 |
 
-Answer types: 87 rating, 72 comment, 64 yes/no, 13 multiple choice, 10 single choice. Evidence: 127 perception, 84 organisational fact, 35 role self-evidence. 35 items have an activation rule. 177 items carry 221 suggested clause references (NCCG 2018 and NAICOM 2021).
+Answer types: 126 rating, 75 comment, 64 yes/no, 13 multiple choice, 10 single choice. Evidence: 163 perception, 84 organisational fact, 41 role self-evidence. 141 items have an activation rule. 177 items carry 221 suggested clause references (NCCG 2018 and NAICOM 2021).
+
+## Peer design
+
+The firm adopted a lighter peer assessment than the original forms. It is the default (`peer_mode` "core", an evaluation option). A consultant can switch an engagement to "full", which restores the original `PEER-NED`, `PEER-EXEC` and `CHAIR-PEER` items for every director. Nothing was deleted: each original peer item has the activation condition `{"evaluation.option": {"key": "peer_mode", "value": "full"}}`, and every new item below has the same condition with "core".
+
+| Items | Asked by | About | Drawn from |
+|---|---|---|---|
+| `PEER-CORE-01`–`04`: well prepared; independent judgement; contributes constructively; understands strategy and key risks | every director | every other director (not the company secretary) | `PEER-NED-06`, `PEER-NED-04`, `BOARD-DYN-07`, `PEER-NED-07`, `PEER-NED-09`, `PEER-NED-11`, `PEER-NED-12`, `PEER-EXEC-15` |
+| `PEER-CORE-05` holds management to account (the chair, NEDs and INEDs) / `PEER-CORE-06` is open to challenge from the board (MD/CEO and EDs) | every director | every other director | `PEER-NED-14`; `PEER-EXEC-01`, `PEER-EXEC-02` |
+| `SELF-CORE-01`–`06`: the same five as a self-rating (ROLE_SELF) | every director | themselves | as above |
+| `PEER-COMMENT-01` "One thing this director could do to add more value to the board" (optional) | every director | every other director | `PEER-NED-16`, `CHAIR-PEER-28` |
+| `DEEP-CHAIR-01`–`05`: participation, chairing meetings, executive evaluation, director development, stakeholder confidence | NEDs and INEDs | the chair | `CHAIR-PEER-07`, `-19`/`-21`, `-20`, `-27`, `-04` |
+| `DEEP-CHAIR-06`–`09`: chair/MD relationship (guidance, working relationship, monitoring performance, representing the board) | NEDs, INEDs and the MD/CEO | the chair | `CHAIR-PEER-09`, `-10`, `-13`, `-14` |
+| `DEEP-MD-01`–`09`, plus `-10` contract grading (chair only) | the chair, NEDs and INEDs (not EDs) | the MD/CEO | `PEER-EXEC-01`, `-04`, `-13`–`-17`, `-19`, `-20`, `-21` |
+| `DEEP-ED-01`–`09`, plus `-10` contract grading (MD/CEO only) | the MD/CEO and the chair | each ED | `PEER-EXEC-03`, `-02`, `-05`, `-06`, `-08`, `-09`, `-12`, `-15`, `-16`, `-21` |
+
+Trimmed from the deep sets: chairman items the whole-board section already covers (leadership style, meetings), the three comment boxes, and the narrower stakeholder, agenda and compensation items; for the MD/CEO, the divisional items (better suited to an ED). Each new item records the bank items it was drawn from in `source_refs` (`derived_from`). The core items are shown as one grid (colleagues in rows, items in columns), so they're estimated at 6 seconds a cell and aren't sent for AI rewording.
+
+A VAL-001-style board (chair, MD/CEO, one ED, two NEDs, one INED, company secretary), every item approved:
+
+| Participant | Full peer mode | Core peer mode |
+|---|---:|---:|
+| P001 chair | 137 questions, ~53 min | 103, ~32 min |
+| P002 MD/CEO | 197, ~77 min | 149, ~49 min |
+| P003 ED | 170, ~66 min | 110, ~35 min |
+| P004 NED (three committees) | 215, ~80 min | 169, ~54 min |
+| P005 NED | 191, ~72 min | 145, ~46 min |
+| P006 INED | 194, ~71 min | 148, ~46 min |
+| P007 company secretary | 98, ~38 min | 70, ~26 min |
+
+The ED deep set has only two raters (the MD/CEO and the chair), so assembly warns that its results can't be reported individually (fewer than 3 raters).
+
+## Priority
+
+Every item has a suggested `priority` with a reason in `tag_notes.priority`, for consultant review. The methodology hasn't been trimmed beyond the peer change.
+
+- **core** (107): the peer design, the INED independence tests, and rating or yes/no items that test a governance code requirement.
+- **standard** (115): the rest of the methodology, including the original peer items (used only in full peer mode).
+- **optional** (66): open comments, knowledge checks, "If so…" follow-ups, items that overlap another, and the contract gradings.
 
 ## Templated items
 
@@ -88,12 +130,13 @@ An item whose placeholder fact isn't confirmed is shown as blocked in the previe
 - **Statutory audit committee.** `COM-SAC-*` items are told apart from a board audit committee by the word "statutory" in the committee's name, because both have the committee type `audit`. Is a separate committee type better?
 - **Enterprise risk management and governance committee.** Its items are split by topic: remuneration policy goes to remuneration or governance committees, succession to nomination or governance committees, and its roles list to governance or risk committees. Check this matches how clients name their committees.
 - **`COM-SAC-01`** says "the head of the committee … not below AGM". It probably means the head of internal audit (NAICOM 5.0 iii).
-- **`PEER-EXEC-21`**, the supervising officer's grading: who supervises whom? The draft assumes the MD/CEO grades EDs and the chair grades the MD/CEO.
+- **`PEER-EXEC-21`, `DEEP-MD-10`, `DEEP-ED-10`**, the supervising officer's grading: who supervises whom? The draft assumes the MD/CEO grades EDs and the chair grades the MD/CEO.
 - **`COM-CORE-10`** had a stray sentence ("Committee is intolerant of mediocrity in management") that looks like a separate item. It is left out.
 - **`COM-CORE-19`**: the EDs' last KPI assessment is asked on every committee form. Should it go to the remuneration or governance committee only?
 - **Overlaps kept on purpose** (different respondents): `BOARD-DYN-12` with the chair peer items, `CHAIR-SELF-07` with `BOARD-RISK-04`, the whole-board meeting questions with the secretariat's, and `CHAIR-SELF-02` with `CEO-SELF-02`.
-- **Secretariat follow-ups.** "If so, …" questions are separate items whose `guidance` names the question they follow. The rule language doesn't branch on answers, so assembly needs to handle these.
-- **Length.** With every draft item, a VAL-001-style board gives each director about 64–96 minutes of questions (see the preview). The historical forms were just as long when added together; the consultant may want to trim.
+- **Secretariat follow-ups.** "If so, …" questions are separate items whose `guidance` names the question they follow; assembly links them (`depends_on_question_id`, `show_if`).
+- **Length.** The core peer design brings a VAL-001 board to 26–54 minutes (above). Priorities are suggested for any further trimming.
+- **ED deep set raters.** Only the MD/CEO and the chair rate each ED, so those results can't be reported individually. Add NEDs on the relevant committee as raters, or report them only in aggregate?
 - **`INED-IND-06`** asks about the last three years, but the profile fact `senior_service_with_regulator` has no time window.
 
 ## Fixture format (for the client's Assessment Intelligence Map)
@@ -134,6 +177,7 @@ The client's own methodology ("Document 2: Assessment Intelligence Map") can be 
 | `governance_refs` | no | `[{"code": "NCCG_2018", "reference": "7.2.1"}]`, with references exactly as printed in the clause library. Optional `"status": "confirmed"`; the default is `suggested`. |
 | `source_refs` | no | Where the item came from: `[{"form_id", "form", "item", "section", "original_text", "original_answer"}]`. Never a person's name. |
 | `tag_notes` | no | `{"theme": {"status": "suggested", "reason": "…"}, …}` for `subject_types`, `subject_binding`, `respondent_rule`, `activation_rule`, `theme`, `evidence_source`, `governance_refs`. |
+| `priority` | no | `core`, `standard` (default) or `optional`: what to keep when an assessment must be shortened. |
 | `weight`, `sort_order`, `review_notes` | no | Number ≥ 0 (default 1), whole number, free text. |
 
 ### Rule language
@@ -156,6 +200,7 @@ A rule is empty (always true), a combinator, or one condition (an object with ex
 | `org.sector` | sector keys, e.g. `["insurance"]` | the company's sector is listed |
 | `org.has_code` | e.g. `"NAICOM_2021"` | the evaluation is assessed against that code |
 | `evaluation.scope_includes` | a subject type code | that subject type is in the evaluation's scope |
+| `evaluation.option` | `{"key": "peer_mode", "value": "core"}` | the evaluation's option has that value (options take their default when not set) |
 | `fact.known` / `fact.unknown` | a fact key | the fact has / hasn't a confirmed value (a tristate "unknown" counts as not known) |
 | `fact.at_least` / `fact.at_most` | `{"key": "board_size", "value": 5}` | the confirmed number is ≥ / ≤ the value |
 

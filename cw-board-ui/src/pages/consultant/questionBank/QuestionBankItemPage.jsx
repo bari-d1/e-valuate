@@ -443,8 +443,17 @@ function Sources({ item }) {
       <SectionTitle hint="Where this item came from, so reviewers can trace it back to the original forms.">Source references</SectionTitle>
       <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: space.sm, fontSize: 13 }}>
         {item.source_refs.map((r, i) => (
-          <li key={`${r.form_id}-${r.item}-${i}`}>
-            <strong>{r.form}</strong>, item {r.item}
+          <li key={`${r.form_id || r.derived_from}-${r.item}-${i}`}>
+            {r.derived_from ? (
+              <>
+                Drawn from bank item <strong>{r.derived_from}</strong>: “{r.text}”
+                {r.forms?.length ? <div style={{ color: color.textMuted }}>Originally on: {r.forms.join("; ")}</div> : null}
+              </>
+            ) : (
+              <>
+                <strong>{r.form}</strong>, item {r.item}
+              </>
+            )}
             {r.section ? <span style={{ color: color.textMuted }}> · {r.section}</span> : null}
             {r.original_text ? <div style={{ fontStyle: "italic", color: color.textMuted }}>Originally: “{r.original_text}”</div> : null}
             {r.original_answer ? <div style={{ color: color.textMuted }}>Answer format: {r.original_answer}</div> : null}
