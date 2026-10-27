@@ -332,8 +332,9 @@ def _committee_snapshot(c: OrgCommittee) -> Dict[str, Any]:
 def snapshot_context(db: Session, evaluation_id: str) -> EvaluationContextSnapshot:
     """
     Freeze the organisation context an evaluation uses: confirmed facts and
-    committees, the organisation's documents, and the evaluation's governance
-    codes. Not called automatically yet (question assembly will call it).
+    committees, the organisation's documents, the evaluation's governance
+    codes, and each participant's board member profile (generation_only facts
+    kept in their own key). Not called automatically yet (question assembly will call it).
     Flushes but does not commit.
     """
     ev = db.get(Evaluation, evaluation_id)
@@ -361,6 +362,9 @@ def snapshot_context(db: Session, evaluation_id: str) -> EvaluationContextSnapsh
         .order_by(EvaluationGovernanceCode.code)
     ).scalars().all()]
 
+    from app.services.board_members import participant_profiles  # board members build on this module
+
+    people = participant_profiles(db, evaluation_id)
     snap = EvaluationContextSnapshot(
         evaluation_id=evaluation_id,
         profile_version=org.profile_version if org else 0,
@@ -368,6 +372,8 @@ def snapshot_context(db: Session, evaluation_id: str) -> EvaluationContextSnapsh
         committees=committees,
         document_ids=document_ids,
         governance_codes=codes,
+        participants=people["participants"],
+        generation_only=people["generation_only"],
     )
     db.add(snap)
     db.flush()

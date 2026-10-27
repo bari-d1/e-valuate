@@ -1169,6 +1169,10 @@ class EvaluationContextSnapshot(Base):
     committees: Mapped[Any] = mapped_column(JSONB, nullable=False, default=list)
     document_ids: Mapped[Any] = mapped_column(JSONB, nullable=False, default=list)
     governance_codes: Mapped[Any] = mapped_column(JSONB, nullable=False, default=list)
+    # Per participant: board member, profile version, confirmed facts, committee memberships
+    participants: Mapped[Any] = mapped_column(JSONB, nullable=False, default=list, server_default="[]")
+    # generation_only facts (e.g. personality_notes) by participant id, kept apart so analysis never reads them
+    generation_only: Mapped[Any] = mapped_column(JSONB, nullable=False, default=dict, server_default="{}")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (

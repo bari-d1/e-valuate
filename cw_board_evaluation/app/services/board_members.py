@@ -25,7 +25,14 @@ from app.db.models import (
     OrgCommittee,
     Participant,
 )
-from app.domain.board_member_profile import PARTICIPANT_ROLE_FOR, validate_profile_value
+from app.domain.board_member_profile import (
+    GENERATION_ONLY_KEYS,
+    PARTICIPANT_ROLE_FOR,
+    PROFILE_FACTS_BY_KEY,
+    all_independence_unknown,
+    tenure_status,
+    validate_profile_value,
+)
 from app.services.profile_review import (
     FactKind,
     ReviewError,
@@ -274,3 +281,114 @@ def member_committees(db: Session, m: BoardMember, statuses=("confirmed",)) -> L
         "status": ms.status,
         "source": ms.source,
     } for ms, c in rows]
+
+
+# ----------------------------
+# Evaluation readiness and snapshots
+# ----------------------------
+
+READY, NEEDS_REVIEW, MISSING_ROLE, NOT_LINKED = "ready", "needs_review", "missing_role", "not_linked"
+
+
+def participant_readiness(db: Session, ev: Evaluation) -> List[Dict[str, Any]]:
+    """
+    Per participant: readiness status, blocking reasons and warnings.
+    Status (most severe first): not_linked, missing_role, needs_review, ready.
+    An INED with every independence fact unknown is a warning, not a blocker.
+    """
+    out = []
+    participants = db.execute(
+        select(Participant).where(Participant.evaluation_id == ev.id).order_by(Participant.created_at)
+    ).scalars().all()
+    for p in participants:
+        m = db.get(BoardMember, p.board_member_id) if p.board_member_id else None
+        blocking: List[str] = []
+        warnings: List[str] = []
+        status = READY
+        facts = confirmed_facts(db, m) if m else {}
+        if m is None:
+            status = NOT_LINKED
+            blocking.append("Not linked to a board member.")
+        else:
+            role_fact = facts.get("governance_role")
+            o = open_proposals(db, m)
+            if role_fact is None:
+                status = MISSING_ROLE
+                blocking.append("No confirmed governance role.")
+            if o["facts"] or o["memberships"]:
+                blocking.append(f"{o['facts']} open fact proposal(s) and {o['memberships']} open committee link(s).")
+            if m.profile_status != "reviewed":
+                blocking.append("Profile not marked reviewed.")
+            if status == READY and blocking:
+                status = NEEDS_REVIEW
+            if role_fact is not None and role_fact.value == "ined" and all_independence_unknown(
+                {k: f.value for k, f in facts.items()}
+            ):
+                warnings.append("Independent NED with every independence question unknown.")
+            if not m.active:
+                warnings.append("Board member is marked inactive.")
+        out.append({
+            "participant_id": str(p.id),
+            "full_name": p.full_name,
+            "email": p.email,
+            "board_member_id": str(m.id) if m else None,
+            "display_code": m.display_code if m else None,
+            "label": member_label(m) if m else (p.full_name or p.email),
+            "governance_role": facts["governance_role"].value if "governance_role" in facts else None,
+            "profile_status": m.profile_status if m else None,
+            "profile_version": m.profile_version if m else None,
+            "status": status,
+            "blocking_reasons": blocking,
+            "warnings": warnings,
+        })
+    return out
+
+
+def _fact_dict(f: BoardMemberFact) -> Dict[str, Any]:
+    return {
+        "key": f.key,
+        "label": PROFILE_FACTS_BY_KEY.get(f.key, {}).get("label", f.key),
+        "value": f.value,
+        "source": f.source,
+        "origin": f.origin,
+        "source_document_id": str(f.source_document_id) if f.source_document_id else None,
+        "source_excerpt": f.source_excerpt,
+        "confirmed_at": f.confirmed_at.isoformat() if f.confirmed_at else None,
+    }
+
+
+def participant_profiles(db: Session, evaluation_id: str) -> Dict[str, Any]:
+    """
+    Snapshot content for each participant's board member: profile version,
+    confirmed facts and committee memberships. generation_only facts are
+    returned separately (by participant id) so analysis never sees them.
+    """
+    participants: List[Dict[str, Any]] = []
+    generation_only: Dict[str, List[Dict[str, Any]]] = {}
+    rows = db.execute(
+        select(Participant).where(Participant.evaluation_id == evaluation_id).order_by(Participant.created_at)
+    ).scalars().all()
+    for p in rows:
+        m = db.get(BoardMember, p.board_member_id) if p.board_member_id else None
+        entry: Dict[str, Any] = {
+            "participant_id": str(p.id),
+            "role": p.role,
+            "board_member_id": str(m.id) if m else None,
+            "display_code": m.display_code if m else None,
+            "profile_version": m.profile_version if m else None,
+            "profile_status": m.profile_status if m else None,
+            "facts": [],
+            "committee_memberships": [],
+            "tenure": None,
+        }
+        if m is not None:
+            facts = sorted(confirmed_facts(db, m).values(), key=lambda f: f.key)
+            entry["facts"] = [_fact_dict(f) for f in facts if f.key not in GENERATION_ONLY_KEYS]
+            hidden = [_fact_dict(f) for f in facts if f.key in GENERATION_ONLY_KEYS]
+            if hidden:
+                generation_only[str(p.id)] = hidden
+            entry["committee_memberships"] = member_committees(db, m)
+            appointment = next((f.value for f in facts if f.key == "board_appointment_date"), None)
+            entry["tenure"] = tenure_status(appointment)
+        participants.append(entry)
+    return {"participants": participants, "generation_only": generation_only}
