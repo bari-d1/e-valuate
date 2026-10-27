@@ -1,6 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { readinessApi } from "../../api/orgApi.js";
+import { formatDateTime } from "../../utils/format.js";
+
+// Participant.role codes, labelled as on the Board tab
+const ROLE_LABELS = {
+  Chair: "Chair",
+  MD_CEO: "Managing Director / CEO",
+  ED: "Executive director",
+  NED: "Non-executive director",
+  INED: "Independent non-executive director",
+  "Company Secretary": "Company secretary",
+};
 
 const READINESS = {
   ready: { label: "Ready", tone: "green" },
@@ -440,7 +451,7 @@ export default function ListParticipantsPage({
                       {p.full_name || "—"}
                     </td>
                     <td style={{ ...tdStyle(), overflowWrap: "break-word" }}>{p.email}</td>
-                    <td style={tdStyle()}>{p.role || "—"}</td>
+                    <td style={tdStyle()}>{p.role ? ROLE_LABELS[p.role] || p.role : "—"}</td>
                     <td style={tdStyle()}>
                       <ReadinessChip ui={ui} item={readinessBy[p.participant_id]} orgId={readiness && readiness.organisation_id} />
                     </td>
@@ -483,8 +494,8 @@ export default function ListParticipantsPage({
                         "—"
                       )}
                     </td>
-                    <td style={tdStyle()}>{p.invited_at || "—"}</td>
-                    <td style={tdStyle()}>{p.responded_at || "—"}</td>
+                    <td style={tdStyle()}>{formatDateTime(p.invited_at)}</td>
+                    <td style={tdStyle()}>{formatDateTime(p.responded_at)}</td>
                   </tr>
                 ))}
               </tbody>

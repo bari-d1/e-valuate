@@ -180,10 +180,16 @@ function LinkedMembers({ ui, org, c, links, members, onChanged }) {
   );
 }
 
+function plural(n, one, many) {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
 function MatchResults({ ui, org, result, onChanged }) {
   const { Button } = ui;
   const { busy, error, run } = useAsync();
+  const [linkedNames, setLinkedNames] = useState([]);
   const id = org.organisation_id;
+  const entryKey = (e) => `${e.committee_id}-${e.name}`;
   const link = (entry, cand) =>
     run(async () => {
       await boardApi.addMembership(id, {
@@ -191,32 +197,42 @@ function MatchResults({ ui, org, result, onChanged }) {
         board_member_id: cand.board_member_id,
         membership_role: entry.membership_role,
       });
+      setLinkedNames((prev) => [...prev, entryKey(entry)]);
       await onChanged();
     });
+  const nearMisses = result.near_misses.filter((e) => !linkedNames.includes(entryKey(e)));
+  const rejected = result.previously_rejected || [];
   return (
     <Panel style={{ marginBottom: space.md }}>
       <Notice tone={result.proposed.length ? "success" : "info"}>
-        {`${result.proposed.length} exact match(es) proposed below for you to confirm; ${result.already_linked.length} already linked.`}
+        {result.proposed.length
+          ? `${plural(result.proposed.length, "exact match", "exact matches")} proposed below for you to confirm.`
+          : "No new exact matches."}
+        {result.already_linked.length ? ` ${plural(result.already_linked.length, "name is", "names are")} already linked.` : ""}
+        {rejected.length ? ` ${plural(rejected.length, "match was", "matches were")} rejected before and left alone.` : ""}
         {result.skipped_committees.length ? `\nNot matched: ${result.skipped_committees.map((s) => `${s.committee} (${s.reason})`).join(", ")}.` : ""}
       </Notice>
-      {result.near_misses.length ? (
+      {nearMisses.length ? (
         <div style={{ marginTop: space.md }}>
           <SectionTitle hint="Close but not exact, so nothing was proposed. Link one only if it's the same person.">Near-misses</SectionTitle>
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: space.sm }}>
-            {result.near_misses.map((e) => (
+            {nearMisses.map((e) => (
               <li key={`${e.committee_id}-${e.name}`} style={{ fontSize: 13, borderTop: `1px solid ${color.border}`, paddingTop: space.sm }}>
                 <div style={{ color: color.text }}>
                   <b>“{e.name}”</b> on {e.committee}
                   {e.membership_role === "chair" ? " (chair)" : ""}
                   {e.reason ? <span style={{ color: color.textMuted }}> · {e.reason}</span> : null}
                 </div>
-                <div style={{ display: "flex", gap: space.sm, flexWrap: "wrap", marginTop: 4, alignItems: "center" }}>
+                <ul style={{ listStyle: "none", margin: "4px 0 0", padding: 0, display: "grid", gap: 6 }}>
                   {e.candidates.map((cand) => (
-                    <Button key={cand.board_member_id} variant="secondary" disabled={busy} onClick={() => link(e, cand)} title={cand.reason}>
-                      {`Link ${cand.board_member}`}
-                    </Button>
+                    <li key={cand.board_member_id} style={{ display: "flex", gap: space.sm, flexWrap: "wrap", alignItems: "center" }}>
+                      <Button variant="secondary" disabled={busy} onClick={() => link(e, cand)}>
+                        {`Link ${cand.board_member}`}
+                      </Button>
+                      <span style={{ color: color.textMuted }}>{cand.reason}</span>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </li>
             ))}
           </ul>

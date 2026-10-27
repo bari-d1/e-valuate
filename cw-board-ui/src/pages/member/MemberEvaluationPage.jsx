@@ -12,6 +12,7 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import { portalLoad } from "../../api/portalApi.js";
 import { getHubTokenMisroute, redirectToHubFromMisroute } from "../../api/memberPortalErrors.js";
 import { MemberUI as ui } from "./memberUi.jsx";
+import { humanise } from "../../utils/format.js";
 
 export default function MemberEvaluationPage() {
   const nav = useNavigate();
@@ -83,7 +84,6 @@ export default function MemberEvaluationPage() {
         right={<ui.Badge tone="blue">Board Member</ui.Badge>}
       >
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-          <ui.Badge tone="gray">Token: {(token || "").slice(0, 10)}…</ui.Badge>
           {busy ? <ui.Badge tone="gray">Loading…</ui.Badge> : null}
           {isResponded ? <ui.Badge tone="green">Completed</ui.Badge> : null}
         </div>
@@ -108,7 +108,7 @@ export default function MemberEvaluationPage() {
 
                 {statusText ? <ui.Badge tone={statusTone}>Status: {statusText}</ui.Badge> : <ui.Badge tone="gray">Status: —</ui.Badge>}
 
-                {assignment?.assignment_type ? <ui.Badge tone="gray">Assignment: {assignment.assignment_type}</ui.Badge> : null}
+                {assignment?.assignment_type ? <ui.Badge tone="gray">Assignment: {humanise(assignment.assignment_type)}</ui.Badge> : null}
               </div>
             </div>
 
@@ -118,18 +118,18 @@ export default function MemberEvaluationPage() {
 
               <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div>
-                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>Evaluation ID</div>
-                  <div style={{ marginTop: 4, fontWeight: 900 }}>{ev?.evaluation_id || "—"}</div>
+                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>Evaluation</div>
+                  <div style={{ marginTop: 4, fontWeight: 900 }}>{ev?.name || ev?.evaluation_id || "—"}</div>
                 </div>
 
                 <div>
-                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>Tenant</div>
+                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>Company</div>
                   <div style={{ marginTop: 4, fontWeight: 900 }}>{ev?.tenant_name || "—"}</div>
                 </div>
 
                 <div>
                   <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>Sector</div>
-                  <div style={{ marginTop: 4, fontWeight: 900 }}>{ev?.sector || "—"}</div>
+                  <div style={{ marginTop: 4, fontWeight: 900 }}>{humanise(ev?.sector) || "—"}</div>
                 </div>
 
                 <div>

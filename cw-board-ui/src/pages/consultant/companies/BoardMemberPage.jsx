@@ -497,6 +497,7 @@ export default function BoardMemberPage({ ui, org, memberId }) {
 
   const role = member.governance_role;
   const blockers = member.review_blockers;
+  const alreadyReviewed = member.profile_status === "reviewed";
   const rowProps = (spec) => ({
     ui,
     orgId,
@@ -556,8 +557,8 @@ export default function BoardMemberPage({ ui, org, memberId }) {
             )}
             <Button
               onClick={() => run(async () => { await boardApi.markReviewed(orgId, memberId); await load(); })}
-              disabled={busy || blockers.length > 0}
-              title={blockers.join(" ") || undefined}
+              disabled={busy || blockers.length > 0 || alreadyReviewed}
+              title={blockers.join(" ") || (alreadyReviewed ? "Already reviewed. Any change sets it back to draft." : undefined)}
             >
               Mark profile reviewed
             </Button>

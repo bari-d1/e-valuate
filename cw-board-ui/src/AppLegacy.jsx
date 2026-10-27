@@ -49,6 +49,7 @@ import AssessmentTracksPage from "./pages/consultant/AssessmentTracksPage";
 import ConsultantResponsesPage from "./pages/consultant/ConsultantResponsesPage";
 import CompaniesListPage from "./pages/consultant/companies/CompaniesListPage";
 import CompanyPage from "./pages/consultant/companies/CompanyPage";
+import { formatDateTime } from "./utils/format.js";
 
 
 
@@ -329,8 +330,7 @@ async function fetchWithFallback(urls, options) {
 }
 
 function formatDateMaybe(iso) {
-  if (!iso) return "—";
-  return String(iso).replace("T", " ").replace("Z", "");
+  return formatDateTime(iso);
 }
 
 function clampInt(n, fallback, minV, maxV) {
@@ -737,6 +737,7 @@ function miniTitleStyle() {
 function tableWrapStyle() {
   return {
     marginTop: 12,
+    position: "relative", // keeps visually hidden labels inside the scroll box
     overflow: "auto",
     border: "1px solid #E5E7EB",
     borderRadius: 12,
@@ -969,7 +970,8 @@ function lockReason(actionKey) {
   const hasQuestionnaireSaved =
     String(questionnaireSavedForEvalId || "").trim() === String(evalId || "").trim();
 
-  const hasQuestions = Array.isArray(questions) && questions.length > 0;
+  // The workflow count is loaded on every page; the questions list only after visiting Questions
+  const hasQuestions = (Array.isArray(questions) && questions.length > 0) || wfQuestionsCount > 0;
 
   const participantsCount =
     typeof wfParticipantsCount !== "undefined" && typeof wfParticipantsCount === "number"
@@ -2471,9 +2473,10 @@ function getWorkflowProgress() {
                   <span style={{ color: "#64748B" }}>Evaluation:</span>
                   <b>
                     {evalId
-                      ? [evalId, evaluations.find((e) => e.evaluation_id === evalId)?.tenant_name]
-                          .filter(Boolean)
-                          .join(" · ")
+                      ? (() => {
+                          const ev = evaluations.find((e) => e.evaluation_id === evalId);
+                          return [ev?.name || evalId, ev?.tenant_name].filter(Boolean).join(" · ");
+                        })()
                       : "None selected"}
                   </b>
                   <span aria-hidden style={{ color: "#64748B" }}>▾</span>
@@ -2482,8 +2485,8 @@ function getWorkflowProgress() {
                   <button
                     type="button"
                     onClick={closeEvaluation}
-                    aria-label="Close evaluation"
-                    title="Close evaluation"
+                    aria-label="Stop working on this evaluation"
+                    title="Stop working on this evaluation"
                     style={{
                       width: 28,
                       height: 28,

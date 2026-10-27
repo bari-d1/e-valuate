@@ -9,6 +9,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { portalHubLoad } from "../../api/portalApi.js";
 import { MemberUI as ui } from "./memberUi.jsx";
+import { humanise } from "../../utils/format.js";
 
 function tokenFromPortalUrl(url) {
   const m = String(url || "").match(/\/member\/([^/]+)\/questions/);
@@ -165,7 +166,7 @@ export default function MemberHubPage() {
                       const done = String(a.status || "").toLowerCase() === "responded";
                       return (
                         <tr key={a.assignment_id} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                          <td style={{ padding: "10px 12px", fontWeight: 800 }}>{a.label || a.assignment_type}</td>
+                          <td style={{ padding: "10px 12px", fontWeight: 800 }}>{a.label || humanise(a.assignment_type)}</td>
                           <td style={{ padding: "10px 12px" }}>
                             <ui.Badge tone={statusTone(a.status)}>{a.status || "—"}</ui.Badge>
                           </td>
