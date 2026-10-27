@@ -10,7 +10,8 @@ import { formatDate, inputCss, useAsync } from "./helpers.js";
 
 function formatValue(spec, value) {
   if (value === null || value === undefined) return "—";
-  if (spec.type === "list") return (value || []).join(", ");
+  // One item per line (shown with pre-wrap): items such as recent events contain commas themselves
+  if (spec.type === "list") return (value || []).length > 1 ? value.map((x) => `• ${x}`).join("\n") : (value || []).join("");
   if (spec.type === "object") {
     return spec.fields
       .filter((f) => value[f.key] !== undefined && value[f.key] !== null)

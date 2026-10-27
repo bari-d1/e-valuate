@@ -123,12 +123,12 @@ export default function InviteParticipantsPage({
       <div style={{ marginTop: 14 }}>
         <Field
           label="Participants (one per line)"
-          hint="Email, then optionally full name and role, separated by commas."
+          hint="Email, then optionally full name and role, separated by commas. Roles: Chair, MD/CEO, ED, NED, INED or Company Secretary. Someone whose email matches a board member is linked to them and takes their role from the Board tab."
         >
           <textarea
             value={inviteText}
             onChange={(e) => setInviteText(e.target.value)}
-            placeholder={"jane.doe@example.com,Jane Doe,INED\njohn.smith@example.com,John Smith,ED"}
+            placeholder={"jane.doe@example.com,Jane Doe,INED\njohn.smith@example.com,John Smith,Company Secretary"}
             style={textareaStyle(160)}
             spellCheck={false}
           />

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { boardApi } from "../../../api/orgApi.js";
 import { color, font, space } from "../../../theme.js";
 import { Notice, Panel, SectionTitle } from "./shared.jsx";
-import { inputCss, useAsync, visuallyHidden } from "./helpers.js";
+import { inputCss, useAsync } from "./helpers.js";
 import { roleLabel, useMemberRegistry } from "./boardHelpers.js";
 
 function AddMember({ ui, org, onAdded, onCancel }) {
@@ -32,10 +32,10 @@ function AddMember({ ui, org, onAdded, onCancel }) {
       ) : null}
       <div style={{ display: "grid", gap: space.md, gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", alignItems: "end" }}>
         <Field label="Full name">
-          <input value={name} onChange={(e) => setName(e.target.value)} style={inputCss()} autoComplete="off" />
+          <input value={name} onChange={(e) => setName(e.target.value)} style={inputCss()} maxLength={255} autoComplete="off" />
         </Field>
         <Field label="Email" hint="Optional. Used when they're invited.">
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputCss()} autoComplete="off" />
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputCss()} maxLength={255} autoComplete="off" />
         </Field>
         <Field label="Display code" hint="Optional, e.g. P001. Shown next to their name.">
           <input value={code} onChange={(e) => setCode(e.target.value)} style={inputCss({ textTransform: "uppercase" })} maxLength={32} />
@@ -51,6 +51,13 @@ function AddMember({ ui, org, onAdded, onCancel }) {
       </div>
     </Panel>
   );
+}
+
+// Active members first, then by surname (the last word of the name), so titles like "Dr." don't decide the order
+function bySurname(a, b) {
+  if (a.active !== b.active) return a.active ? -1 : 1;
+  const surname = (m) => (m.full_name || "").trim().split(/\s+/).pop().toLowerCase();
+  return surname(a).localeCompare(surname(b)) || (a.full_name || "").localeCompare(b.full_name || "");
 }
 
 function Committees({ items }) {
@@ -114,15 +121,15 @@ export default function BoardTab({ ui, org }) {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: font.body, minWidth: 640 }}>
             <thead>
               <tr style={{ background: color.surfaceMuted, textAlign: "left" }}>
-                {["Board member", "Role", "Committees", "Profile", ""].map((h, i) => (
-                  <th key={h || i} scope="col" style={{ ...ui.tdStyle(), fontWeight: font.weight.heavy }}>
-                    {h || <span style={visuallyHidden}>Warnings</span>}
+                {["Board member", "Role", "Committees", "Profile"].map((h) => (
+                  <th key={h} scope="col" style={{ ...ui.tdStyle(), fontWeight: font.weight.heavy }}>
+                    {h}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {items.map((m) => (
+              {[...items].sort(bySurname).map((m) => (
                 <tr key={m.board_member_id} style={{ borderTop: `1px solid ${color.border}`, opacity: m.active ? 1 : 0.6 }}>
                   <td style={ui.tdStyle()}>
                     <Link to={`/consultant/companies/${id}/board/${m.board_member_id}`} style={{ fontWeight: font.weight.bold, color: color.primaryText }}>
@@ -130,6 +137,15 @@ export default function BoardTab({ ui, org }) {
                       {m.full_name}
                     </Link>
                     <div style={{ fontSize: font.small, color: color.textMuted, overflowWrap: "break-word" }}>{m.email || "No email"}</div>
+                    {m.problems.length ? (
+                      <ul aria-label="To check" style={{ listStyle: "none", margin: "4px 0 0", padding: 0, display: "flex", flexWrap: "wrap", gap: 4 }}>
+                        {m.problems.map((p) => (
+                          <li key={p}>
+                            <Badge tone="amber">{p}</Badge>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
                   </td>
                   <td style={ui.tdStyle()}>
                     {m.governance_role ? roleLabel(registry, m.governance_role) : <span style={{ color: color.textMuted }}>Not confirmed</span>}
@@ -142,15 +158,6 @@ export default function BoardTab({ ui, org }) {
                       {m.profile_status === "reviewed" ? <Badge tone="green">Reviewed v{m.profile_version}</Badge> : <Badge tone="gray">Draft</Badge>}
                       {!m.active ? <Badge tone="gray">Inactive</Badge> : null}
                     </div>
-                  </td>
-                  <td style={ui.tdStyle()}>
-                    {m.problems.length ? (
-                      <span title={m.problems.join("\n")}>
-                        <Badge tone="amber">
-                          {m.problems.length === 1 ? m.problems[0] : `${m.problems.length} to check`}
-                        </Badge>
-                      </span>
-                    ) : null}
                   </td>
                 </tr>
               ))}

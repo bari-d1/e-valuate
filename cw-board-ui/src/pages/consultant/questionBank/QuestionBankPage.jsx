@@ -108,7 +108,7 @@ export default function QuestionBankPage({ ui }) {
             {filtered ? " match" : ""}
           </p>
           <div style={ui.tableWrapStyle()}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: font.body, minWidth: 720 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: font.body, minWidth: 600 }}>
               <thead>
                 <tr style={{ background: color.surfaceMuted, textAlign: "left" }}>
                   {["Code", "Question", "Tags", "Status"].map((h) => (
@@ -137,14 +137,14 @@ export default function QuestionBankPage({ ui }) {
                     <td style={ui.tdStyle()}>
                       <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                         {i.subject_types.map((s) => (
-                          <Badge key={s} tone="blue">
+                          <Badge key={s} tone="blue" wrap>
                             {nameOf(meta?.subject_types, s)}
                           </Badge>
                         ))}
-                        <Badge tone="purple">{nameOf(meta?.themes, i.theme_code)}</Badge>
-                        <Badge tone="gray">{nameOf(meta?.evidence_sources, i.evidence_source_code)}</Badge>
+                        <Badge tone="purple" wrap>{nameOf(meta?.themes, i.theme_code)}</Badge>
+                        <Badge tone="gray" wrap>{nameOf(meta?.evidence_sources, i.evidence_source_code)}</Badge>
                         {i.templated ? <Badge tone="amber">Templated</Badge> : null}
-                        {i.known_from ? <Badge tone="green">Known: {i.known_from_label}</Badge> : null}
+                        {i.known_from ? <Badge tone="green" wrap>Known: {i.known_from_label}</Badge> : null}
                       </div>
                     </td>
                     <td style={ui.tdStyle()}>

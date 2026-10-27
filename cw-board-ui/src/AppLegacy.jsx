@@ -60,6 +60,7 @@ import { formatDateTime } from "./utils/format.js";
 
 import { saveBlobAsFile } from "./api/blobDownload.js";
 import { getConsultantHeaders } from "./api/consultantAuth.js";
+import { NETWORK_ERROR, validationMessage } from "./api/orgApi.js";
 import { color, tone as toneColors, radius, space, font, SIDEBAR_BREAKPOINT } from "./theme.js";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
@@ -351,7 +352,8 @@ function normalizeAnswerTypes(keys) {
 /* --------------------------
    UI Components
 -------------------------- */
-function Badge({ children, tone = "blue" }) {
+// wrap: let long labels break over lines (e.g. tags in narrow table cells)
+function Badge({ children, tone = "blue", wrap = false }) {
   const t = toneColors[tone] || toneColors.gray;
   return (
     <span
@@ -366,7 +368,7 @@ function Badge({ children, tone = "blue" }) {
         color: t.fg,
         fontSize: font.small,
         fontWeight: font.weight.medium,
-        whiteSpace: "nowrap",
+        whiteSpace: wrap ? "normal" : "nowrap",
       }}
     >
       {children}
@@ -764,6 +766,14 @@ function joinUrl(base, path) {
   return `${b}/${p}`;
 }
 
+// FastAPI errors: detail is a string, or a list of validation errors ({loc, msg})
+function detailMessage(detail) {
+  if (!detail) return "";
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) return validationMessage(detail);
+  return detail.message || "";
+}
+
 async function apiRequest(method, path, payload, opts = {}) {
   const baseUrl = opts.baseUrl || API_BASE; // ✅ default to API_BASE (CRITICAL)
   const url = path.startsWith("http") ? path : joinUrl(baseUrl, path);
@@ -773,12 +783,17 @@ async function apiRequest(method, path, payload, opts = {}) {
     ...(opts.headers || {}),
   });
 
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: payload ? JSON.stringify(payload) : undefined,
-    credentials: opts.credentials || "same-origin",
-  });
+  let res;
+  try {
+    res = await fetch(url, {
+      method,
+      headers,
+      body: payload ? JSON.stringify(payload) : undefined,
+      credentials: opts.credentials || "same-origin",
+    });
+  } catch {
+    throw new Error(NETWORK_ERROR);
+  }
 
   const data = await safeJsonOrText(res);
 
@@ -786,6 +801,7 @@ async function apiRequest(method, path, payload, opts = {}) {
     const err = new Error(
       (typeof data === "string" && data) ||
         (data && data.message) ||
+        detailMessage(data && data.detail) ||
         `Request failed (${res.status})`
     );
     err.status = res.status;
@@ -1557,8 +1573,12 @@ function renderNextActionBar(opts = {}) {
     if (!String(evalId || "").trim()) throw new Error("Evaluation ID is required.");
 
     const sendEmail = opts?.sendEmail === true;
+    const participants = parseInviteText(inviteText);
+    if (!participants.length) {
+      throw new Error("Add at least one participant: one email address per line.");
+    }
     const payload = {
-      participants: parseInviteText(inviteText),
+      participants,
       send_email: sendEmail,
     };
     const data = await apiPost(`/api/v1/evaluations/${evalId}/participants/invite`, payload);
@@ -2296,13 +2316,24 @@ function getWorkflowProgress() {
     setOpenRequest(id);
   }
 
-  function closeEvaluation() {
+  function clearEvaluationFocus() {
     setProgressLoadedFor("");
     setEvalId("");
     setSelectedTemplate("");
     setSelectedVersion("");
     setTemplateCode("");
     setVersion("");
+  }
+
+  // Opening another company's pages drops the focus on an evaluation that belongs to a different company
+  const companyInPath = (location.pathname.match(/^\/consultant\/companies\/([^/]+)/) || [])[1] || "";
+  const focusedOrgId = evaluations.find((e) => e.evaluation_id === evalId)?.organisation_id || "";
+  useEffect(() => {
+    if (companyInPath && focusedOrgId && focusedOrgId !== companyInPath) clearEvaluationFocus();
+  }, [companyInPath, focusedOrgId]);
+
+  function closeEvaluation() {
+    clearEvaluationFocus();
     navigate("/consultant/evaluations");
   }
 
@@ -2339,7 +2370,8 @@ function getWorkflowProgress() {
   // Every consultant page except companies and the evaluation list/create works on the evaluation in focus
   const needsFocus =
     !String(evalId || "").trim() &&
-    !/^\/consultant\/?$|^\/consultant\/(evaluations|companies)(\/|$)/.test(location.pathname);
+    // Companies and the question bank aren't tied to one evaluation
+    !/^\/consultant\/?$|^\/consultant\/(evaluations|companies|question-bank)(\/|$)/.test(location.pathname);
 
   //Here is where we actually build the page with sidebar and the main bar(page)
 

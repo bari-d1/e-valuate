@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router-dom";
 import { boardApi, downloadDocument } from "../../../api/orgApi.js";
 import { color, font, space } from "../../../theme.js";
-import { Excerpt, LinkButton, Notice, Panel, SectionTitle, SourceTag } from "./shared.jsx";
+import { DroppedItems, Excerpt, LinkButton, Notice, Panel, SectionTitle, SourceTag } from "./shared.jsx";
 import { formatDate, inputCss, useAsync, visuallyHidden } from "./helpers.js";
 import { TRISTATE, roleLabel, useMemberRegistry } from "./boardHelpers.js";
 
@@ -295,10 +295,10 @@ function EditMember({ ui, orgId, member, onSaved, onCancel }) {
       ) : null}
       <div style={{ display: "grid", gap: space.md, gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", alignItems: "end" }}>
         <Field label="Full name">
-          <input value={name} onChange={(e) => setName(e.target.value)} style={inputCss()} />
+          <input value={name} onChange={(e) => setName(e.target.value)} style={inputCss()} maxLength={255} />
         </Field>
         <Field label="Email">
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputCss()} />
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputCss()} maxLength={255} />
         </Field>
         <Field label="Display code">
           <input value={code} onChange={(e) => setCode(e.target.value)} style={inputCss({ textTransform: "uppercase" })} maxLength={32} />
@@ -392,9 +392,9 @@ function Documents({ ui, orgId, member, docs, onChanged }) {
         <div style={{ marginTop: space.sm }}>
           <Notice tone="success">
             {`Proposed ${summary.facts_added} new and updated ${summary.facts_updated} fact(s).`}
-            {summary.discarded.length ? `\n${summary.discarded.length} item(s) were dropped because they couldn't be checked against the document.` : ""}
             {summary.skipped.length ? `\nSkipped: ${summary.skipped.map((s) => `${s.filename}: ${s.reason}`).join("; ")}` : ""}
           </Notice>
+          <DroppedItems items={summary.discarded} />
         </div>
       ) : null}
       {error ? (

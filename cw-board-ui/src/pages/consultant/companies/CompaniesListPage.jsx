@@ -58,7 +58,7 @@ export default function CompaniesListPage({ ui }) {
             style={{ display: "grid", gap: space.md, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", alignItems: "end" }}
           >
             <Field label="Company name">
-              <input value={name} onChange={(e) => setName(e.target.value)} style={inputCss()} autoFocus autoComplete="off" />
+              <input value={name} onChange={(e) => setName(e.target.value)} style={inputCss()} maxLength={255} autoFocus autoComplete="off" />
             </Field>
             <Field label="Sector" hint="Sets the default governance codes. You can change it later.">
               <select value={sector} onChange={(e) => setSector(e.target.value)} style={inputCss()}>

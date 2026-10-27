@@ -110,3 +110,23 @@ export function SourceTag({ ui, source }) {
   const tone = { public: "blue", client: "purple", consultant: "gray" }[source] || "gray";
   return <Badge tone={tone}>{SOURCE_LABELS[source] || source}</Badge>;
 }
+
+/** What an extraction run dropped and why, collapsed under a one-line count. */
+export function DroppedItems({ items }) {
+  if (!items || !items.length) return null;
+  return (
+    <details style={{ marginTop: space.sm, fontSize: 13 }}>
+      <summary style={{ cursor: "pointer", color: color.text }}>
+        {`${items.length} item(s) were dropped because they couldn't be checked against the documents. Show which`}
+      </summary>
+      <ul style={{ margin: `${space.xs}px 0 0`, paddingLeft: 18, color: color.textMuted, display: "grid", gap: 2 }}>
+        {items.map((d, i) => (
+          <li key={i}>
+            <span style={{ color: color.text }}>{d.label || d.committee || d.key || "Item"}</span>
+            {d.filename ? ` (${d.filename}${d.part ? `, ${d.part}` : ""})` : ""}: {d.reason}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
