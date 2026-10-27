@@ -13,100 +13,19 @@ Requires: RUN_INTEGRATION_TESTS=1 and PostgreSQL.
 from __future__ import annotations
 
 import json
-from datetime import date
 from pathlib import Path
 
 import pytest
 from sqlalchemy import func, select
 
-from app.db.models import (
-    AssessmentAssignment,
-    BoardMember,
-    BoardMemberFact,
-    CommitteeMembership,
-    Evaluation,
-    EvaluationGovernanceCode,
-    Organisation,
-    OrganisationFact,
-    OrgCommittee,
-    Participant,
-    Question,
-)
-from app.domain.board_member_profile import PARTICIPANT_ROLE_FOR
+from app.db.models import AssessmentAssignment, Participant, Question
 from app.services.question_bank import load_fixture
 from app.services.question_selection import LONG_PREVIEW_MINUTES, eligible_items, preview
+from tests.val001 import build_val001
 
 pytestmark = pytest.mark.integration
 
 FIXTURE = Path(__file__).resolve().parents[1] / "reference" / "question_bank" / "draft_bank.json"
-
-ROSTER = [
-    ("P001", "chair", "2018-01-15"),
-    ("P002", "md_ceo", "2020-06-01"),
-    ("P003", "ed", "2021-02-01"),
-    ("P004", "ned", "2017-09-01"),
-    ("P005", "ned", None),
-    ("P006", "ined", "2019-03-01"),
-    ("P007", "company_secretary", None),
-]
-COMMITTEES = [
-    ("Audit and Compliance Committee", "audit", {"P006": "chair", "P004": "member", "P005": "member"}),
-    ("Enterprise Risk Management and Governance Committee", "governance", {"P004": "chair", "P006": "member", "P002": "member"}),
-    ("Finance and Investment Committee", "finance", {"P005": "chair", "P002": "member", "P003": "member", "P004": "member"}),
-]
-
-
-def _confirmed(model, **kw):
-    return model(source="client", status="confirmed", origin="manual", **kw)
-
-
-def build_val001(db, *, sector="insurance", codes=("NCCG_2018", "NAICOM_2021"), eid="VAL-001",
-                 board_composition=True, ined_facts=True):
-    org = Organisation(name=f"{eid} Test Company", sector_key=sector, country="NG")
-    db.add(org)
-    db.flush()
-    db.add(_confirmed(OrganisationFact, organisation_id=org.id, key="board_size", value=6))
-    if board_composition:
-        db.add(_confirmed(OrganisationFact, organisation_id=org.id, key="board_composition",
-                          value={"executive_directors": 2, "non_executive_directors": 3,
-                                 "independent_non_executive_directors": 1, "women": 1, "men": 5}))
-    ev = Evaluation(id=eid, tenant_name=org.name, sector=sector, year=2025, regulators={"items": []},
-                    organisation_id=org.id, review_period_end=date(2025, 12, 31))
-    db.add(ev)
-    db.flush()
-    for code in codes:
-        db.add(EvaluationGovernanceCode(evaluation_id=ev.id, code=code, source="manual"))
-
-    members, participants = {}, {}
-    for code, role, appointed in ROSTER:
-        m = BoardMember(organisation_id=org.id, full_name=f"Board Member {code[1:]}", email=f"{code}@example.invalid",
-                        display_code=code, active=True, profile_status="reviewed", profile_version=2)
-        db.add(m)
-        db.flush()
-        db.add(_confirmed(BoardMemberFact, board_member_id=m.id, key="governance_role", value=role))
-        if appointed:
-            db.add(_confirmed(BoardMemberFact, board_member_id=m.id, key="board_appointment_date", value=appointed))
-        db.add(_confirmed(BoardMemberFact, board_member_id=m.id, key="expertise", value=["Finance"]))
-        p = Participant(evaluation_id=ev.id, email=m.email, full_name=m.full_name, role=PARTICIPANT_ROLE_FOR[role],
-                        board_member_id=m.id, status="invited")
-        db.add(p)
-        members[code], participants[code] = m, p
-    if ined_facts:
-        for key in ("holds_company_shares", "represents_significant_shareholder",
-                    "employee_of_company_or_group_last_5y", "close_family_tie_to_director_adviser_or_auditor"):
-            db.add(_confirmed(BoardMemberFact, board_member_id=members["P006"].id, key=key, value={"answer": "no"}))
-    committees = {}
-    for name, ctype, seats in COMMITTEES:
-        c = _confirmed(OrgCommittee, organisation_id=org.id, name=name, committee_type=ctype, member_names=[])
-        db.add(c)
-        db.flush()
-        committees[name] = c
-        for code, seat in seats.items():
-            db.add(CommitteeMembership(committee_id=c.id, board_member_id=members[code].id, membership_role=seat,
-                                       source="client", status="confirmed", origin="manual"))
-    db.flush()
-    return ev, participants, committees
-
 
 @pytest.fixture
 def bank(db_session, reference_seeded):
@@ -139,7 +58,7 @@ def test_preview_needs_approved_items_unless_drafts_included(db_session, val001)
     out = preview(db_session, ev)
     assert out["items_considered"] == 0
     assert any("No approved" in w for w in out["warnings"])
-    assert preview(db_session, ev, include_drafts=True)["items_considered"] == 246
+    assert preview(db_session, ev, include_drafts=True)["items_considered"] == 288
 
 
 def test_ined_gets_independence_items_and_known_ones_are_skipped(result) -> None:
@@ -178,25 +97,63 @@ def test_committee_items_go_to_members_once_per_committee(result, val001) -> Non
     assert {e["subject"]["label"] for e in result["P004"]["skipped"] if e["code"] == "COM-CORE-03"} == set(ids)
 
 
-def test_peer_items_are_about_other_directors_never_the_respondent(result, val001) -> None:
+def _about(p, code):
+    return {e["subject"]["participant_id"] for e in p["included"] if e["code"] == code}
+
+
+DIRECTORS = ("P001", "P002", "P003", "P004", "P005", "P006")
+
+
+def test_core_peer_items_go_to_every_other_director(result, val001) -> None:
     _, participants, _ = val001
     pid = {code: str(p.id) for code, p in participants.items()}
+    for code in DIRECTORS:
+        others = {pid[c] for c in DIRECTORS if c != code}
+        p = result[code]
+        assert _about(p, "PEER-CORE-01") == others, code  # never themselves, never P007
+        assert _about(p, "PEER-COMMENT-01") == others, code
+        assert _about(p, "PEER-CORE-05") == {pid[c] for c in ("P001", "P004", "P005", "P006") if c != code}
+        assert _about(p, "PEER-CORE-06") == {pid[c] for c in ("P002", "P003") if c != code}
+        assert {e["code"] for e in p["included"] if e["code"].startswith("SELF-CORE-")} == (
+            {f"SELF-CORE-0{n}" for n in (1, 2, 3, 4)} | {"SELF-CORE-06" if code in ("P002", "P003") else "SELF-CORE-05"})
+        assert all(e["subject"]["participant_id"] == pid[code] for e in p["included"] if e["code"].startswith("SELF-CORE-"))
+        assert not _codes(p["included"], "PEER-NED-") and not _codes(p["included"], "PEER-EXEC-")
+        assert not _codes(p["included"], "CHAIR-PEER-")
+    assert not _codes(result["P007"]["included"], "PEER-") and not _codes(result["P007"]["included"], "SELF-CORE-")
+
+
+def test_deep_sets_go_to_those_best_placed(result, val001) -> None:
+    _, participants, _ = val001
+    pid = {code: str(p.id) for code, p in participants.items()}
+    chair_deep = {code: _codes(result[code]["included"], "DEEP-CHAIR-") for code in result}
+    for code in ("P004", "P005", "P006"):
+        assert len(chair_deep[code]) == 9, code
+    assert sorted(chair_deep["P002"]) == ["DEEP-CHAIR-06", "DEEP-CHAIR-07", "DEEP-CHAIR-08", "DEEP-CHAIR-09"]
+    assert chair_deep["P003"] == [] and chair_deep["P001"] == [] and chair_deep["P007"] == []
+    md_raters = {code for code in result if _codes(result[code]["included"], "DEEP-MD-")}
+    assert md_raters == {"P001", "P004", "P005", "P006"}
+    ed_raters = {code for code in result if _codes(result[code]["included"], "DEEP-ED-")}
+    assert ed_raters == {"P001", "P002"}
+    assert _about(result["P001"], "DEEP-ED-01") == {pid["P003"]}
+
+
+def test_full_peer_mode_restores_the_original_forms(db_session, val001) -> None:
+    ev, participants, _ = val001
+    ev.options = {"peer_mode": "full"}
+    db_session.flush()
+    result = _by_code(preview(db_session, ev, include_drafts=True))
+    pid = {code: str(p.id) for code, p in participants.items()}
     nominees = {"P004", "P005", "P006"}
-    for code in ("P001", "P002", "P003", "P004", "P005", "P006"):
-        about = {e["subject"]["participant_id"] for e in result[code]["included"] if e["code"] == "PEER-NED-01"}
-        assert about == {pid[c] for c in nominees - {code}}, code
-        execs = {e["subject"]["participant_id"] for e in result[code]["included"] if e["code"] == "PEER-EXEC-01"}
-        assert execs == {pid[c] for c in {"P002", "P003"} - {code}}, code
+    for code in DIRECTORS:
+        assert _about(result[code], "PEER-NED-01") == {pid[c] for c in nominees - {code}}, code
+        assert _about(result[code], "PEER-EXEC-01") == {pid[c] for c in {"P002", "P003"} - {code}}, code
+        assert not _codes(result[code]["included"], "PEER-CORE-") and not _codes(result[code]["included"], "DEEP-")
         for e in result[code]["included"]:
             if e["code"].startswith(("PEER-", "CHAIR-PEER-")):
                 assert e["subject"]["participant_id"] != pid[code]
-    assert not _codes(result["P007"]["included"], "PEER-"), "the secretary doesn't do director peer reviews"
-    # The chair peer review: everyone but the chair, including the company secretary
     for code in ("P002", "P003", "P004", "P005", "P006", "P007"):
-        assert {e["subject"]["participant_id"] for e in result[code]["included"] if e["code"] == "CHAIR-PEER-01"} == {pid["P001"]}
-    assert not _codes(result["P001"]["included"], "CHAIR-PEER-")
-    # "Relationship with the MD/CEO" is only asked about EDs
-    assert {e["subject"]["participant_id"] for e in result["P001"]["included"] if e["code"] == "PEER-EXEC-03"} == {pid["P003"]}
+        assert _about(result[code], "CHAIR-PEER-01") == {pid["P001"]}
+    assert _about(result["P001"], "PEER-EXEC-03") == {pid["P003"]}
 
 
 def test_chair_self_items_reach_only_the_chair(result) -> None:
@@ -231,7 +188,7 @@ def test_counts_and_time(result) -> None:
         assert p["estimated_minutes"] > 0, code
         assert p["blocked"] == [], (code, p["blocked"][:2])
         assert p["long"] is (p["estimated_minutes"] > LONG_PREVIEW_MINUTES)
-    assert result["P004"]["long"] is True  # three committees and every peer review
+    assert result["P004"]["long"] is True  # three committees and both deep sets
 
 
 def test_item_limited_to_insurance_or_naicom_does_not_reach_a_bank(db_session, bank) -> None:

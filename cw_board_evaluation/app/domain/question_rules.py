@@ -25,6 +25,7 @@ Conditions (see CONDITIONS for the argument each takes):
     org.sector                              ["insurance", ...]       sector keys
     org.has_code                            "NAICOM_2021"
     evaluation.scope_includes               "INED"
+    evaluation.option                       {"key": "peer_mode", "value": "core"}
     fact.known                              "<fact key>"
     fact.unknown                            "<fact key>"
     fact.at_least / fact.at_most            {"key": "<fact key>", "value": 2}
@@ -43,6 +44,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from app.domain.board_member_profile import GOVERNANCE_ROLE_KEYS, PROFILE_FACTS_BY_KEY
+from app.domain.evaluation_options import OPTIONS_BY_KEY, effective_options, option_values
 from app.domain.governance import GOVERNANCE_CODE_KEYS, SECTOR_KEYS
 from app.domain.org_profile import COMMITTEE_TYPES, FACTS_BY_KEY
 from app.domain.taxonomy import SUBJECT_TYPE_CODES, SUBJECT_TYPES
@@ -353,6 +355,23 @@ def _scope_includes(arg, ctx) -> RuleResult:
     return RuleResult(False, [f"the evaluation's scope doesn't include {name}"])
 
 
+def _option_check(arg: Any) -> List[str]:
+    if not isinstance(arg, dict) or set(arg) != {"key", "value"}:
+        return ['needs {"key": "<option>", "value": "<value>"}']
+    if arg["key"] not in OPTIONS_BY_KEY:
+        return [f"unknown option {arg['key']!r} (known: {', '.join(OPTIONS_BY_KEY)})"]
+    if arg["value"] not in option_values(arg["key"]):
+        return [f"{arg['key']} must be one of: {', '.join(option_values(arg['key']))}"]
+    return []
+
+
+def _evaluation_option(arg, ctx) -> RuleResult:
+    value = effective_options((ctx.get("evaluation") or {}).get("options"))[arg["key"]]
+    if value == arg["value"]:
+        return RuleResult(True, [f"the evaluation uses {arg['key'].replace('_', ' ')} {value!r}"])
+    return RuleResult(False, [f"the evaluation uses {arg['key'].replace('_', ' ')} {value!r}, not {arg['value']!r}"])
+
+
 def _fact_known(arg, ctx) -> RuleResult:
     known, v = lookup_fact(ctx, arg)
     if known:
@@ -397,6 +416,7 @@ CONDITIONS: Dict[str, Tuple[str, Callable[[Any], List[str]], Callable[[Any, Dict
     "org.sector": ("list of sectors", _list_of(SECTOR_KEYS, "sectors"), _org_sector),
     "org.has_code": ("governance code", _one_of(GOVERNANCE_CODE_KEYS, "governance code"), _org_has_code),
     "evaluation.scope_includes": ("subject type", _one_of(SUBJECT_TYPE_CODES, "subject type"), _scope_includes),
+    "evaluation.option": ('{"key": option, "value": value}', _option_check, _evaluation_option),
     "fact.known": ("fact key", _fact_key, _fact_known),
     "fact.unknown": ("fact key", _fact_key, _fact_unknown),
     "fact.at_least": ('{"key": fact key, "value": number}', _fact_compare, _fact_compare_eval("at_least")),
@@ -500,7 +520,7 @@ def evaluate(rule: Any, ctx: Dict[str, Any]) -> RuleResult:
          "subject":    {"kind": "board"|"function"|"person"|"committee", "type", "label",
                         "participant_id", "committee_id", "committee_type", "committee_name", "facts"},
          "org":        {"sector", "codes", "facts"},
-         "evaluation": {"scope", "review_year"}}
+         "evaluation": {"scope", "review_year", "options"}}
 
     Returns the result (True / False / None for missing data) with reasons.
     """
@@ -550,6 +570,7 @@ def _describe(rule: Dict[str, Any]) -> str:
         "org.sector": lambda a: f"the company is in {_or_list(a)}",
         "org.has_code": lambda a: f"the evaluation uses {_code_name(a)}",
         "evaluation.scope_includes": lambda a: f"the scope includes {SUBJECT_TYPE_NAMES.get(a, a)}",
+        "evaluation.option": lambda a: f"{a['key'].replace('_', ' ')} is {a['value']!r}",
         "fact.known": lambda a: f"{fact_label(a)} is known",
         "fact.unknown": lambda a: f"{fact_label(a)} is not known",
         "fact.at_least": lambda a: f"{fact_label(a['key'])} is at least {a['value']}",

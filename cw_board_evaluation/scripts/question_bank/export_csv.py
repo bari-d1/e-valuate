@@ -23,12 +23,12 @@ from app.domain.question_rules import describe_rule  # noqa: E402
 DEFAULT_FIXTURE = ROOT / "reference" / "question_bank" / "draft_bank.json"
 
 COLUMNS = [
-    "code", "version", "status", "section", "text", "answer_type", "options", "scale",
+    "code", "version", "status", "priority", "section", "text", "answer_type", "options", "scale",
     "subject_types", "subject_binding", "respondent_rule_plain", "activation_rule_plain",
     "theme_code", "evidence_source_code", "known_from", "known_from_behaviour", "placeholders",
     "governance_refs", "guidance", "review_notes", "source_refs",
     "why_subject_types", "why_subject_binding", "why_respondent_rule", "why_activation_rule",
-    "why_theme", "why_evidence_source", "why_governance_refs",
+    "why_theme", "why_evidence_source", "why_governance_refs", "why_priority",
     "respondent_rule", "activation_rule", "weight", "sort_order",
 ]
 
@@ -42,6 +42,8 @@ def _scale(scale: Any) -> str:
 
 
 def _source(ref: Dict[str, Any]) -> str:
+    if ref.get("derived_from"):
+        return f"from bank item {ref['derived_from']}"
     return f"{ref.get('form')} {ref.get('item')}".strip()
 
 
@@ -52,7 +54,8 @@ def item_row(item: Dict[str, Any]) -> Dict[str, Any]:
         "code": item["code"],
         "version": item.get("version", 1),
         "status": item.get("status", "draft"),
-        "section": refs[0].get("section", "") if refs else "",
+        "priority": item.get("priority", "standard"),
+        "section": (refs[0].get("section") or refs[0].get("derived_section", "")) if refs else "",
         "text": item["text"],
         "answer_type": item["answer_type"],
         "options": " | ".join(item.get("options") or []),
@@ -72,7 +75,7 @@ def item_row(item: Dict[str, Any]) -> Dict[str, Any]:
         "source_refs": "; ".join(_source(r) for r in refs),
         **{f"why_{k}": (notes.get(k) or {}).get("reason", "") for k in (
             "subject_types", "subject_binding", "respondent_rule", "activation_rule", "theme",
-            "evidence_source", "governance_refs")},
+            "evidence_source", "governance_refs", "priority")},
         "respondent_rule": json.dumps(item.get("respondent_rule")) if item.get("respondent_rule") else "",
         "activation_rule": json.dumps(item.get("activation_rule")) if item.get("activation_rule") else "",
         "weight": item.get("weight", 1),

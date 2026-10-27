@@ -52,13 +52,13 @@ def _count(db, model):
 def test_loader_is_idempotent(db_session, clauses) -> None:
     fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
     first = svc.load_fixture(db_session, fixture)
-    assert len(first["created"]) == 246
+    assert len(first["created"]) == 288
     assert first["errors"] == [] and first["unresolved_clauses"] == []
     links = _count(db_session, QuestionBankItemClause)
     assert links > 0
     second = svc.load_fixture(db_session, fixture)
-    assert second["created"] == [] and len(second["unchanged"]) == 246
-    assert _count(db_session, QuestionBankItem) == 246
+    assert second["created"] == [] and len(second["unchanged"]) == 288
+    assert _count(db_session, QuestionBankItem) == 288
     assert _count(db_session, QuestionBankItemClause) == links
     item = db_session.execute(select(QuestionBankItem).where(QuestionBankItem.code == "INED-IND-01")).scalar_one()
     assert [(link.clause.code, link.clause.reference, link.status) for link in item.clause_links] == [("NCCG_2018", "7.2.1", "suggested")]
@@ -163,9 +163,9 @@ def test_api_rejects_invalid_items_with_every_error(api_client, reference_seeded
 def test_api_list_filters(api_client, db_session, clauses) -> None:
     svc.load_fixture(db_session, json.loads(FIXTURE.read_text(encoding="utf-8")))
     body = api_client.get(f"{API}/items").json()
-    assert body["total"] == 246 and body["status_counts"]["draft"] == 246
+    assert body["total"] == 288 and body["status_counts"]["draft"] == 288
     ined = api_client.get(f"{API}/items", params={"subject_type": "INED", "theme": "INDEPENDENCE"}).json()["items"]
-    assert {i["code"] for i in ined} == {f"INED-IND-{n:02d}" for n in range(1, 10)} | {"PEER-NED-04", "DIR-SELF-03"}
+    assert {i["code"] for i in ined} == {f"INED-IND-{n:02d}" for n in range(1, 10)} | {"PEER-NED-04", "DIR-SELF-03", "PEER-CORE-02", "SELF-CORE-02"}
     found = api_client.get(f"{API}/items", params={"q": "whistleblowing"}).json()["items"]
     assert "BOARD-RISK-04" in {i["code"] for i in found}
     assert api_client.get(f"{API}/items", params={"evidence_source": "ORG_FACT", "status": "approved"}).json()["total"] == 0

@@ -5,6 +5,8 @@ import { color, font, radius, space } from "../../../theme.js";
 import { Notice, Panel, SectionTitle } from "../companies/shared.jsx";
 import { useAsync } from "../companies/helpers.js";
 import { ANSWER_TYPE_LABELS } from "./bankHelpers.js";
+import AssembledSet from "./AssembledSet.jsx";
+import AssemblyPanel from "./AssemblyPanel.jsx";
 
 function plural(n, word) {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
@@ -227,7 +229,10 @@ export default function QuestionPreviewPage({ ui, evalId }) {
   const [includeDrafts, setIncludeDrafts] = useState(true);
   const [data, setData] = useState(null);
   const [selected, setSelected] = useState("");
+  const [view, setView] = useState("preview");
+  const [setsVersion, setSetsVersion] = useState(0);
   const { busy, error, run } = useAsync();
+  const refreshSets = useCallback(() => setSetsVersion((n) => n + 1), []);
   const id = String(evalId || "").trim();
 
   const load = useCallback(() => {
@@ -292,6 +297,8 @@ export default function QuestionPreviewPage({ ui, evalId }) {
           </Panel>
         ) : null}
 
+        <AssemblyPanel ui={ui} evalId={id} onOptionsChanged={load} onRunFinished={refreshSets} />
+
         {data === null ? (
           <p style={{ color: color.textMuted }}>Loading…</p>
         ) : data.participants.length === 0 ? (
@@ -304,7 +311,30 @@ export default function QuestionPreviewPage({ ui, evalId }) {
               </SectionTitle>
               <Summary ui={ui} data={data} selected={participant?.participant_id} onSelect={setSelected} />
             </section>
-            {participant ? <ParticipantDetail ui={ui} participant={participant} /> : null}
+            {participant ? (
+              <>
+                <div role="tablist" aria-label="Participant view" style={{ display: "flex", gap: space.sm, flexWrap: "wrap" }}>
+                  {[
+                    ["preview", "Selection preview"],
+                    ["assembled", "Assembled draft"],
+                  ].map(([key, label]) => (
+                    <ui.Button key={key} variant={view === key ? "primary" : "secondary"} onClick={() => setView(key)}>
+                      {label}
+                    </ui.Button>
+                  ))}
+                </div>
+                {view === "preview" ? (
+                  <ParticipantDetail ui={ui} participant={participant} />
+                ) : (
+                  <section>
+                    <SectionTitle hint="Bank text and any AI suggestion side by side. Editing and approval come in the review screen.">
+                      {participant.label}: assembled draft
+                    </SectionTitle>
+                    <AssembledSet ui={ui} evalId={id} participantId={participant.participant_id} refreshKey={setsVersion} />
+                  </section>
+                )}
+              </>
+            ) : null}
           </>
         )}
       </div>

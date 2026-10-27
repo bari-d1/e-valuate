@@ -37,6 +37,7 @@ from sqlalchemy import (
     func,
     text,
 )
+from sqlalchemy import text as sql_text  # Question has a column named "text"
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.mutable import MutableDict, MutableList
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -93,6 +94,10 @@ class Evaluation(Base):
     brief: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     # "draft" | "in_review" | "live" | "closed"
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft", server_default="draft")
+    # Methodology options (app.domain.evaluation_options), e.g. {"peer_mode": "full"}; missing keys use defaults
+    options: Mapped[Dict[str, Any]] = mapped_column(
+        MutableDict.as_mutable(JSONB), nullable=False, default=dict, server_default="{}"
+    )
 
     # Relationships
     reports: Mapped[list["Report"]] = relationship(
@@ -585,6 +590,46 @@ class Question(Base):
         nullable=False,
     )
 
+    # ---- Assembled questions (one participant's tailored set). All NULL on
+    # legacy template questions, which behave exactly as before. Assembled
+    # rows use template_code "P:<participant id>" so template queries never see them.
+    evaluation_id: Mapped[Optional[str]] = mapped_column(
+        String(64), ForeignKey("evaluations.id", ondelete="CASCADE"), nullable=True
+    )
+    participant_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("participants.id", ondelete="CASCADE"), nullable=True
+    )
+    bank_item_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("question_bank_items.id", ondelete="SET NULL"), nullable=True
+    )
+    bank_item_version: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    # The subject instance the question is about (the board, a committee, a person)
+    evaluation_subject_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("evaluation_subjects.id", ondelete="SET NULL"), nullable=True
+    )
+    # "board" | "committees" | "colleagues" | "yourself" | "confirm" | "additional"
+    section: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    sort_order: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    # "draft" | "approved" | "locked" (follows the participant's set)
+    status: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    bank_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # bank wording after placeholders
+    ai_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # AI suggestion, never used until chosen
+    ai_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # Which wording `text` holds: "bank" | "ai_tailored" | "ai_new" | "consultant_edited"
+    text_source: Mapped[Optional[str]] = mapped_column(String(24), nullable=True)
+    # AI new-question suggestions: "pending" | "accepted" | "rejected", and the fact they respond to
+    suggestion_status: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    ai_fact_key: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    # "If so..." follow-ups: shown only when the parent's answer matches show_if, e.g. {"answer": "yes"}
+    depends_on_question_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("questions.id", ondelete="SET NULL"), nullable=True
+    )
+    show_if: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)
+    # known_from "confirm" items: the stored value the participant is asked to confirm
+    confirm_value: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)
+    options: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)
+    scale: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)
+
     responses: Mapped[list["Response"]] = relationship(back_populates="question")
 
     # Subject TYPES this question is about (e.g. COMMITTEE). Which committee or
@@ -605,7 +650,23 @@ class Question(Base):
         Index("ix_questions_dimension", "dimension"),
         Index("ix_questions_theme", "theme_code"),
         Index("ix_questions_evidence_source", "evidence_source_code"),
-        UniqueConstraint("template_code", "version", "text", name="uq_question_template_version_text"),
+        # Unique text per template for legacy questions only: two participants (or one participant
+        # rating several colleagues) legitimately get identical assembled text.
+        Index(
+            "uq_question_template_version_text", "template_code", "version", "text",
+            unique=True, postgresql_where=sql_text("participant_id IS NULL"),
+        ),
+        Index("ix_questions_participant", "participant_id"),
+        Index("ix_questions_evaluation", "evaluation_id"),
+        CheckConstraint(
+            "section IS NULL OR section IN ('board', 'committees', 'colleagues', 'yourself', 'confirm', 'additional')",
+            name="ck_questions_section",
+        ),
+        CheckConstraint("status IS NULL OR status IN ('draft', 'approved', 'locked')", name="ck_questions_status"),
+        CheckConstraint(
+            "text_source IS NULL OR text_source IN ('bank', 'ai_tailored', 'ai_new', 'consultant_edited')",
+            name="ck_questions_text_source",
+        ),
     )
 
 
@@ -1348,6 +1409,8 @@ class QuestionBankItem(Base):
     tag_notes: Mapped[Any] = mapped_column(JSONB, nullable=False, default=dict)
     weight: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # "core" | "standard" | "optional": what to keep when an assessment must be shortened
+    priority: Mapped[str] = mapped_column(String(16), nullable=False, default="standard", server_default="standard")
     review_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -1384,6 +1447,7 @@ class QuestionBankItem(Base):
             name="ck_question_bank_items_subject_binding",
         ),
         CheckConstraint("known_from_behaviour IN ('skip', 'confirm')", name="ck_question_bank_items_known_from_behaviour"),
+        CheckConstraint("priority IN ('core', 'standard', 'optional')", name="ck_question_bank_items_priority"),
         Index("ix_question_bank_items_code", "code"),
         Index("ix_question_bank_items_status", "status"),
     )
@@ -1426,4 +1490,114 @@ class QuestionBankItemClause(Base):
     __table_args__ = (
         CheckConstraint("status IN ('suggested', 'confirmed')", name="ck_question_bank_item_clauses_status"),
         Index("ix_question_bank_item_clauses_clause", "clause_id"),
+    )
+
+
+# ----------------------------
+# Assembly: one tailored question set per participant
+# ----------------------------
+
+class AssemblyRun(Base):
+    """One run of question assembly for an evaluation (runs as a background job)."""
+
+    __tablename__ = "assembly_runs"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    evaluation_id: Mapped[str] = mapped_column(String(64), ForeignKey("evaluations.id", ondelete="CASCADE"), nullable=False)
+    # "queued" | "running" | "done" | "failed"
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="queued")
+    participant_ids: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)  # NULL = every participant
+    reset: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    include_drafts: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    ai_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    snapshot_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("evaluation_context_snapshots.id", ondelete="SET NULL"), nullable=True
+    )
+    # Per participant: assembled / skipped (with reasons) and counts
+    results: Mapped[Any] = mapped_column(JSONB, nullable=False, default=list)
+    rater_warnings: Mapped[Any] = mapped_column(JSONB, nullable=False, default=list)
+    error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    requested_by: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("status IN ('queued', 'running', 'done', 'failed')", name="ck_assembly_runs_status"),
+        Index("ix_assembly_runs_evaluation", "evaluation_id", "created_at"),
+    )
+
+
+class ParticipantQuestionSet(Base):
+    """A participant's assembled set: draft, then approved by a consultant, then locked when they open it."""
+
+    __tablename__ = "participant_question_sets"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    evaluation_id: Mapped[str] = mapped_column(String(64), ForeignKey("evaluations.id", ondelete="CASCADE"), nullable=False)
+    participant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("participants.id", ondelete="CASCADE"), nullable=False
+    )
+    # "draft" | "approved" | "locked"
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")
+    assembly_run_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("assembly_runs.id", ondelete="SET NULL"), nullable=True
+    )
+    # Known-fact skips, blocked items, coverage gaps, dropped AI suggestions, counts and time estimate
+    summary: Mapped[Any] = mapped_column(JSONB, nullable=False, default=dict)
+    estimated_minutes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    override_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # approving despite coverage gaps
+    approved_by: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    locked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        UniqueConstraint("participant_id", name="uq_participant_question_set_participant"),
+        CheckConstraint("status IN ('draft', 'approved', 'locked')", name="ck_participant_question_sets_status"),
+        Index("ix_participant_question_sets_evaluation", "evaluation_id"),
+    )
+
+
+class QuestionSuggestionDecision(Base):
+    """
+    A consultant's decision on an assembled question's wording or an AI new-question
+    suggestion. Kept for audit and the bank feedback loop even if the question is
+    later re-assembled (question_id is then NULL; the bank item and texts remain).
+    """
+
+    __tablename__ = "question_suggestion_decisions"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    question_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("questions.id", ondelete="SET NULL"), nullable=True
+    )
+    evaluation_id: Mapped[str] = mapped_column(String(64), ForeignKey("evaluations.id", ondelete="CASCADE"), nullable=False)
+    participant_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("participants.id", ondelete="SET NULL"), nullable=True
+    )
+    bank_item_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("question_bank_items.id", ondelete="SET NULL"), nullable=True
+    )
+    bank_item_code: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    bank_item_version: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    # "use_bank" | "use_ai" | "edit" | "accept_new" | "reject_new"
+    decision: Mapped[str] = mapped_column(String(16), nullable=False)
+    bank_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    ai_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    final_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    decided_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    decided_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint(
+            "decision IN ('use_bank', 'use_ai', 'edit', 'accept_new', 'reject_new')",
+            name="ck_question_suggestion_decisions_decision",
+        ),
+        Index("ix_question_suggestion_decisions_bank_item", "bank_item_code"),
+        Index("ix_question_suggestion_decisions_evaluation", "evaluation_id"),
     )

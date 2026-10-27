@@ -38,6 +38,7 @@ Each run adds a new "E2E Test Plc" evaluation to the app's database. The report 
 | 2026-10-21 | `groundwork` | 38 passed (27 unit, 11 integration), 0 failed, 0 skipped |
 | 2026-10-21 | `groundwork`, fresh clone | `./dev.sh` set up and seeded an empty database; `e2e_smoke.py` passed |
 | 2026-10-27 | `feature/question-bank` | 340 passed (unit and integration), 0 failed, 0 skipped |
+| 2026-10-27 | `feature/assembly` | 382 passed (unit and integration), 0 failed, 0 skipped |
 
 ## Known failures
 

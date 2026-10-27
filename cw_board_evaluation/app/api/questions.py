@@ -477,6 +477,11 @@ def update_question(question_id: str, payload: UpdateQuestionRequest, db: Sessio
     q = db.get(Question, q_uuid)
     if not q:
         raise HTTPException(status_code=404, detail="Question not found.")
+    if q.participant_id is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="This is an assembled question; change it through the evaluation's assembled-questions endpoints.",
+        )
 
     # Tags: only fields present in the request are changed (null clears).
     # Validate before changing anything, so a 400 leaves the question untouched.
