@@ -112,7 +112,8 @@ def match_committee_members(db: Session, org: Organisation) -> Dict[str, Any]:
                 continue
             if len(hits) > 1:
                 result["near_misses"].append({**entry, "reason": "several board members have this name",
-                                              "candidates": [member_label(m) for m in hits]})
+                                              "candidates": [{"board_member": member_label(m), "board_member_id": str(m.id),
+                                                             "reason": "same name"} for m in hits]})
                 continue
             candidates = []
             for key, ms_ in by_norm.items():

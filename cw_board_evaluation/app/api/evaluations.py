@@ -1133,7 +1133,8 @@ def evaluation_readiness(evaluation_id: str, db: Session = Depends(get_db)) -> D
     counts: Dict[str, int] = {}
     for i in items:
         counts[i["status"]] = counts.get(i["status"], 0) + 1
-    return {"evaluation_id": evaluation_id, "counts": counts, "items": items,
+    return {"evaluation_id": evaluation_id, "organisation_id": str(ev.organisation_id) if ev.organisation_id else None,
+            "counts": counts, "items": items,
             "all_ready": bool(items) and all(i["status"] == "ready" for i in items)}
 
 

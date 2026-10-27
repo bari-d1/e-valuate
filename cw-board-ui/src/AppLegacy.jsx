@@ -2557,6 +2557,7 @@ function getWorkflowProgress() {
             <Route path="companies" element={<CompaniesListPage ui={ui} />} />
             <Route path="companies/:orgId" element={<Navigate to="documents" replace />} />
             <Route path="companies/:orgId/:tab" element={<CompanyPage ui={ui} />} />
+            <Route path="companies/:orgId/:tab/:memberId" element={<CompanyPage ui={ui} />} />
 
             {/* Evaluations */}
             <Route
@@ -2668,6 +2669,7 @@ function getWorkflowProgress() {
               element={
                 <ListParticipantsPage
                   ui={ui}
+                  evalId={evalId}
                   busy={busy}
                   focus={focus}
                   result={result}

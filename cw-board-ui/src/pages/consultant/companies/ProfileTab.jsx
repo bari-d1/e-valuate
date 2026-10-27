@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { SOURCE_LABELS, orgApi } from "../../../api/orgApi.js";
+import { orgApi } from "../../../api/orgApi.js";
 import { color, font, space } from "../../../theme.js";
-import { Excerpt, LinkButton, Notice, Panel, SectionTitle } from "./shared.jsx";
+import { Excerpt, LinkButton, Notice, Panel, SectionTitle, SourceTag } from "./shared.jsx";
 import { formatDate, inputCss, useAsync } from "./helpers.js";
 
 // ----------------------------
@@ -101,12 +101,6 @@ function FactEditor({ ui, spec, initial, initialSource = "consultant", showSourc
       </div>
     </div>
   );
-}
-
-function SourceTag({ ui, source }) {
-  const { Badge } = ui;
-  const tone = { public: "blue", client: "purple", consultant: "gray" }[source] || "gray";
-  return <Badge tone={tone}>{SOURCE_LABELS[source] || source}</Badge>;
 }
 
 // ----------------------------

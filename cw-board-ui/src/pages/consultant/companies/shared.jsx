@@ -1,4 +1,5 @@
 import React from "react";
+import { SOURCE_LABELS } from "../../../api/orgApi.js";
 import { color, font, radius, space } from "../../../theme.js";
 
 /** Small building blocks shared by the company pages. */
@@ -103,3 +104,9 @@ export function Excerpt({ text, filename }) {
   );
 }
 
+
+export function SourceTag({ ui, source }) {
+  const { Badge } = ui;
+  const tone = { public: "blue", client: "purple", consultant: "gray" }[source] || "gray";
+  return <Badge tone={tone}>{SOURCE_LABELS[source] || source}</Badge>;
+}
