@@ -28,10 +28,31 @@ Usage:
 from __future__ import annotations
 
 import html
+import logging
 import os
 import smtplib
 from email.message import EmailMessage
 from typing import Any, Dict, List, Optional, Tuple
+
+log = logging.getLogger(__name__)
+
+# Reserved for documentation and testing (RFC 2606 / RFC 6761). Never sent to, so
+# dry runs can use placeholder participants such as P001@example.invalid.
+RESERVED_EMAIL_DOMAINS = {"example.com", "example.org", "example.net"}
+RESERVED_SKIP_MESSAGE = "Skipped: reserved test address (example.* or .invalid); not sent."
+
+
+def is_reserved_address(email: Optional[str]) -> bool:
+    """True for addresses on example.com/.org/.net or any .invalid domain."""
+    domain = (email or "").strip().lower().rpartition("@")[2]
+    return domain in RESERVED_EMAIL_DOMAINS or domain == "invalid" or domain.endswith(".invalid")
+
+
+def _skip_reserved(to_email: str) -> bool:
+    if is_reserved_address(to_email):
+        log.info("Email skipped: %s is a reserved test domain", to_email.rpartition("@")[2].lower())
+        return True
+    return False
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -175,6 +196,8 @@ def send_invite_email(
     to_email = (to_email or "").strip()
     if not to_email:
         return False, "to_email is required"
+    if _skip_reserved(to_email):
+        return False, RESERVED_SKIP_MESSAGE
 
     msg = EmailMessage()
     msg["Subject"] = f"Board Evaluation Invite ({evaluation_id})"
@@ -272,6 +295,8 @@ def send_assignment_links_digest_email(
     to_email = (to_email or "").strip()
     if not to_email:
         return False, "to_email is required"
+    if _skip_reserved(to_email):
+        return False, RESERVED_SKIP_MESSAGE
 
     cleaned: List[Dict[str, str]] = []
     for it in links:
