@@ -518,7 +518,7 @@ export default function BoardMemberPage({ ui, org, memberId }) {
             {member.display_code ? <span style={{ color: color.textMuted }}>{member.display_code} · </span> : null}
             {member.full_name}
           </h2>
-          <div style={{ marginTop: 2, fontSize: 13, color: color.textMuted, wordBreak: "break-all" }}>
+          <div style={{ marginTop: 2, fontSize: 13, color: color.textMuted, overflowWrap: "break-word" }}>
             {member.email || "No email"} · {role ? roleLabel(registry, role) : "Role not confirmed"}
           </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: space.sm }}>

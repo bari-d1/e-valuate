@@ -439,7 +439,7 @@ export default function ListParticipantsPage({
                       {p.display_code ? <span style={{ color: "#64748B", fontWeight: 700 }}>{p.display_code} · </span> : null}
                       {p.full_name || "—"}
                     </td>
-                    <td style={{ ...tdStyle(), wordBreak: "break-all" }}>{p.email}</td>
+                    <td style={{ ...tdStyle(), overflowWrap: "break-word" }}>{p.email}</td>
                     <td style={tdStyle()}>{p.role || "—"}</td>
                     <td style={tdStyle()}>
                       <ReadinessChip ui={ui} item={readinessBy[p.participant_id]} orgId={readiness && readiness.organisation_id} />

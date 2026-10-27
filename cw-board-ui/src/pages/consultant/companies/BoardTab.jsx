@@ -129,7 +129,7 @@ export default function BoardTab({ ui, org }) {
                       {m.display_code ? <span style={{ fontVariantNumeric: "tabular-nums" }}>{m.display_code} · </span> : null}
                       {m.full_name}
                     </Link>
-                    <div style={{ fontSize: font.small, color: color.textMuted, wordBreak: "break-all" }}>{m.email || "No email"}</div>
+                    <div style={{ fontSize: font.small, color: color.textMuted, overflowWrap: "break-word" }}>{m.email || "No email"}</div>
                   </td>
                   <td style={ui.tdStyle()}>
                     {m.governance_role ? roleLabel(registry, m.governance_role) : <span style={{ color: color.textMuted }}>Not confirmed</span>}

@@ -24,13 +24,14 @@ from app.services.board_members import member_label
 
 HONORIFICS = {"mr", "mrs", "ms", "miss", "dr", "prof", "professor", "chief", "alhaji", "alhaja", "engr", "sir"}
 NEAR_MISS_RATIO = 0.8
+MAX_CANDIDATES = 3
 
 
 def normalise_name(name: Optional[str]) -> str:
     """'Chief (Mrs.) Ada  OBI' -> 'ada obi'."""
     s = (name or "").casefold()
     s = re.sub(r"[^\w\s]", " ", s)          # punctuation, incl. brackets and full stops
-    s = re.sub(r"[\d_]", " ", s)
+    s = s.replace("_", " ")
     tokens = [t for t in s.split() if t]
     while tokens and tokens[0] in HONORIFICS:  # honorifics are leading titles ("Prof Dr ...")
         tokens.pop(0)
@@ -115,12 +116,15 @@ def match_committee_members(db: Session, org: Organisation) -> Dict[str, Any]:
                                               "candidates": [{"board_member": member_label(m), "board_member_id": str(m.id),
                                                              "reason": "same name"} for m in hits]})
                 continue
-            candidates = []
+            scored = []
             for key, ms_ in by_norm.items():
                 why = _near(norm, key)
                 if why:
-                    candidates += [{"board_member": member_label(m), "board_member_id": str(m.id), "reason": why}
-                                   for m in ms_]
+                    score = difflib.SequenceMatcher(None, norm, key).ratio()
+                    scored += [(score, {"board_member": member_label(m), "board_member_id": str(m.id), "reason": why})
+                               for m in ms_]
+            scored.sort(key=lambda x: -x[0])
+            candidates = [c for _, c in scored[:MAX_CANDIDATES]]  # the closest few
             if candidates:
                 result["near_misses"].append({**entry, "candidates": candidates})
             else:

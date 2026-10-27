@@ -83,6 +83,10 @@ def test_honorifics_and_punctuation_removed(written) -> None:
     assert normalise_name(written) == "ada obi"
 
 
+def test_numbers_are_kept() -> None:
+    assert normalise_name("Board Member 03") != normalise_name("Board Member 04")
+
+
 def test_near_misses() -> None:
     assert _near("obi ada", "ada obi") == "same names in a different order"
     assert _near("ada ngozi obi", "ada obi") == "one name has extra parts"
