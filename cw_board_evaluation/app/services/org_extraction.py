@@ -323,9 +323,16 @@ class FactRules:
     skip_value: Optional[Callable[[str, Any], bool]] = None
 
 
+# A number quoted from a rule or range ("between seven and eleven directors") is a limit, not an actual count
+_RULE_WORDS = re.compile(r"\b(between|at least|at most|not less than|not more than|no fewer than|no more than|"
+                         r"minimum|maximum|up to|shall (?:have|consist|comprise))\b")
+
+
 def _org_extra_check(key, spec, value, ex_norm, doc_norm):
     if spec["type"] == "number" and not _number_in_excerpt(value, ex_norm):
         return "number not stated in the excerpt"
+    if spec["type"] == "number" and _RULE_WORDS.search(ex_norm):
+        return "the quote states a rule or range, not an actual number"
     return None
 
 
@@ -339,8 +346,8 @@ def _collect_facts(reply, doc, doc_norm, cands, result, rules: FactRules = ORG_F
         except ValidationError:
             result.discarded.append({"filename": doc.filename, "reason": "fact missing key or excerpt"})
             continue
-        what = {"key": item.key, "filename": doc.filename}
         spec = rules.facts_by_key.get(item.key)
+        what = {"key": item.key, "label": spec["label"] if spec else item.key, "filename": doc.filename}
         if spec is None:
             result.discarded.append({**what, "reason": "unknown fact key"})
             continue
@@ -399,19 +406,40 @@ def _collect_committees(reply, doc, doc_norm, cands, result) -> None:
         ))
 
 
+def _same_list_item(a: str, b: str) -> bool:
+    """Same text ignoring case and spacing, or one is the bracketed short form of the other ("NAICOM" in "... (NAICOM)")."""
+    na, nb = normalise_for_match(a), normalise_for_match(b)
+    return na == nb or f"({na})" in nb or f"({nb})" in na
+
+
+def _value_text(v: Any) -> str:
+    if isinstance(v, str):
+        return f"“{v}”"
+    if isinstance(v, list):
+        return ", ".join(str(x) for x in v)
+    if isinstance(v, dict):
+        return ", ".join(f"{k.replace('_', ' ')}: {x}" for k, x in v.items())
+    return str(v)
+
+
 def _merge_fact(key: str, cands: List[_Candidate], facts_by_key=FACTS_BY_KEY) -> Tuple[Any, _Candidate, Optional[str]]:
     """First candidate (most useful document first) wins; lists are unioned. Returns (value, primary, note)."""
     primary = cands[0]
     if facts_by_key[key]["type"] == "list":
         merged: List[str] = []
         for c in cands:
-            merged += [x for x in c.value if x not in merged]
+            for x in c.value:
+                same = next((i for i, y in enumerate(merged) if _same_list_item(x, y)), None)
+                if same is None:
+                    merged.append(x)
+                elif len(x) > len(merged[same]):  # keep the fuller form, e.g. "National Insurance Commission (NAICOM)"
+                    merged[same] = x
         others = sorted({c.filename for c in cands[1:] if c.filename != primary.filename})
         return merged, primary, ("Also found in: " + ", ".join(others)) if others else None
     differing = [c for c in cands[1:] if c.value != primary.value]
     note = None
     if differing:
-        note = "Other values found: " + "; ".join(f"{json.dumps(c.value)} ({c.filename})" for c in differing)
+        note = "Other values found: " + "; ".join(f"{_value_text(c.value)} ({c.filename})" for c in differing)
     return primary.value, primary, note
 
 

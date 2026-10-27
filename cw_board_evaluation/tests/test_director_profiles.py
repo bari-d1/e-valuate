@@ -218,6 +218,9 @@ REPLY = {
          "source_excerpt": "Colleagues describe her as direct and well prepared."},
         # date not in the excerpt: dropped
         {"key": "board_appointment_date", "value": "2016-01-01", "source_excerpt": "appointed to the Board"},
+        # month-only date given a day it doesn't state: dropped
+        {"key": "board_appointment_date", "value": "2015-06-15",
+         "source_excerpt": "was appointed to the Board on 1 June 2015"},
     ],
 }
 
@@ -238,6 +241,8 @@ def test_extraction_proposes_with_verbatim_excerpts(db_session, org, enabled) ->
     assert "Board Member 07" in llm.calls[0]
     reasons = {(d["key"], d["reason"]) for d in result.discarded}
     assert ("employee_of_company_or_group_last_5y", "excerpt not found in the document") in reasons
+    assert ("board_appointment_date", "the quote doesn't give this exact date (day and month)") in reasons
+    assert facts[("board_appointment_date", "proposed")].value == "2015-06-01"
     assert ("personality_notes", "notes must be a verbatim quote from the document") in reasons
     assert ("board_appointment_date", "date not stated in the excerpt") in reasons
     # independence not stated explicitly stays unknown
@@ -379,6 +384,39 @@ def test_from_board_members_sends_nothing(api_client, db_session, org, monkeypat
     listed = api_client.get(f"/api/v1/evaluations/{ev.id}/participants").json()
     items = listed["items"] if isinstance(listed, dict) else listed
     assert {i.get("display_code") for i in items} == {"P007", "P008", "P009"}
+
+
+def test_from_board_members_skips_same_name_on_another_email(api_client, db_session, org) -> None:
+    ev = _evaluation(db_session, org, "eval-same-name")
+    m = _ready_member(db_session, org, name="Mr. Segun Odu-Koya", email="segun@board.test", code="P010")
+    home = Participant(evaluation_id=ev.id, email="segun.home@mail.test", full_name="Segun Odu Koya", status="invited")
+    db_session.add(home)
+    db_session.commit()
+
+    body = api_client.post(f"/api/v1/evaluations/{ev.id}/participants/from-board-members").json()
+    assert body["created"] == 0
+    [skip] = body["same_name_not_added"]
+    assert (skip["participant_email"], skip["board_member_id"]) == ("segun.home@mail.test", str(m.id))
+    rows = db_session.execute(select(Participant).where(Participant.evaluation_id == ev.id)).scalars().all()
+    assert [r.email for r in rows] == ["segun.home@mail.test"]
+    assert rows[0].board_member_id is None  # a matching name alone doesn't link
+
+
+def test_invite_takes_role_from_linked_board_member(api_client, db_session, org) -> None:
+    ev = _evaluation(db_session, org, "eval-invite-role")
+    _ready_member(db_session, org)  # member07@demo.test, confirmed as NED
+    db_session.commit()
+
+    res = api_client.post(f"/api/v1/evaluations/{ev.id}/participants/invite", json={"participants": [
+        {"email": "member07@demo.test", "full_name": "Board Member 07"},
+        {"email": "cosec@demo.test", "full_name": "Company Sec", "role": "company secretary"},
+        {"email": "md@demo.test", "full_name": "The MD", "role": "MD/CEO"},
+        {"email": "other@demo.test", "full_name": "Other", "role": "Observer"},
+    ]})
+    assert res.status_code == 201, res.text
+    roles = {i["email"]: i["role"] for i in res.json()["created_items"]}
+    assert roles == {"member07@demo.test": "NED", "cosec@demo.test": "Company Secretary",
+                     "md@demo.test": "MD_CEO", "other@demo.test": "Observer"}
 
 
 def test_readiness_reasons(api_client, db_session, org) -> None:

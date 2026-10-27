@@ -161,7 +161,8 @@ def build_selection_context(db: Session, ev: Evaluation) -> Dict[str, Any]:
                 for ms, c in rows if str(c.id) in confirmed_committee_ids
             ]
         role = role or governance_role_from_participant_role(p.role)
-        facts["tenure_years"] = tenure_years(facts.get("board_appointment_date"))
+        # Tenure at the end of the review period, not today: the questionnaire is about that period.
+        facts["tenure_years"] = tenure_years(facts.get("board_appointment_date"), ev.review_period_end)
         facts["committee_types"] = sorted({c["type"] for c in member_committees}) or None
         people.append({
             "participant_id": str(p.id),

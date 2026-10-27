@@ -33,6 +33,7 @@ from app.db.models import (
     OrgDocument,
 )
 from app.domain.org_profile import COMMITTEE_TYPES, FACT_SOURCES, FACTS_BY_KEY, validate_fact_value
+from app.domain.question_rules import format_fact_value
 from app.services.organisations import resync_organisation_evaluations
 
 
@@ -118,16 +119,30 @@ def confirm_fact_of(db: Session, kind: FactKind, owner, fact, *, value: Any = No
         target.source_document_id, target.source_excerpt = fact.source_document_id, fact.source_excerpt
         db.delete(fact)
         db.flush()
+    old_value = fact.value
     target.value = new_value
     target.source = _check_source(source) if source else fact.source
     target.note = note if note is not None else fact.note
     if edited:
         target.note = ((target.note + " ") if target.note else "") + "Edited by consultant before confirming."
+        _detach_quote(target, old_value)
     target.status, target.confirmed_at = "confirmed", _now()
     db.flush()
     kind.on_change(db, owner, target.key)
     db.flush()
     return target
+
+
+def _detach_quote(fact, old_value: Any) -> None:
+    """
+    A quote supports the value it was found for, not a consultant's correction:
+    move it into the note (with the value it supported) so it is no longer shown as the evidence.
+    """
+    if not fact.source_excerpt:
+        return
+    moved = f'Originally proposed as {format_fact_value(old_value)}, quoting: "{fact.source_excerpt}".'
+    fact.note = ((fact.note + " ") if fact.note else "") + moved
+    fact.source_excerpt, fact.source_document_id = None, None
 
 
 def update_fact_of(db: Session, kind: FactKind, owner, fact, *, value: Any = None,
@@ -138,7 +153,9 @@ def update_fact_of(db: Session, kind: FactKind, owner, fact, *, value: Any = Non
     if fact.status != "confirmed":
         raise ReviewError("Rejected facts can't be edited; add the fact again instead.")
     if value is not None:
-        fact.value = kind.validate(fact.key, value)
+        old_value, fact.value = fact.value, kind.validate(fact.key, value)
+        if fact.value != old_value:
+            _detach_quote(fact, old_value)
     if source is not None:
         fact.source = _check_source(source)
     if note is not None:

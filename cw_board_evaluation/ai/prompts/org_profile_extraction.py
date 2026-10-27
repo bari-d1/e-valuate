@@ -22,7 +22,12 @@ Rules:
 5. For committees, copy the committee name, the chair and each member's name exactly as written. Do not add titles
    that aren't in the text and do not expand initials.
 6. Use only the fact keys listed by the user, with the value shape given for each key.
-7. Reply with JSON only, matching the requested schema. No commentary."""
+7. Numbers are actual counts as stated (e.g. "The Board has eight members"), never a rule, limit or range
+   (e.g. "between seven and eleven directors" is not the board size).
+8. For list facts, items are often stated in different places. Output the same key once per item, each with its
+   own quote, rather than one entry with a quote that can't cover every item. Don't list the same thing twice
+   under different names (e.g. a regulator's full name and its abbreviation).
+9. Reply with JSON only, matching the requested schema. No commentary."""
 
 RESPONSE_SCHEMA = {
     "facts": [

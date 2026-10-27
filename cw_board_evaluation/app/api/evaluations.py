@@ -66,7 +66,8 @@ from app.db.models import (
 )
 
 from app.services.analytics import build_analytics
-from app.domain.board_member_profile import PARTICIPANT_ROLE_FOR
+from app.domain.board_member_profile import PARTICIPANT_ROLE_FOR, governance_role_from_participant_role
+from app.services.committee_matching import normalise_name
 from app.services.board_members import member_label, participant_readiness
 from app.services.organisations import sync_evaluation_from_organisation
 from app.services.profile_review import snapshot_context
@@ -886,6 +887,25 @@ def enable_evaluation_tracks(
 # Participants
 # -------------------------
 
+# Spellings consultants type when registering participants -> Participant.role.
+# Only used here: the taxonomy's role map stays strict for stored data.
+TYPED_ROLE_ALIASES = {
+    "chairman": "chair", "chairperson": "chair", "md/ceo": "md_ceo", "md": "md_ceo", "ceo": "md_ceo",
+    "managing director": "md_ceo", "executive director": "ed", "non-executive director": "ned",
+    "independent non-executive director": "ined", "cosec": "company secretary",
+}
+
+
+def _confirmed_participant_role(db: Session, board_member_id) -> Optional[str]:
+    """Participant.role for a board member's confirmed governance role, or None."""
+    fact = db.execute(select(BoardMemberFact).where(
+        BoardMemberFact.board_member_id == board_member_id,
+        BoardMemberFact.key == "governance_role",
+        BoardMemberFact.status == "confirmed",
+    )).scalar_one_or_none()
+    return PARTICIPANT_ROLE_FOR.get(fact.value) if fact else None
+
+
 def _new_participant(
     db: Session,
     evaluation_id: str,
@@ -900,7 +920,9 @@ def _new_participant(
     "invited" and a hub access token. Never sends anything; emails are only sent
     by the callers that explicitly ask for them (invite with send_email=true,
     notify-links). Linked to the company's board member with the same email
-    when no board member is given.
+    when no board member is given. A linked participant takes the role
+    confirmed on the Board tab; otherwise a recognised spelling of the typed
+    role ("MD/CEO", "Chairman", ...) is stored in its standard form.
     """
     if board_member_id is None:
         ev = db.get(Evaluation, evaluation_id)
@@ -909,6 +931,10 @@ def _new_participant(
                 BoardMember.organisation_id == ev.organisation_id,
                 func.lower(BoardMember.email) == (email or "").strip().lower(),
             )).scalar_one_or_none()
+    board_role = _confirmed_participant_role(db, board_member_id) if board_member_id else None
+    typed = (role or "").strip()
+    typed_role = governance_role_from_participant_role(TYPED_ROLE_ALIASES.get(typed.lower(), typed))
+    role = board_role or (PARTICIPANT_ROLE_FOR[typed_role] if typed_role else role)
     p = Participant(
         evaluation_id=evaluation_id,
         email=email,
@@ -1094,14 +1120,18 @@ def participants_from_board_members(
     if ids is not None and len(members) != len(set(ids)):
         raise HTTPException(status_code=400, detail="Some board members don't belong to this evaluation's company.")
 
-    created, existing, placeholders = [], [], []
+    # Participants not linked to a board member, by name: someone registered on
+    # another email (e.g. a personal one) must not be added a second time.
+    unlinked_by_name: Dict[str, Participant] = {}
+    for q in db.execute(select(Participant).where(
+        Participant.evaluation_id == evaluation_id, Participant.board_member_id.is_(None),
+    )).scalars().all():
+        if normalise_name(q.full_name):
+            unlinked_by_name.setdefault(normalise_name(q.full_name), q)
+
+    created, existing, placeholders, same_name = [], [], [], []
     for m in members:
-        role_fact = db.execute(select(BoardMemberFact).where(
-            BoardMemberFact.board_member_id == m.id,
-            BoardMemberFact.key == "governance_role",
-            BoardMemberFact.status == "confirmed",
-        )).scalar_one_or_none()
-        role = PARTICIPANT_ROLE_FOR[role_fact.value] if role_fact else None
+        role = _confirmed_participant_role(db, m.id)
 
         email = (m.email or "").strip().lower()
         if not email:
@@ -1115,7 +1145,14 @@ def participants_from_board_members(
         if p is not None:
             if p.board_member_id is None:
                 p.board_member_id = m.id
+                p.role = role or p.role
             existing.append({"participant_id": str(p.id), "board_member_id": str(m.id), "label": member_label(m)})
+            continue
+        q = unlinked_by_name.get(normalise_name(m.full_name))
+        if q is not None:
+            # Not linked automatically: a matching name alone doesn't prove it's the same person.
+            same_name.append({"participant_id": str(q.id), "participant_email": q.email,
+                              "board_member_id": str(m.id), "label": member_label(m), "board_email": m.email})
             continue
         p = _new_participant(db, evaluation_id, email=email, full_name=m.full_name, role=role, board_member_id=m.id)
         created.append({"participant_id": str(p.id), "board_member_id": str(m.id), "label": member_label(m),
@@ -1128,6 +1165,7 @@ def participants_from_board_members(
         "existing": len(existing),
         "created_items": created,
         "existing_items": existing,
+        "same_name_not_added": same_name,
         "placeholder_emails": placeholders,
         "emails_sent": 0,
     }
