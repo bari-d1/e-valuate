@@ -235,6 +235,30 @@ def _subject_ref(s: Dict[str, Any]) -> Dict[str, Any]:
             "participant_id": s.get("participant_id"), "committee_id": s.get("committee_id")}
 
 
+def fill_for_subject(item: Dict[str, Any], base: Dict[str, Any], respondent: Dict[str, Any],
+                     subject: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    An item's wording for one respondent and subject, with placeholders filled as
+    selection fills them. Rules are not checked: used when a consultant adds an item by hand.
+    Returns {"text", "options", "missing"} (missing: labels of facts a placeholder needs).
+    """
+    resp_ctx = {k: respondent.get(k) for k in ("participant_id", "label", "role", "committees", "facts")}
+    ctx = {"respondent": resp_ctx, "subject": subject, "org": base["org"], "evaluation": base["evaluation"]}
+    values: Dict[str, str] = {}
+    missing = []
+    for key in item["placeholders"]:
+        known, v = lookup_fact(ctx, key)
+        if known:
+            values[key] = format_fact_value(v)
+        else:
+            missing.append(fact_label(key))
+    return {
+        "text": fill_placeholders(item["text"], values),
+        "options": [fill_placeholders(o, values) for o in item["options"]] if item.get("options") else None,
+        "missing": missing,
+    }
+
+
 def select_for_respondent(items: List[Dict[str, Any]], base: Dict[str, Any], respondent: Dict[str, Any]) -> Dict[str, Any]:
     included: List[Dict[str, Any]] = []
     skipped: List[Dict[str, Any]] = []

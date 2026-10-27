@@ -119,3 +119,35 @@ def test_assembly_upgrade_downgrade_keeps_legacy_questions(migration_db) -> None
 
 
 BEFORE_ASSEMBLY = "f3b8d2c61a07"
+
+
+REVIEW = "c5d2e8a91f40"
+
+
+def test_review_upgrade_downgrade(migration_db) -> None:
+    cfg, engine = migration_db
+    command.upgrade(cfg, REVIEW)
+    assert "question_set_events" in _tables(engine)
+    with engine.begin() as conn:
+        conn.execute(text("INSERT INTO evaluations (id, tenant_name, sector, year, instrument_template_code, "
+                          "instrument_version, regulators, status) VALUES ('M-2', 'Co', 'insurance', 2025, 'DEFAULT', 1, '{}', 'draft')"))
+        pid = uuid.uuid4()
+        conn.execute(text("INSERT INTO participants (id, evaluation_id, email, status) VALUES (:id, 'M-2', 'P2@example.invalid', 'invited')"),
+                     {"id": pid})
+        row = ("INSERT INTO questions (id, template_code, version, dimension, text, answer_type, weight, active, "
+               "evaluation_id, participant_id, section, status, text_source) VALUES (:id, :tc, 1, 'Board', :t, 'rating', "
+               "1, 1, 'M-2', :p, 'board', :s, :src)")
+        for t, s, src in (("Kept", "draft", "bank"), ("Removed", "removed", "bank"), ("Written", "draft", "consultant_written")):
+            conn.execute(text(row), {"id": uuid.uuid4(), "tc": f"P:{pid}", "p": pid, "t": t, "s": s, "src": src})
+        conn.execute(text("INSERT INTO question_set_events (id, evaluation_id, participant_id, action, detail, created_by) "
+                          "VALUES (:id, 'M-2', :p, 'remove', '{}', 'Tester')"), {"id": uuid.uuid4(), "p": pid})
+        with pytest.raises(Exception):  # unknown actions are refused
+            with conn.begin_nested():
+                conn.execute(text("INSERT INTO question_set_events (id, evaluation_id, action, detail, created_by) "
+                                  "VALUES (:id, 'M-2', 'shred', '{}', 'Tester')"), {"id": uuid.uuid4()})
+
+    command.downgrade(cfg, ASSEMBLY)
+    with engine.connect() as conn:
+        assert [r[0] for r in conn.execute(text("SELECT text FROM questions WHERE evaluation_id = 'M-2'"))] == ["Kept"]
+    assert "question_set_events" not in _tables(engine)
+    command.upgrade(cfg, "head")
