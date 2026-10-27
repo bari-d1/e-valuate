@@ -73,6 +73,9 @@ COMMITTEE = {"kind": "committee", "type": "COMMITTEE", "committee_id": "c1", "co
     ({"org.has_code": "NAICOM_2021"}, {"org": {"codes": []}}, None),
     ({"evaluation.scope_includes": "INED"}, {}, True),
     ({"evaluation.scope_includes": "ED"}, {}, False),
+    ({"evaluation.option": {"key": "peer_mode", "value": "core"}}, {}, True),  # the default
+    ({"evaluation.option": {"key": "peer_mode", "value": "full"}}, {"evaluation": {"options": {"peer_mode": "full"}}}, True),
+    ({"evaluation.option": {"key": "peer_mode", "value": "full"}}, {}, False),
     ({"fact.known": "holds_company_shares"}, {}, True),
     ({"fact.known": "provides_advisory_services"}, {}, False),
     ({"fact.unknown": "provides_advisory_services"}, {}, True),
@@ -96,7 +99,7 @@ def test_every_condition_is_covered() -> None:
     covered = {
         "respondent.role", "respondent.is_subject", "respondent.is_not_subject", "respondent.is_member_of_subject_committee",
         "respondent.chairs_subject_committee", "subject.type", "subject.committee_type", "subject.committee_name_contains",
-        "org.sector", "org.has_code", "evaluation.scope_includes", "fact.known", "fact.unknown", "fact.at_least",
+        "org.sector", "org.has_code", "evaluation.scope_includes", "evaluation.option", "fact.known", "fact.unknown", "fact.at_least",
         "fact.at_most",
     }
     assert covered == set(CONDITIONS)
@@ -173,6 +176,8 @@ def test_unknown_condition_is_an_error_not_false() -> None:
     ({"org.sector": ["insurers"]}, "unknown sectors: insurers"),
     ({"fact.known": "shoe_size"}, "unknown fact key 'shoe_size'"),
     ({"fact.at_most": {"key": "board_size"}}, 'needs {"key"'),
+    ({"evaluation.option": {"key": "peer_mode", "value": "some"}}, "peer_mode must be one of: core, full"),
+    ({"evaluation.option": {"key": "pace", "value": "x"}}, "unknown option 'pace'"),
     ({"all": []}, "needs a non-empty list of rules"),
     ({"respondent.role": ["chair"], "org.sector": ["insurance"]}, "exactly one key"),
     (["respondent.role"], "must be an object"),

@@ -40,7 +40,7 @@ def clauses():
 def test_fixture_shape(bank) -> None:
     assert bank["format"] == "cw-question-bank"
     assert bank["format_version"] == 1
-    assert len(bank["items"]) == 246
+    assert len(bank["items"]) == 288
 
 
 def test_codes_are_unique_and_stable(bank) -> None:
@@ -93,6 +93,8 @@ def test_every_source_item_is_traced_once(bank) -> None:
     for item in bank["items"]:
         assert item["source_refs"], item["code"]
         for ref in item["source_refs"]:
+            if "derived_from" in ref:
+                continue  # drawn from other bank items; checked below
             assert ref["form"] == forms[ref["form_id"]]["name"]  # only the listed form names, never free text
             key = (ref["form_id"], ref["item"])
             assert key not in seen, f"{key} on {seen[key]} and {item['code']}"
@@ -100,6 +102,42 @@ def test_every_source_item_is_traced_once(bank) -> None:
     for form_id, form in forms.items():
         assert sum(1 for f, _ in seen if f == form_id) == form["items_before"], form_id
     assert sum(f["items_before"] for f in forms.values()) == 405
+
+
+def test_derived_items_point_at_real_bank_items(bank) -> None:
+    by_code = {i["code"]: i for i in bank["items"]}
+    derived = [i for i in bank["items"] if any("derived_from" in r for r in i["source_refs"])]
+    assert len(derived) == 42
+    for item in derived:
+        for ref in item["source_refs"]:
+            assert by_code[ref["derived_from"]]["text"] == ref["text"], item["code"]
+
+
+def test_peer_design(bank) -> None:
+    by_code = {i["code"]: i for i in bank["items"]}
+    core = {"evaluation.option": {"key": "peer_mode", "value": "core"}}
+    full = {"evaluation.option": {"key": "peer_mode", "value": "full"}}
+
+    def gated_on(item, cond):
+        rule = item["activation_rule"]
+        return rule == cond or cond in (rule or {}).get("all", [])
+
+    for item in bank["items"]:
+        if item["code"].startswith(("PEER-NED-", "PEER-EXEC-", "CHAIR-PEER-")):
+            assert gated_on(item, full), item["code"]
+        if item["code"].startswith(("PEER-CORE-", "SELF-CORE-", "PEER-COMMENT-", "DEEP-")):
+            assert gated_on(item, core), item["code"]
+    assert len([c for c in by_code if c.startswith("DEEP-CHAIR-")]) == 9
+    assert len([c for c in by_code if c.startswith("DEEP-MD-")]) == 10
+    assert len([c for c in by_code if c.startswith("DEEP-ED-")]) == 10
+    assert by_code["PEER-CORE-01"]["evidence_source_code"] == "PERCEPTION"
+    assert by_code["SELF-CORE-01"]["evidence_source_code"] == "ROLE_SELF"
+
+
+def test_every_item_has_a_suggested_priority(bank) -> None:
+    for item in bank["items"]:
+        assert item["priority"] in ("core", "standard", "optional"), item["code"]
+        assert item["tag_notes"]["priority"]["status"] == "suggested"
 
 
 def test_merges(bank) -> None:
