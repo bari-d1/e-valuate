@@ -291,7 +291,9 @@ def update_organisation(organisation_id: str, payload: OrganisationPatch, db: Se
 def list_documents(organisation_id: str, db: Session = Depends(get_db)) -> Dict[str, Any]:
     org = _org_or_404(db, organisation_id)
     docs = db.execute(
-        select(OrgDocument).where(OrgDocument.organisation_id == org.id).order_by(OrgDocument.uploaded_at)
+        select(OrgDocument)
+        .where(OrgDocument.organisation_id == org.id, OrgDocument.board_member_id.is_(None))
+        .order_by(OrgDocument.uploaded_at)
     ).scalars().all()
     return {"count": len(docs), "items": [_doc_dict(d) for d in docs]}
 

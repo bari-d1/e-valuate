@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { SOURCE_LABELS, orgApi } from "../../../api/orgApi.js";
+import { SOURCE_LABELS, boardApi, orgApi } from "../../../api/orgApi.js";
 import { color, font, space } from "../../../theme.js";
 import { Excerpt, LinkButton, Notice, Panel, SectionTitle } from "./shared.jsx";
-import { inputCss, useAsync } from "./helpers.js";
+import { inputCss, useAsync, visuallyHidden } from "./helpers.js";
 
 const TYPE_LABELS = {
   audit: "Audit",
@@ -75,7 +75,176 @@ function CommitteeForm({ ui, initial, busy, submitLabel, onSubmit, onCancel, sho
   );
 }
 
-function CommitteeCard({ ui, org, c, docNames, onChanged }) {
+function LinkedMembers({ ui, org, c, links, members, onChanged }) {
+  const { Badge, Button } = ui;
+  const { busy, error, run } = useAsync();
+  const [adding, setAdding] = useState(false);
+  const [memberId, setMemberId] = useState("");
+  const [role, setRole] = useState("member");
+  const id = org.organisation_id;
+  const act = (fn) =>
+    run(async () => {
+      await fn();
+      await onChanged();
+    });
+  const linked = links.filter((l) => l.status === "confirmed");
+  const proposed = links.filter((l) => l.status === "proposed");
+  const linkedIds = new Set(links.filter((l) => l.status !== "rejected").map((l) => l.board_member_id));
+  const available = members.filter((m) => m.active && !linkedIds.has(m.board_member_id));
+
+  return (
+    <div style={{ marginTop: space.sm, borderTop: `1px solid ${color.border}`, paddingTop: space.sm }}>
+      <div style={{ fontSize: 13, fontWeight: font.weight.bold, color: color.text }}>Linked board members</div>
+      {linked.length ? (
+        <ul style={{ listStyle: "none", margin: "4px 0 0", padding: 0, display: "grid", gap: 4 }}>
+          {linked.map((l) => (
+            <li key={l.membership_id} style={{ display: "flex", gap: space.sm, alignItems: "center", flexWrap: "wrap", fontSize: 13 }}>
+              <span style={{ color: color.text }}>{l.board_member}</span>
+              {l.membership_role === "chair" ? <Badge tone="blue">Chair</Badge> : null}
+              <LinkButton danger disabled={busy} onClick={() => window.confirm(`Unlink ${l.board_member}?`) && act(() => boardApi.deleteMembership(id, l.membership_id))}>
+                Unlink
+              </LinkButton>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div style={{ marginTop: 2, fontSize: 13, color: color.textMuted }}>None yet.</div>
+      )}
+      {proposed.map((l) => (
+        <Panel key={l.membership_id} highlight style={{ marginTop: space.sm, padding: space.sm }}>
+          <div style={{ display: "flex", gap: space.sm, alignItems: "center", flexWrap: "wrap", fontSize: 13 }}>
+            <Badge tone="amber">Proposed</Badge>
+            <span style={{ fontWeight: font.weight.bold, color: color.text }}>{l.board_member}</span>
+            {l.membership_role === "chair" ? <Badge tone="blue">Chair</Badge> : null}
+          </div>
+          {l.matched_name ? (
+            <div style={{ marginTop: 2, fontSize: font.small, color: color.textMuted }}>Matched “{l.matched_name}”</div>
+          ) : null}
+          <div style={{ display: "flex", gap: space.sm, flexWrap: "wrap", marginTop: space.sm }}>
+            <Button onClick={() => act(() => boardApi.confirmMembership(id, l.membership_id))} disabled={busy}>
+              Confirm
+            </Button>
+            <Button variant="danger" onClick={() => act(() => boardApi.rejectMembership(id, l.membership_id))} disabled={busy}>
+              Reject
+            </Button>
+          </div>
+        </Panel>
+      ))}
+      {adding ? (
+        <div style={{ display: "flex", gap: space.sm, flexWrap: "wrap", alignItems: "center", marginTop: space.sm }}>
+          <label style={visuallyHidden} htmlFor={`add-link-${c.committee_id}`}>
+            Board member
+          </label>
+          <select id={`add-link-${c.committee_id}`} value={memberId} onChange={(e) => setMemberId(e.target.value)} style={inputCss({ flex: "1 1 180px", width: "auto" })}>
+            <option value="">Choose a board member…</option>
+            {available.map((m) => (
+              <option key={m.board_member_id} value={m.board_member_id}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+          <label style={visuallyHidden} htmlFor={`add-role-${c.committee_id}`}>
+            Role on the committee
+          </label>
+          <select id={`add-role-${c.committee_id}`} value={role} onChange={(e) => setRole(e.target.value)} style={inputCss({ width: "auto" })}>
+            <option value="member">Member</option>
+            <option value="chair">Chair</option>
+          </select>
+          <Button
+            disabled={busy || !memberId}
+            onClick={() =>
+              act(async () => {
+                await boardApi.addMembership(id, { committee_id: c.committee_id, board_member_id: memberId, membership_role: role });
+                setAdding(false);
+                setMemberId("");
+              })
+            }
+          >
+            Link
+          </Button>
+          <Button variant="secondary" onClick={() => setAdding(false)} disabled={busy}>
+            Cancel
+          </Button>
+        </div>
+      ) : available.length ? (
+        <div style={{ marginTop: space.sm }}>
+          <LinkButton onClick={() => setAdding(true)}>Add a board member</LinkButton>
+        </div>
+      ) : null}
+      {error ? (
+        <div style={{ marginTop: space.sm }}>
+          <Notice tone="error">{error}</Notice>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function MatchResults({ ui, org, result, onChanged }) {
+  const { Button } = ui;
+  const { busy, error, run } = useAsync();
+  const id = org.organisation_id;
+  const link = (entry, cand) =>
+    run(async () => {
+      await boardApi.addMembership(id, {
+        committee_id: entry.committee_id,
+        board_member_id: cand.board_member_id,
+        membership_role: entry.membership_role,
+      });
+      await onChanged();
+    });
+  return (
+    <Panel style={{ marginBottom: space.md }}>
+      <Notice tone={result.proposed.length ? "success" : "info"}>
+        {`${result.proposed.length} exact match(es) proposed below for you to confirm; ${result.already_linked.length} already linked.`}
+        {result.skipped_committees.length ? `\nNot matched: ${result.skipped_committees.map((s) => `${s.committee} (${s.reason})`).join(", ")}.` : ""}
+      </Notice>
+      {result.near_misses.length ? (
+        <div style={{ marginTop: space.md }}>
+          <SectionTitle hint="Close but not exact, so nothing was proposed. Link one only if it's the same person.">Near-misses</SectionTitle>
+          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: space.sm }}>
+            {result.near_misses.map((e) => (
+              <li key={`${e.committee_id}-${e.name}`} style={{ fontSize: 13, borderTop: `1px solid ${color.border}`, paddingTop: space.sm }}>
+                <div style={{ color: color.text }}>
+                  <b>“{e.name}”</b> on {e.committee}
+                  {e.membership_role === "chair" ? " (chair)" : ""}
+                  {e.reason ? <span style={{ color: color.textMuted }}> · {e.reason}</span> : null}
+                </div>
+                <div style={{ display: "flex", gap: space.sm, flexWrap: "wrap", marginTop: 4, alignItems: "center" }}>
+                  {e.candidates.map((cand) => (
+                    <Button key={cand.board_member_id} variant="secondary" disabled={busy} onClick={() => link(e, cand)} title={cand.reason}>
+                      {`Link ${cand.board_member}`}
+                    </Button>
+                  ))}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {result.unmatched.length ? (
+        <div style={{ marginTop: space.md }}>
+          <SectionTitle hint="No board member has a similar name. Add them on the Board tab, or link someone by hand.">Unmatched names</SectionTitle>
+          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: color.text }}>
+            {result.unmatched.map((e) => (
+              <li key={`${e.committee_id}-${e.name}`}>
+                “{e.name}” on {e.committee}
+                {e.membership_role === "chair" ? " (chair)" : ""}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {error ? (
+        <div style={{ marginTop: space.sm }}>
+          <Notice tone="error">{error}</Notice>
+        </div>
+      ) : null}
+    </Panel>
+  );
+}
+
+function CommitteeCard({ ui, org, c, docNames, links, members, onChanged }) {
   const { Badge, Button } = ui;
   const { busy, error, run } = useAsync();
   const [editing, setEditing] = useState(false);
@@ -105,6 +274,7 @@ function CommitteeCard({ ui, org, c, docNames, onChanged }) {
         <dd style={{ margin: 0, color: color.text }}>{c.member_names.length ? c.member_names.join(", ") : "—"}</dd>
       </dl>
       {c.source_excerpt ? <Excerpt text={c.source_excerpt} filename={docNames[c.source_document_id]} /> : null}
+      {!proposed ? <LinkedMembers ui={ui} org={org} c={c} links={links} members={members} onChanged={onChanged} /> : null}
 
       {editing ? (
         <CommitteeForm
@@ -151,14 +321,24 @@ export default function CommitteesTab({ ui, org, reloadOrg }) {
   const [items, setItems] = useState(null);
   const [docNames, setDocNames] = useState({});
   const [adding, setAdding] = useState(false);
+  const [links, setLinks] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [matchResult, setMatchResult] = useState(null);
   const { busy, error, run } = useAsync();
   const id = org.organisation_id;
 
   const load = useCallback(
     () =>
       run(async () => {
-        const [c, d] = await Promise.all([orgApi.committees(id), orgApi.documents(id)]);
+        const [c, d, l, m] = await Promise.all([
+          orgApi.committees(id),
+          orgApi.documents(id),
+          boardApi.memberships(id),
+          boardApi.list(id),
+        ]);
         setItems(c.items.filter((x) => x.status !== "rejected"));
+        setLinks(l.items);
+        setMembers(m.items);
         setDocNames(Object.fromEntries(d.items.map((x) => [x.document_id, x.filename])));
       }),
     [id, run]
@@ -174,17 +354,28 @@ export default function CommitteesTab({ ui, org, reloadOrg }) {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: space.md, flexWrap: "wrap", alignItems: "flex-start" }}>
-        <SectionTitle hint="Names exactly as written in the company's documents. Linking members to participants comes later.">
+        <SectionTitle hint="Names exactly as written in the company's documents, linked to board members once confirmed.">
           Committees
         </SectionTitle>
-        {!adding ? (
-          <Button variant="secondary" onClick={() => setAdding(true)}>
-            Add committee
+        <div style={{ display: "flex", gap: space.sm, flexWrap: "wrap" }}>
+          <Button
+            onClick={() => run(async () => { setMatchResult(await boardApi.match(id)); await refresh(); })}
+            disabled={busy}
+            title="Propose links where a committee name exactly matches a board member's name"
+          >
+            Match members
           </Button>
-        ) : null}
+          {!adding ? (
+            <Button variant="secondary" onClick={() => setAdding(true)}>
+              Add committee
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       {error ? <Notice tone="error">{error}</Notice> : null}
+
+      {matchResult ? <MatchResults ui={ui} org={org} result={matchResult} onChanged={refresh} /> : null}
 
       {adding ? (
         <Panel style={{ marginBottom: space.md }}>
@@ -213,7 +404,7 @@ export default function CommitteesTab({ ui, org, reloadOrg }) {
       ) : (
         <div style={{ display: "grid", gap: space.md, gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
           {items.map((c) => (
-            <CommitteeCard key={c.committee_id} ui={ui} org={org} c={c} docNames={docNames} onChanged={refresh} />
+            <CommitteeCard key={c.committee_id} ui={ui} org={org} c={c} docNames={docNames} links={links.filter((l) => l.committee_id === c.committee_id)} members={members} onChanged={refresh} />
           ))}
         </div>
       )}

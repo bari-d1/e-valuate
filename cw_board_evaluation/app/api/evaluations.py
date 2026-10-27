@@ -50,6 +50,8 @@ from sqlalchemy.exc import IntegrityError
 
 from app.db.session import get_db
 from app.db.models import (
+    BoardMember,
+    BoardMemberFact,
     EvaluationContextSnapshot,
     EvaluationScopeSubjectType,
     Organisation,
@@ -64,6 +66,8 @@ from app.db.models import (
 )
 
 from app.services.analytics import build_analytics
+from app.domain.board_member_profile import PARTICIPANT_ROLE_FOR
+from app.services.board_members import member_label, participant_readiness
 from app.services.organisations import sync_evaluation_from_organisation
 from app.services.profile_review import snapshot_context
 from app.services.committee_track_config import (
@@ -882,6 +886,37 @@ def enable_evaluation_tracks(
 # Participants
 # -------------------------
 
+def _new_participant(
+    db: Session,
+    evaluation_id: str,
+    *,
+    email: str,
+    full_name: Optional[str],
+    role: Optional[str],
+    board_member_id=None,
+) -> Participant:
+    """
+    Create a participant exactly as the invite endpoint always has: status
+    "invited" and a hub access token. Never sends anything; emails are only sent
+    by the callers that explicitly ask for them (invite with send_email=true,
+    notify-links).
+    """
+    p = Participant(
+        evaluation_id=evaluation_id,
+        email=email,
+        full_name=full_name,
+        role=role,
+        board_member_id=board_member_id,
+        status="invited",
+        invited_at=_utcnow(),
+        access_token=_generate_unique_participant_access_token(db),
+        token_created_at=_utcnow(),
+    )
+    db.add(p)
+    db.flush()
+    return p
+
+
 @router.post("/evaluations/{evaluation_id}/participants/invite", status_code=status.HTTP_201_CREATED)
 def invite_participants(
     evaluation_id: str,
@@ -952,20 +987,7 @@ def invite_participants(
             continue
 
         # New participant
-        token = _generate_unique_participant_access_token(db)
-
-        p = Participant(
-            evaluation_id=evaluation_id,
-            email=email,
-            full_name=item.full_name,
-            role=item.role,
-            status="invited",
-            invited_at=_utcnow(),
-            access_token=token,
-            token_created_at=_utcnow(),
-        )
-        db.add(p)
-        db.flush()
+        p = _new_participant(db, evaluation_id, email=email, full_name=item.full_name, role=item.role)
         created += 1
 
         assignment_urls = _assignment_portal_urls_for_respondent(db, evaluation_id, p.id)
@@ -1026,6 +1048,94 @@ def invite_participants(
             hub_token=None, assignment_portal_urls=[], portal_status=""
         )["token_glossary"],
     }
+
+
+class FromBoardMembersRequest(BaseModel):
+    # Board member ids to add; omitted/null means every active board member of the company
+    board_member_ids: Optional[List[str]] = None
+
+
+@router.post("/evaluations/{evaluation_id}/participants/from-board-members", status_code=status.HTTP_201_CREATED)
+def participants_from_board_members(
+    evaluation_id: str,
+    payload: Optional[FromBoardMembersRequest] = None,
+    db: Session = Depends(get_db),
+) -> Dict[str, Any]:
+    """
+    Add participants from the company's board members (default: all active),
+    linked to them and with the role from their confirmed governance role.
+    Creates participants the same way as the invite endpoint without sending:
+    no emails are sent here. Members without an email get a placeholder
+    address on example.invalid, which is never emailed.
+    """
+    ev = _ensure_evaluation_exists(db, evaluation_id)
+    if not ev.organisation_id:
+        raise HTTPException(status_code=400, detail="This evaluation has no company, so it has no board members.")
+
+    stmt = select(BoardMember).where(BoardMember.organisation_id == ev.organisation_id)
+    ids = (payload.board_member_ids if payload else None)
+    if ids is None:
+        stmt = stmt.where(BoardMember.active.is_(True))
+    else:
+        try:
+            wanted = [UUID(str(i)) for i in ids]
+        except ValueError:
+            raise HTTPException(status_code=400, detail="board_member_ids must be board member ids.")
+        stmt = stmt.where(BoardMember.id.in_(wanted))
+    members = db.execute(stmt.order_by(BoardMember.full_name)).scalars().all()
+    if ids is not None and len(members) != len(set(ids)):
+        raise HTTPException(status_code=400, detail="Some board members don't belong to this evaluation's company.")
+
+    created, existing, placeholders = [], [], []
+    for m in members:
+        role_fact = db.execute(select(BoardMemberFact).where(
+            BoardMemberFact.board_member_id == m.id,
+            BoardMemberFact.key == "governance_role",
+            BoardMemberFact.status == "confirmed",
+        )).scalar_one_or_none()
+        role = PARTICIPANT_ROLE_FOR[role_fact.value] if role_fact else None
+
+        email = (m.email or "").strip().lower()
+        if not email:
+            email = f"{(m.display_code or ('member-' + str(m.id)[:8])).lower()}@example.invalid"
+            placeholders.append(email)
+
+        p = db.execute(select(Participant).where(
+            Participant.evaluation_id == evaluation_id,
+            (Participant.board_member_id == m.id) | (func.lower(Participant.email) == email),
+        )).scalars().first()
+        if p is not None:
+            if p.board_member_id is None:
+                p.board_member_id = m.id
+            existing.append({"participant_id": str(p.id), "board_member_id": str(m.id), "label": member_label(m)})
+            continue
+        p = _new_participant(db, evaluation_id, email=email, full_name=m.full_name, role=role, board_member_id=m.id)
+        created.append({"participant_id": str(p.id), "board_member_id": str(m.id), "label": member_label(m),
+                        "email": email, "role": role})
+
+    db.commit()
+    return {
+        "evaluation_id": evaluation_id,
+        "created": len(created),
+        "existing": len(existing),
+        "created_items": created,
+        "existing_items": existing,
+        "placeholder_emails": placeholders,
+        "emails_sent": 0,
+    }
+
+
+@router.get("/evaluations/{evaluation_id}/readiness", status_code=status.HTTP_200_OK)
+def evaluation_readiness(evaluation_id: str, db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """Per participant: profile status, blocking reasons and warnings (question assembly needs 'ready')."""
+    ev = _ensure_evaluation_exists(db, evaluation_id)
+    items = participant_readiness(db, ev)
+    counts: Dict[str, int] = {}
+    for i in items:
+        counts[i["status"]] = counts.get(i["status"], 0) + 1
+    return {"evaluation_id": evaluation_id, "organisation_id": str(ev.organisation_id) if ev.organisation_id else None,
+            "counts": counts, "items": items,
+            "all_ready": bool(items) and all(i["status"] == "ready" for i in items)}
 
 
 @router.post("/evaluations/{evaluation_id}/participants/notify-links", status_code=status.HTTP_200_OK)
@@ -1090,6 +1200,7 @@ def list_participants(evaluation_id: str, db: Session = Depends(get_db)) -> Dict
         primary_portal_url = assignment_urls[0] if assignment_urls else None
         hub_url = _participant_hub_url(p)
 
+        member = db.get(BoardMember, p.board_member_id) if p.board_member_id else None
         items.append(
             {
                 "participant_id": str(p.id),
@@ -1099,6 +1210,8 @@ def list_participants(evaluation_id: str, db: Session = Depends(get_db)) -> Dict
                 "status": p.status,
                 "invited_at": p.invited_at.isoformat() if p.invited_at else None,
                 "responded_at": p.responded_at.isoformat() if p.responded_at else None,
+                "board_member_id": str(member.id) if member else None,
+                "display_code": member.display_code if member else None,
                 **_participant_links_dict(p, assignment_urls),
             }
         )

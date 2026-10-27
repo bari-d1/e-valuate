@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useState } from "react";
 import { NavLink, Navigate, useNavigate, useParams } from "react-router-dom";
 import { SECTOR_OPTIONS, orgApi, sectorFromOption, sectorLabel } from "../../../api/orgApi.js";
 import { color, font, radius, space } from "../../../theme.js";
+import BoardMemberPage from "./BoardMemberPage.jsx";
+import BoardTab from "./BoardTab.jsx";
 import CommitteesTab from "./CommitteesTab.jsx";
 import DocumentsTab from "./DocumentsTab.jsx";
 import EvaluationsTab from "./EvaluationsTab.jsx";
@@ -13,6 +15,7 @@ import { inputCss, useAsync } from "./helpers.js";
 const TABS = [
   { key: "documents", label: "Documents", Component: DocumentsTab },
   { key: "profile", label: "Profile", Component: ProfileTab },
+  { key: "board", label: "Board", Component: BoardTab },
   { key: "committees", label: "Committees", Component: CommitteesTab },
   { key: "codes", label: "Governance codes", Component: GovernanceCodesTab },
   { key: "evaluations", label: "Evaluations", Component: EvaluationsTab },
@@ -78,7 +81,7 @@ function EditDetails({ ui, org, onSaved, onCancel }) {
 
 export default function CompanyPage({ ui, onEvaluationCreatedPath }) {
   const { Badge, Button, Card } = ui;
-  const { orgId, tab } = useParams();
+  const { orgId, tab, memberId } = useParams();
   const navigate = useNavigate();
   const { error, run } = useAsync();
   const [org, setOrg] = useState(null);
@@ -93,7 +96,7 @@ export default function CompanyPage({ ui, onEvaluationCreatedPath }) {
 
   const active = TABS.find((t) => t.key === tab);
   if (!active) return <Navigate to={`/consultant/companies/${orgId}/documents`} replace />;
-  const { Component } = active;
+  const Component = tab === "board" && memberId ? BoardMemberPage : active.Component;
 
   return (
     <Card
@@ -169,6 +172,7 @@ export default function CompanyPage({ ui, onEvaluationCreatedPath }) {
           registry={registry}
           reloadOrg={reloadOrg}
           onEvaluationCreatedPath={onEvaluationCreatedPath}
+          memberId={memberId}
         />
       ) : (
         <p style={{ color: color.textMuted }}>Loading…</p>

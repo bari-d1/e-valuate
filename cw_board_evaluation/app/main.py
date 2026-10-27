@@ -25,6 +25,7 @@ from app.api.assignments import router as assignments_router
 from app.api.taxonomy import router as taxonomy_router
 from app.api.governance import router as governance_router
 from app.api.organisations import router as organisations_router
+from app.api.board_members import router as board_members_router
 
 try:
     from app.api.debug import router as debug_router
@@ -59,6 +60,7 @@ def create_app() -> FastAPI:
     app.include_router(taxonomy_router, prefix="/api/v1", tags=["taxonomy"], dependencies=consultant_auth)
     app.include_router(governance_router, prefix="/api/v1", tags=["governance"], dependencies=consultant_auth)
     app.include_router(organisations_router, prefix="/api/v1", tags=["organisations"], dependencies=consultant_auth)
+    app.include_router(board_members_router, prefix="/api/v1", tags=["board members"], dependencies=consultant_auth)
 
     if debug_router is not None:
         app.include_router(debug_router, prefix="/api/v1", tags=["debug"], dependencies=consultant_auth)

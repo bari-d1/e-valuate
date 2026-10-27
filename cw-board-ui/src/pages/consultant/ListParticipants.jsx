@@ -1,10 +1,45 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { readinessApi } from "../../api/orgApi.js";
+
+const READINESS = {
+  ready: { label: "Ready", tone: "green" },
+  needs_review: { label: "Needs review", tone: "amber" },
+  missing_role: { label: "Missing role", tone: "red" },
+  not_linked: { label: "Not linked", tone: "gray" },
+};
+
+function ReadinessChip({ ui, item, orgId }) {
+  const { Badge } = ui;
+  if (!item) return "—";
+  const r = READINESS[item.status] || READINESS.not_linked;
+  const why = [...item.blocking_reasons, ...item.warnings].join("\n");
+  const chip = (
+    <span title={why || undefined}>
+      <Badge tone={r.tone}>{r.label}</Badge>
+    </span>
+  );
+  return (
+    <div style={{ display: "grid", gap: 4, justifyItems: "start" }}>
+      {chip}
+      {item.warnings.length ? (
+        <span style={{ fontSize: 11, color: "#92400E", fontWeight: 600 }}>⚠ {item.warnings[0]}</span>
+      ) : null}
+      {item.board_member_id && orgId && item.status !== "ready" ? (
+        <Link to={`/consultant/companies/${orgId}/board/${item.board_member_id}`} style={{ fontSize: 12, fontWeight: 700 }}>
+          Open profile
+        </Link>
+      ) : null}
+    </div>
+  );
+}
 
 /**
  * List Participants page (router-based)
  */
 export default function ListParticipantsPage({
   ui,
+  evalId,
   busy,
   focus,
   result,
@@ -25,6 +60,26 @@ export default function ListParticipantsPage({
   questionsCount = 0,
 }) {
   const { Card, Badge, Button } = ui || {};
+  const [readiness, setReadiness] = useState(null);
+  const [boardMsg, setBoardMsg] = useState(null);
+  const [boardBusy, setBoardBusy] = useState(false);
+
+  const loadReadiness = useCallback(async () => {
+    if (!String(evalId || "").trim()) return;
+    try {
+      setReadiness(await readinessApi.readiness(evalId));
+    } catch {
+      setReadiness(null);
+    }
+  }, [evalId]);
+  useEffect(() => {
+    loadReadiness();
+  }, [loadReadiness]);
+
+  const readinessBy = useMemo(
+    () => Object.fromEntries(((readiness && readiness.items) || []).map((i) => [i.participant_id, i])),
+    [readiness]
+  );
 
   const missing = [];
   if (!ui?.Card) missing.push("ui.Card");
@@ -142,6 +197,25 @@ export default function ListParticipantsPage({
     };
   }, [hasQuestions, hasAssignments, someParticipantsNeedTasks, reasonListQuestions, reasonTracks]);
 
+  const addBoardMembers = async () => {
+    setBoardBusy(true);
+    setBoardMsg(null);
+    try {
+      const r = await readinessApi.fromBoardMembers(evalId);
+      const parts = [`Added ${r.created} participant${r.created === 1 ? "" : "s"} from the board (${r.existing} already on the roster). No emails were sent.`];
+      if (r.placeholder_emails.length) {
+        parts.push(`${r.placeholder_emails.length} member(s) have no email yet, so they got a placeholder address that is never emailed: ${r.placeholder_emails.join(", ")}.`);
+      }
+      setBoardMsg({ tone: "ok", text: parts.join(" ") });
+      await listParticipants({ silent: true });
+      await loadReadiness();
+    } catch (e) {
+      setBoardMsg({ tone: "error", text: e?.message || String(e) });
+    } finally {
+      setBoardBusy(false);
+    }
+  };
+
   useEffect(() => {
     if (!reasonParticipants) {
       listParticipants({ silent: true }).catch(() => {});
@@ -236,12 +310,72 @@ export default function ListParticipantsPage({
         </div>
       ) : null}
 
+      <div
+        style={{
+          marginTop: 12,
+          padding: 14,
+          borderRadius: 12,
+          border: "1px solid #E5E7EB",
+          background: "#FFFFFF",
+          fontSize: 13,
+          display: "grid",
+          gap: 10,
+        }}
+      >
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ minWidth: 0, flex: "1 1 260px", color: "#334155" }}>
+            <b>Board members.</b> Add the company's active board members as participants. Nothing is sent: invite them when you're ready.
+          </div>
+          <Button
+            disabled={busy || boardBusy || !!reasonParticipants}
+            title={reasonParticipants || "Create a participant for each active board member (no emails)"}
+            onClick={addBoardMembers}
+          >
+            {boardBusy ? "Adding…" : "Add board members"}
+          </Button>
+        </div>
+        {readiness && readiness.items.length ? (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <span style={{ fontWeight: 700, color: "#0F172A" }}>Profiles:</span>
+            {Object.entries(READINESS).map(([k, r]) =>
+              readiness.counts[k] ? (
+                <Badge key={k} tone={r.tone}>
+                  {r.label}: {readiness.counts[k]}
+                </Badge>
+              ) : null
+            )}
+            {readiness.organisation_id ? (
+              <Link to={`/consultant/companies/${readiness.organisation_id}/board`} style={{ fontWeight: 700 }}>
+                Open the Board tab
+              </Link>
+            ) : null}
+          </div>
+        ) : null}
+        {boardMsg ? (
+          <div
+            role={boardMsg.tone === "error" ? "alert" : "status"}
+            style={{
+              padding: 10,
+              borderRadius: 10,
+              border: `1px solid ${boardMsg.tone === "error" ? "#FECACA" : "#A7F3D0"}`,
+              background: boardMsg.tone === "error" ? "#FEF2F2" : "#ECFDF5",
+              color: boardMsg.tone === "error" ? "#7F1D1D" : "#065F46",
+            }}
+          >
+            {boardMsg.text}
+          </div>
+        ) : null}
+      </div>
+
       {renderFlowBar({
         left: [
           {
             key: "refresh",
             label: busy ? "Loading..." : "Refresh List",
-            onClick: listParticipants,
+            onClick: () => {
+              listParticipants();
+              loadReadiness();
+            },
             disabled: busy || !!reasonParticipants,
             title: reasonParticipants || "Load latest participants",
             variant: "soft",
@@ -282,7 +416,7 @@ export default function ListParticipantsPage({
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead style={{ background: "#F8FAFC" }}>
                 <tr>
-                  {["Name", "Email", "Role", "Status", "Task hub", "Invited At", "Responded At"].map((h) => (
+                  {["Name", "Email", "Role", "Profile", "Status", "Task hub", "Invited At", "Responded At"].map((h) => (
                     <th
                       key={h}
                       style={{
@@ -301,9 +435,15 @@ export default function ListParticipantsPage({
               <tbody>
                 {items.map((p) => (
                   <tr key={p.participant_id} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                    <td style={tdStyle()}>{p.full_name || "—"}</td>
-                    <td style={tdStyle()}>{p.email}</td>
+                    <td style={tdStyle()}>
+                      {p.display_code ? <span style={{ color: "#64748B", fontWeight: 700 }}>{p.display_code} · </span> : null}
+                      {p.full_name || "—"}
+                    </td>
+                    <td style={{ ...tdStyle(), overflowWrap: "break-word" }}>{p.email}</td>
                     <td style={tdStyle()}>{p.role || "—"}</td>
+                    <td style={tdStyle()}>
+                      <ReadinessChip ui={ui} item={readinessBy[p.participant_id]} orgId={readiness && readiness.organisation_id} />
+                    </td>
                     <td style={tdStyle()}>
                       <span
                         style={{

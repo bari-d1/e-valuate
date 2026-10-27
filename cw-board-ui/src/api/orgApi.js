@@ -78,6 +78,52 @@ export const orgApi = {
   taxonomy: () => request("/taxonomy"),
 };
 
+const member = (id, mId) => `${org(id)}/board-members/${encodeURIComponent(mId)}`;
+
+export const boardApi = {
+  registry: () => request("/board-member-profile/registry"),
+  list: (id) => request(`${org(id)}/board-members`),
+  create: (id, body) => request(`${org(id)}/board-members`, { method: "POST", body }),
+  get: (id, mId) => request(member(id, mId)),
+  update: (id, mId, body) => request(member(id, mId), { method: "PATCH", body }),
+  deactivate: (id, mId) => request(`${member(id, mId)}/deactivate`, { method: "POST" }),
+
+  documents: (id, mId) => request(`${member(id, mId)}/documents`),
+  upload: (id, mId, file) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request(`${member(id, mId)}/documents`, { method: "POST", form });
+  },
+  deleteDocument: (id, mId, docId) => request(`${member(id, mId)}/documents/${docId}`, { method: "DELETE" }),
+  extract: (id, mId) => request(`${member(id, mId)}/extraction`, { method: "POST" }),
+
+  facts: (id, mId) => request(`${member(id, mId)}/facts`),
+  addFact: (id, mId, body) => request(`${member(id, mId)}/facts`, { method: "POST", body }),
+  updateFact: (id, mId, factId, body) => request(`${member(id, mId)}/facts/${factId}`, { method: "PATCH", body }),
+  confirmFact: (id, mId, factId, body) => request(`${member(id, mId)}/facts/${factId}/confirm`, { method: "POST", body: body || {} }),
+  rejectFact: (id, mId, factId) => request(`${member(id, mId)}/facts/${factId}/reject`, { method: "POST" }),
+  deleteFact: (id, mId, factId) => request(`${member(id, mId)}/facts/${factId}`, { method: "DELETE" }),
+  markReviewed: (id, mId) => request(`${member(id, mId)}/mark-reviewed`, { method: "POST" }),
+
+  memberships: (id) => request(`${org(id)}/committee-memberships`),
+  match: (id) => request(`${org(id)}/committee-memberships/match`, { method: "POST" }),
+  addMembership: (id, body) => request(`${org(id)}/committee-memberships`, { method: "POST", body }),
+  confirmMembership: (id, msId, body) => request(`${org(id)}/committee-memberships/${msId}/confirm`, { method: "POST", body: body || {} }),
+  rejectMembership: (id, msId) => request(`${org(id)}/committee-memberships/${msId}/reject`, { method: "POST" }),
+  deleteMembership: (id, msId) => request(`${org(id)}/committee-memberships/${msId}`, { method: "DELETE" }),
+};
+
+const ev = (evalId) => `/evaluations/${encodeURIComponent(evalId)}`;
+
+export const readinessApi = {
+  readiness: (evalId) => request(`${ev(evalId)}/readiness`),
+  fromBoardMembers: (evalId, boardMemberIds) =>
+    request(`${ev(evalId)}/participants/from-board-members`, {
+      method: "POST",
+      body: boardMemberIds ? { board_member_ids: boardMemberIds } : {},
+    }),
+};
+
 /** Download a stored document with the consultant headers (a plain link can't send them). */
 export async function downloadDocument(id, docId, filename) {
   const res = await fetch(orgApi.downloadUrl(id, docId), { headers: getConsultantHeaders() });
