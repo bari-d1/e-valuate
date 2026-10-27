@@ -14,8 +14,9 @@ Rules:
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Type
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -54,44 +55,60 @@ def _check_source(source: str) -> str:
     return source
 
 
-def _confirmed_fact(db: Session, org_id, key: str) -> Optional[OrganisationFact]:
-    return db.execute(
-        select(OrganisationFact).where(
-            OrganisationFact.organisation_id == org_id,
-            OrganisationFact.key == key,
-            OrganisationFact.status == "confirmed",
-        )
-    ).scalar_one_or_none()
-
-
 # ----------------------------
 # Facts
 # ----------------------------
+# One set of rules for every kind of profile fact (organisation and board
+# member). A FactKind says which table, which owner column, how values are
+# validated and what happens when the confirmed profile changes.
 
-def add_fact(db: Session, org: Organisation, *, key: str, value: Any, source: str, note: Optional[str] = None) -> OrganisationFact:
+@dataclass(frozen=True)
+class FactKind:
+    model: Type
+    owner_column: str                      # e.g. "organisation_id"
+    validate: Callable[[str, Any], Any]
+    on_change: Callable[[Session, Any, Optional[str]], None]  # (db, owner, key)
+
+
+def _org_changed(db: Session, org: Organisation, key: Optional[str]) -> None:
+    _profile_changed(db, org, key)
+
+
+ORG_FACTS = FactKind(OrganisationFact, "organisation_id", validate_fact_value, _org_changed)
+
+
+def _confirmed(db: Session, kind: FactKind, owner, key: str):
+    col = getattr(kind.model, kind.owner_column)
+    return db.execute(
+        select(kind.model).where(col == owner.id, kind.model.key == key, kind.model.status == "confirmed")
+    ).scalar_one_or_none()
+
+
+def add_fact_of(db: Session, kind: FactKind, owner, *, key: str, value: Any, source: str, note: Optional[str] = None):
     """Manual entry: confirmed straight away (replacing any confirmed value for the key)."""
-    value = validate_fact_value(key, value)
+    value = kind.validate(key, value)
     _check_source(source)
-    fact = _confirmed_fact(db, org.id, key)
+    fact = _confirmed(db, kind, owner, key)
     if fact is None:
-        fact = OrganisationFact(organisation_id=org.id, key=key)
+        fact = kind.model(key=key, **{kind.owner_column: owner.id})
         db.add(fact)
     fact.value, fact.source, fact.origin, fact.status = value, source, "manual", "confirmed"
     fact.source_document_id, fact.source_excerpt, fact.note = None, None, note
     fact.confirmed_at = _now()
-    _profile_changed(db, org, key)
+    db.flush()
+    kind.on_change(db, owner, key)
     db.flush()
     return fact
 
 
-def confirm_fact(db: Session, org: Organisation, fact: OrganisationFact, *, value: Any = None,
-                 source: Optional[str] = None, note: Optional[str] = None) -> OrganisationFact:
+def confirm_fact_of(db: Session, kind: FactKind, owner, fact, *, value: Any = None,
+                    source: Optional[str] = None, note: Optional[str] = None):
     """Confirm a proposal (optionally with an edited value). Replaces the current confirmed value."""
     if fact.status != "proposed":
         raise ReviewError("Only proposed facts can be confirmed.")
-    new_value = validate_fact_value(fact.key, fact.value if value is None else value)
+    new_value = kind.validate(fact.key, fact.value if value is None else value)
     edited = value is not None and new_value != fact.value
-    current = _confirmed_fact(db, org.id, fact.key)
+    current = _confirmed(db, kind, owner, fact.key)
     target = fact
     if current is not None:  # keep one confirmed row per key: move the proposal's provenance onto it
         target = current
@@ -105,31 +122,33 @@ def confirm_fact(db: Session, org: Organisation, fact: OrganisationFact, *, valu
     if edited:
         target.note = ((target.note + " ") if target.note else "") + "Edited by consultant before confirming."
     target.status, target.confirmed_at = "confirmed", _now()
-    _profile_changed(db, org, target.key)
+    db.flush()
+    kind.on_change(db, owner, target.key)
     db.flush()
     return target
 
 
-def update_fact(db: Session, org: Organisation, fact: OrganisationFact, *, value: Any = None,
-                source: Optional[str] = None, note: Optional[str] = None) -> OrganisationFact:
+def update_fact_of(db: Session, kind: FactKind, owner, fact, *, value: Any = None,
+                   source: Optional[str] = None, note: Optional[str] = None):
     """Edit a fact. Editing a proposal confirms it; editing a confirmed fact sets the profile back to draft."""
     if fact.status == "proposed":
-        return confirm_fact(db, org, fact, value=value, source=source, note=note)
+        return confirm_fact_of(db, kind, owner, fact, value=value, source=source, note=note)
     if fact.status != "confirmed":
         raise ReviewError("Rejected facts can't be edited; add the fact again instead.")
     if value is not None:
-        fact.value = validate_fact_value(fact.key, value)
+        fact.value = kind.validate(fact.key, value)
     if source is not None:
         fact.source = _check_source(source)
     if note is not None:
         fact.note = note
     fact.confirmed_at = _now()
-    _profile_changed(db, org, fact.key)
+    db.flush()
+    kind.on_change(db, owner, fact.key)
     db.flush()
     return fact
 
 
-def reject_fact(db: Session, org: Organisation, fact: OrganisationFact) -> OrganisationFact:
+def reject_fact_of(db: Session, kind: FactKind, owner, fact):
     if fact.status != "proposed":
         raise ReviewError("Only proposed facts can be rejected. Delete a confirmed fact instead.")
     fact.status = "rejected"
@@ -137,12 +156,37 @@ def reject_fact(db: Session, org: Organisation, fact: OrganisationFact) -> Organ
     return fact
 
 
-def delete_fact(db: Session, org: Organisation, fact: OrganisationFact) -> None:
+def delete_fact_of(db: Session, kind: FactKind, owner, fact) -> None:
     was_confirmed, key = fact.status == "confirmed", fact.key
     db.delete(fact)
-    if was_confirmed:
-        _profile_changed(db, org, key)
     db.flush()
+    if was_confirmed:
+        kind.on_change(db, owner, key)
+    db.flush()
+
+
+# Organisation facts (unchanged signatures)
+
+def add_fact(db: Session, org: Organisation, *, key: str, value: Any, source: str, note: Optional[str] = None) -> OrganisationFact:
+    return add_fact_of(db, ORG_FACTS, org, key=key, value=value, source=source, note=note)
+
+
+def confirm_fact(db: Session, org: Organisation, fact: OrganisationFact, *, value: Any = None,
+                 source: Optional[str] = None, note: Optional[str] = None) -> OrganisationFact:
+    return confirm_fact_of(db, ORG_FACTS, org, fact, value=value, source=source, note=note)
+
+
+def update_fact(db: Session, org: Organisation, fact: OrganisationFact, *, value: Any = None,
+                source: Optional[str] = None, note: Optional[str] = None) -> OrganisationFact:
+    return update_fact_of(db, ORG_FACTS, org, fact, value=value, source=source, note=note)
+
+
+def reject_fact(db: Session, org: Organisation, fact: OrganisationFact) -> OrganisationFact:
+    return reject_fact_of(db, ORG_FACTS, org, fact)
+
+
+def delete_fact(db: Session, org: Organisation, fact: OrganisationFact) -> None:
+    delete_fact_of(db, ORG_FACTS, org, fact)
 
 
 # ----------------------------
