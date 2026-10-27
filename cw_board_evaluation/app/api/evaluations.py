@@ -68,6 +68,7 @@ from app.db.models import (
 from app.services.analytics import build_analytics
 from app.domain.board_member_profile import PARTICIPANT_ROLE_FOR, governance_role_from_participant_role
 from app.services.committee_matching import normalise_name
+from app.services.question_sets import invite_block_reasons
 from app.services.board_members import member_label, participant_readiness
 from app.services.organisations import sync_evaluation_from_organisation
 from app.services.profile_review import snapshot_context
@@ -992,7 +993,8 @@ def invite_participants(
             hub_url = _participant_hub_url(existing) or ""
 
             email_ok, email_err, email_skipped = False, None, True
-            if payload.send_email:
+            blocked = invite_block_reasons(db, evaluation_id).get(str(existing.id)) if payload.send_email else None
+            if payload.send_email and not blocked:
                 email_ok, email_err = send_invite_email(
                     to_email=existing.email,
                     full_name=existing.full_name,
@@ -1016,6 +1018,7 @@ def invite_participants(
                     "email_sent": bool(email_ok),
                     "email_skipped": email_skipped,
                     "email_error": email_err,
+                    "invite_blocked": blocked,
                 }
             )
             continue
@@ -1029,7 +1032,8 @@ def invite_participants(
         hub_url = _participant_hub_url(p) or ""
 
         email_ok, email_err, email_skipped = False, None, True
-        if payload.send_email:
+        blocked = invite_block_reasons(db, evaluation_id).get(str(p.id)) if payload.send_email else None
+        if payload.send_email and not blocked:
             email_ok, email_err = send_invite_email(
                 to_email=p.email,
                 full_name=p.full_name,
@@ -1053,6 +1057,7 @@ def invite_participants(
                 "email_sent": bool(email_ok),
                 "email_skipped": email_skipped,
                 "email_error": email_err,
+                "invite_blocked": blocked,
             }
         )
 

@@ -2,9 +2,14 @@
 app.services.question_sets
 --------------------------
 A participant's assembled question set after assembly: consultant decisions
-on wording and AI new-question suggestions (each recorded with who and when),
-the set lifecycle (draft -> approved -> locked) and the bank feedback loop
-(accepted AI wording per bank item; promote to a new DRAFT bank version).
+on wording and AI new-question suggestions, the set lifecycle
+(draft -> approved -> locked, approved -> draft by reopening), the invite gate
+and the bank feedback loop (accepted AI wording per bank item; promote to a new
+DRAFT bank version).
+
+Audit: every change to a set is a QuestionSetEvent (who, when, what changed).
+Wording decisions are also QuestionSuggestionDecisions, which feed the bank
+feedback loop; the event log is the complete history.
 """
 
 from __future__ import annotations
@@ -24,11 +29,19 @@ from app.db.models import (
     Participant,
     Question,
     QuestionBankItem,
+    QuestionSetEvent,
     QuestionSuggestionDecision,
 )
 from app.services import question_bank as bank
 from app.services import question_tailoring as ai
-from app.services.question_assembly import SECTIONS, SetConflict, TailoringContext
+from app.services.question_assembly import (
+    SECTIONS,
+    SetConflict,
+    TailoringContext,
+    live_rater_warnings,
+    refresh_summary,
+    set_metrics,
+)
 from app.services.question_selection import ROLE_LABELS, build_selection_context
 
 SECTION_LABELS = {
@@ -55,11 +68,38 @@ def set_questions(db: Session, participant_id) -> List[Question]:
                            .order_by(Question.sort_order, Question.id)).scalars().all())
 
 
-def _require_draft(db: Session, q: Question) -> ParticipantQuestionSet:
-    pset = question_set(db, q.participant_id)
-    if pset is None or pset.status != "draft":
-        raise SetConflict(f"The set is {pset.status if pset else 'missing'}; only draft sets can be changed.")
+STATUS_WORDS = {"approved": "approved; reopen it to make changes",
+                "locked": "locked because the participant has started; it can't change"}
+
+
+def require_draft_set(pset: Optional[ParticipantQuestionSet]) -> ParticipantQuestionSet:
+    if pset is None:
+        raise SetConflict("No assembled set for this participant yet.")
+    if pset.status != "draft":
+        raise SetConflict(f"The set is {STATUS_WORDS.get(pset.status, pset.status)}.")
     return pset
+
+
+def _require_draft(db: Session, q: Question, *, allow_removed: bool = False) -> ParticipantQuestionSet:
+    pset = require_draft_set(question_set(db, q.participant_id))
+    if q.status == "removed" and not allow_removed:
+        raise SetConflict("This question was removed from the set; restore it first.")
+    return pset
+
+
+def log_event(db: Session, pset: Optional[ParticipantQuestionSet], action: str, by: str, *,
+              q: Optional[Question] = None, evaluation_id: Optional[str] = None, participant_id=None,
+              **detail: Any) -> QuestionSetEvent:
+    """Record one change to a set: who, when (now) and what changed."""
+    e = QuestionSetEvent(
+        evaluation_id=evaluation_id or (pset.evaluation_id if pset else q.evaluation_id),
+        participant_id=participant_id or (pset.participant_id if pset else q.participant_id),
+        question_set_id=pset.id if pset else None, question_id=q.id if q else None, action=action,
+        detail={k: v for k, v in detail.items() if v is not None}, created_by=by or "consultant",
+    )
+    db.add(e)
+    db.flush()
+    return e
 
 
 def _record(db: Session, q: Question, decision: str, by: str, note: Optional[str] = None) -> QuestionSuggestionDecision:
@@ -81,12 +121,15 @@ def _record(db: Session, q: Question, decision: str, by: str, note: Optional[str
 def choose_wording(db: Session, q: Question, use: str, by: str, text: Optional[str] = None,
                    note: Optional[str] = None) -> Question:
     """use: "bank" | "ai" | "edited". Tags never change: only the wording does."""
-    _require_draft(db, q)
-    if q.text_source == "ai_new":
+    pset = _require_draft(db, q)
+    before = q.text
+    if q.text_source in ("ai_new", "consultant_written"):
         if use != "edited" or not (text or "").strip():
-            raise ValueError("A new question can only be edited (give the text), accepted or rejected.")
+            raise ValueError("This question can only be edited (give the text), not switched to bank or AI wording.")
         q.text = text.strip()
-        _record(db, q, "edit", by, note)
+        if q.text_source == "ai_new":
+            _record(db, q, "edit", by, note)
+        log_event(db, pset, "edit", by, q=q, before=before, after=q.text, note=note)
         return q
     if use == "bank":
         q.text, q.text_source = q.bank_text, "bank"
@@ -103,20 +146,24 @@ def choose_wording(db: Session, q: Question, use: str, by: str, text: Optional[s
         _record(db, q, "edit", by, note)
     else:
         raise ValueError("use must be bank, ai or edited.")
+    log_event(db, pset, {"bank": "use_bank", "ai": "use_ai", "edited": "edit"}[use], by, q=q, before=before,
+              after=q.text, note=note)
     db.flush()
     return q
 
 
 def decide_new(db: Session, q: Question, accept: bool, by: str, note: Optional[str] = None) -> Question:
-    _require_draft(db, q)
+    pset = _require_draft(db, q)
     if q.text_source != "ai_new":
         raise ValueError("Only AI new-question suggestions can be accepted or rejected.")
     q.suggestion_status = "accepted" if accept else "rejected"
     _record(db, q, "accept_new" if accept else "reject_new", by, note)
+    log_event(db, pset, "accept_new" if accept else "reject_new", by, q=q, text=q.text, note=note)
     return q
 
 
-def regenerate(db: Session, q: Question, note: str = "", llm_call: Optional[ai.LLMCall] = None) -> Dict[str, Any]:
+def regenerate(db: Session, q: Question, note: str = "", llm_call: Optional[ai.LLMCall] = None,
+               by: str = "consultant") -> Dict[str, Any]:
     """Ask again for one question's suggestion, optionally with a consultant note."""
     if not ai.ai_tailoring_enabled():
         raise SetConflict("AI tailoring is off (AI_TAILORING_ENABLED).")
@@ -147,8 +194,11 @@ def regenerate(db: Session, q: Question, note: str = "", llm_call: Optional[ai.L
     context = {**ctx.context, "respondent": {"role": ROLE_LABELS.get(person.get("role") or "", "Director"),
                                              "tone_notes": ctx._tone(person["participant_id"])}}
     checked = ai.tailor(sent, context, ai.vocabulary(context, sent), ctx.people, llm_call, note=note)
+    before = q.ai_text
     if checked.accepted:
         q.ai_text, q.ai_reason = checked.accepted[0]["text"], checked.accepted[0]["reason"]
+    log_event(db, pset, "regenerate", by, q=q, note=note or None, before=before,
+              after=q.ai_text if checked.accepted else None, dropped=len(checked.dropped) or None)
     db.flush()
     return {"accepted": bool(checked.accepted), "dropped": checked.dropped}
 
@@ -157,26 +207,49 @@ def regenerate(db: Session, q: Question, note: str = "", llm_call: Optional[ai.L
 # Lifecycle
 # ----------------------------
 
-def approve_set(db: Session, pset: ParticipantQuestionSet, by: str, override_reason: Optional[str] = None) -> ParticipantQuestionSet:
+def approve_set(db: Session, pset: ParticipantQuestionSet, by: str, override_reason: Optional[str] = None,
+                **detail: Any) -> ParticipantQuestionSet:
     if pset.status != "draft":
         raise SetConflict(f"The set is already {pset.status}.")
-    gaps = (pset.summary or {}).get("coverage_gaps") or []
+    m = refresh_summary(db, pset)
+    gaps = m["coverage_gaps"]
     if gaps and not (override_reason or "").strip():
         raise SetConflict(f"{len(gaps)} coverage gap(s) remain: "
                           + "; ".join(g["message"] for g in gaps) + " Give an override reason to approve anyway.")
     for q in set_questions(db, pset.participant_id):
-        if q.text_source == "ai_new" and q.suggestion_status != "accepted":
-            continue  # pending or rejected suggestions never reach a participant
+        if q.status == "removed" or (q.text_source == "ai_new" and q.suggestion_status != "accepted"):
+            continue  # removed questions and pending or rejected suggestions never reach a participant
         q.status = "approved"
     pset.status = "approved"
     pset.override_reason = override_reason.strip() if gaps and override_reason else None
     pset.approved_by = by or "consultant"
     pset.approved_at = _now()
+    log_event(db, pset, "approve", by, override_reason=pset.override_reason, gaps=len(gaps) or None,
+              questions=m["counts"]["questions"], estimated_minutes=m["estimated_minutes"], **detail)
     db.flush()
     return pset
 
 
-def lock_set(db: Session, pset: ParticipantQuestionSet) -> ParticipantQuestionSet:
+def reopen_set(db: Session, pset: ParticipantQuestionSet, by: str, reason: str) -> ParticipantQuestionSet:
+    """Back to draft for changes. Only before the participant has opened it (an approved, not locked, set)."""
+    if pset.status == "locked":
+        raise SetConflict("The participant has started, so the set is locked and can't be reopened.")
+    if pset.status != "approved":
+        raise SetConflict("Only an approved set can be reopened; this one is still a draft.")
+    if not (reason or "").strip():
+        raise ValueError("Give a reason for reopening the set.")
+    for q in set_questions(db, pset.participant_id):
+        if q.status == "approved":
+            q.status = "draft"
+    log_event(db, pset, "reopen", by, reason=reason.strip(), approved_by=pset.approved_by,
+              approved_at=_iso(pset.approved_at))
+    pset.status = "draft"
+    pset.approved_by, pset.approved_at, pset.override_reason = None, None, None
+    db.flush()
+    return pset
+
+
+def lock_set(db: Session, pset: ParticipantQuestionSet, by: str = "participant") -> ParticipantQuestionSet:
     """Called when the participant first opens the form; an approved set can't change after this."""
     if pset.status == "locked":
         return pset
@@ -187,8 +260,33 @@ def lock_set(db: Session, pset: ParticipantQuestionSet) -> ParticipantQuestionSe
             q.status = "locked"
     pset.status = "locked"
     pset.locked_at = _now()
+    log_event(db, pset, "lock", by)
     db.flush()
     return pset
+
+
+# ----------------------------
+# Invite gate
+# ----------------------------
+
+def invite_block_reasons(db: Session, evaluation_id: str) -> Dict[str, str]:
+    """
+    Participants who mustn't be invited or sent links yet, with the reason. Only for
+    evaluations that use assembled sets (any set exists); otherwise empty, so legacy
+    evaluations behave exactly as before.
+    """
+    sets = {str(s.participant_id): s for s in db.execute(select(ParticipantQuestionSet).where(
+        ParticipantQuestionSet.evaluation_id == evaluation_id)).scalars().all()}
+    if not sets:
+        return {}
+    out: Dict[str, str] = {}
+    for pid in db.execute(select(Participant.id).where(Participant.evaluation_id == evaluation_id)).scalars():
+        s = sets.get(str(pid))
+        if s is None:
+            out[str(pid)] = "No question set has been assembled for them yet."
+        elif s.status == "draft":
+            out[str(pid)] = "Their question set isn't approved yet."
+    return out
 
 
 # ----------------------------
@@ -211,6 +309,7 @@ def question_dict(q: Question, codes: Dict[str, str], subjects: Dict[str, Evalua
         "subject_types": q.subject_type_codes, "dimension": q.dimension,
         "depends_on_question_id": str(q.depends_on_question_id) if q.depends_on_question_id else None,
         "show_if": q.show_if, "confirm_value": q.confirm_value,
+        "removed_reason": q.removed_reason, "selection_reason": q.selection_reason, "added_by": q.added_by,
     }
 
 
@@ -224,19 +323,31 @@ def set_dict(db: Session, ev_id: str, participant: Participant) -> Dict[str, Any
     run = db.execute(select(AssemblyRun).where(AssemblyRun.evaluation_id == ev_id, AssemblyRun.status == "done")
                      .order_by(AssemblyRun.created_at.desc()).limit(1)).scalars().first()
     rendered = [question_dict(q, codes, subjects) for q in questions]
+    metrics = set_metrics(db, pset) if pset is not None else None
+    warnings = live_rater_warnings(db, ev_id) if pset is not None else (run.rater_warnings if run else [])
     return {
         "participant_id": str(participant.id),
         "label": participant.full_name or participant.email,
+        "role": participant.role,
         "set": None if pset is None else {
-            "id": str(pset.id), "status": pset.status, "estimated_minutes": pset.estimated_minutes,
+            "id": str(pset.id), "status": pset.status, "estimated_minutes": metrics["estimated_minutes"],
             "summary": pset.summary, "override_reason": pset.override_reason, "approved_by": pset.approved_by,
             "approved_at": _iso(pset.approved_at), "locked_at": _iso(pset.locked_at),
             "assembly_run_id": str(pset.assembly_run_id) if pset.assembly_run_id else None,
+            "counts": metrics["counts"], "coverage": metrics["coverage"], "coverage_gaps": metrics["coverage_gaps"],
         },
         "sections": [{"key": s, "label": SECTION_LABELS[s], "questions": [q for q in rendered if q["section"] == s]}
                      for s in SECTIONS if any(q["section"] == s for q in rendered)],
-        "rater_warnings": run.rater_warnings if run else [],
+        "rater_warnings": warnings,
     }
+
+
+def set_history(db: Session, participant_id, limit: int = 100) -> List[Dict[str, Any]]:
+    """The set's audit trail, newest first."""
+    rows = db.execute(select(QuestionSetEvent).where(QuestionSetEvent.participant_id == participant_id)
+                      .order_by(QuestionSetEvent.created_at.desc()).limit(limit)).scalars().all()
+    return [{"id": str(e.id), "action": e.action, "question_id": str(e.question_id) if e.question_id else None,
+             "detail": e.detail, "by": e.created_by, "at": _iso(e.created_at)} for e in rows]
 
 
 def run_dict(run: AssemblyRun) -> Dict[str, Any]:
