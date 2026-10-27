@@ -23,8 +23,8 @@ export function validationMessage(detail) {
     .join("; ");
 }
 
-export async function request(path, { method = "GET", body, form } = {}) {
-  const headers = getConsultantHeaders({ Accept: "application/json" });
+export async function request(path, { method = "GET", body, form, headers: extra } = {}) {
+  const headers = getConsultantHeaders({ Accept: "application/json", ...(extra || {}) });
   let payload;
   if (form) {
     payload = form; // the browser sets the multipart boundary

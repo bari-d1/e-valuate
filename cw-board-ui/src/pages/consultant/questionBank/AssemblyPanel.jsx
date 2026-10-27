@@ -8,7 +8,7 @@ import { formatDateTime } from "../../../utils/format.js";
 const RUN_TONE = { queued: "gray", running: "blue", done: "green", failed: "red" };
 
 /** Peer mode, the "Assemble drafts" action, run status and evaluation-wide rater warnings. */
-export default function AssemblyPanel({ ui, evalId, onOptionsChanged, onRunFinished }) {
+export default function AssemblyPanel({ ui, evalId, onOptionsChanged, onRunFinished, showRaterWarnings = true }) {
   const { Badge, Button, Field } = ui;
   const [options, setOptions] = useState(null);
   const [available, setAvailable] = useState([]);
@@ -122,7 +122,7 @@ export default function AssemblyPanel({ ui, evalId, onOptionsChanged, onRunFinis
                   ) : null}
                 </div>
               ) : null}
-              {(latest.rater_warnings || []).map((w) => (
+              {(showRaterWarnings ? latest.rater_warnings || [] : []).map((w) => (
                 <Notice key={`${w.set}-${w.subject_key}`} tone="warn">
                   {w.message} Raters: {w.raters.join(", ")}.
                 </Notice>

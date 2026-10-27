@@ -242,7 +242,7 @@ export default function InviteParticipantsPage({
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead style={{ background: "#F8FAFC" }}>
                 <tr>
-                  {["Email", "Name", "Role", "Hub link", "First task link", "Email"].map((h) => (
+                  {["Email", "Name", "Role", "Hub link", "First task link", "Email sent"].map((h) => (
                     <th
                       key={h}
                       style={{
@@ -322,7 +322,12 @@ export default function InviteParticipantsPage({
                       </td>
 
                       <td style={{ padding: "10px 12px" }}>
-                        {p.email_skipped ? (
+                        {p.invite_blocked ? (
+                          <div style={{ display: "grid", gap: 6 }}>
+                            <Badge tone="amber">Not sent</Badge>
+                            <div style={{ fontSize: 12, color: "#92400E" }}>{p.invite_blocked}</div>
+                          </div>
+                        ) : p.email_skipped ? (
                           <Badge tone="gray">Not sent (register only)</Badge>
                         ) : ok ? (
                           <Badge tone="green">Sent</Badge>
