@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { downloadDocument, orgApi } from "../../../api/orgApi.js";
 import { color, font, space } from "../../../theme.js";
-import { LinkButton, Notice, Panel, SectionTitle } from "./shared.jsx";
+import { DroppedItems, LinkButton, Notice, Panel, SectionTitle } from "./shared.jsx";
 import { formatDate, useAsync } from "./helpers.js";
 
 function sizeLabel(bytes) {
@@ -139,9 +139,9 @@ export default function DocumentsTab({ ui, org, registry, reloadOrg }) {
             <div style={{ marginTop: space.md }}>
               <Notice tone="success">
                 {`Proposed ${summary.facts_added} new and updated ${summary.facts_updated} fact(s); ${summary.committees_added} new and ${summary.committees_updated} updated committee(s).`}
-                {summary.discarded.length ? `\n${summary.discarded.length} item(s) were dropped because their quote couldn't be found in the document.` : ""}
                 {summary.skipped.length ? `\nSkipped: ${summary.skipped.map((s) => `${s.filename}${s.part ? ` (${s.part})` : ""}: ${s.reason}`).join("; ")}` : ""}
               </Notice>
+              <DroppedItems items={summary.discarded} />
             </div>
           ) : null}
         </Panel>

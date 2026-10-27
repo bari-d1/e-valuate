@@ -92,6 +92,20 @@ def test_editing_a_proposal_confirms_it(db_session, org) -> None:
     assert "Edited" in (f.note or "")
 
 
+def test_edited_value_no_longer_cites_the_old_quote(db_session, org) -> None:
+    p = _proposal(db_session, org, "board_size", 7, excerpt="between seven and eleven directors")
+    f = review.update_fact(db_session, org, p, value=8)
+    assert (f.value, f.source_excerpt, f.source_document_id) == (8, None, None)
+    assert 'Originally proposed as 7, quoting: "between seven and eleven directors".' in f.note
+    # Confirming unchanged keeps the quote as evidence
+    q = _proposal(db_session, org, "ownership", "Owned by Acme Holdings", excerpt="Acme Holdings owns 60%")
+    assert review.confirm_fact(db_session, org, q).source_excerpt == "Acme Holdings owns 60%"
+    # Correcting a confirmed fact moves its quote too
+    g = review.update_fact(db_session, org, review.confirm_fact(db_session, org, _proposal(
+        db_session, org, "listing_status", "Listed", excerpt="listed on the exchange")), value="Unlisted")
+    assert g.source_excerpt is None and "listed on the exchange" in g.note
+
+
 def test_confirming_replaces_confirmed_value(db_session, org) -> None:
     review.add_fact(db_session, org, key="board_size", value=9, source="client")
     p = _proposal(db_session, org, "board_size", 10, excerpt="The Board has ten members")

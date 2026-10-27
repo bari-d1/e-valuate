@@ -70,6 +70,8 @@ def test_ined_gets_independence_items_and_known_ones_are_skipped(result) -> None
     assert skipped["INED-IND-01"]["value_text"] == "No"
     assert skipped["INED-IND-01"]["why"] == "Skipped: Holds shares in the company is already confirmed (No)"
     assert skipped["INED-IND-09"]["known_from"] == "tenure_years"
+    # Counted to the end of the review period (31 Dec 2025), not to today
+    assert skipped["INED-IND-09"]["value"] == 6.8  # appointed 1 Mar 2019
     assert included["INED-IND-05"]["why"] == "Included: respondent is an independent NED and the item is about themselves"
     for code in ("P001", "P002", "P003", "P004", "P005", "P007"):
         assert not _codes(result[code]["included"] + result[code]["skipped"], "INED-IND-"), code

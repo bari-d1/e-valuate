@@ -12,11 +12,13 @@ Extra rules for people:
   are dropped (unknown is already the default).
 - personality_notes: the value itself must appear verbatim in the document, so
   it can only ever be a quote, never the model's own characterisation.
-- Dates: the year must appear in the excerpt.
+- Dates: the year and the day must appear in the excerpt, so a month-only date
+  ("July 2020") can't come back with an invented day.
 """
 
 from __future__ import annotations
 
+import re
 from typing import Optional
 
 from sqlalchemy import select
@@ -48,7 +50,28 @@ def _member_extra_check(key, spec, value, ex_norm, doc_norm) -> Optional[str]:
         return "notes must be a verbatim quote from the document"
     if spec["type"] == "date" and value[:4] not in ex_norm:
         return "date not stated in the excerpt"
+    if spec["type"] == "date" and not _full_date_in_excerpt(value, ex_norm):
+        return "the quote doesn't give this exact date (day and month)"
     return None
+
+
+_MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october",
+           "november", "december"]
+
+
+def _full_date_in_excerpt(iso: str, ex_norm: str) -> bool:
+    """The day written next to the date's month: "1 June", "June 1st", "01/06/2015", "2015-06-01"."""
+    month, day = int(iso[5:7]), int(iso[8:10])
+    name = _MONTHS[month - 1]
+    names = rf"(?:{name}|{name[:3]}{'t' if month == 9 else ''}?\.?)"
+    d = rf"(?<!\d)0?{day}(?:st|nd|rd|th)?(?!\d)"
+    patterns = [
+        rf"{d}\s+(?:of\s+)?{names}\b",
+        rf"\b{names}\s+{d}",
+        rf"(?<!\d)0?{day}[/.-]0?{month}[/.-]\d{{2,4}}",  # 01/06/2015
+        rf"\b\d{{4}}-0?{month}-0?{day}(?!\d)",          # 2015-06-01
+    ]
+    return any(re.search(p, ex_norm) for p in patterns)
 
 
 MEMBER_FACT_RULES = FactRules(PROFILE_FACTS_BY_KEY, validate_profile_value, _member_extra_check, _skip_unknown)

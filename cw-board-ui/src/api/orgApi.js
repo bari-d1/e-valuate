@@ -7,6 +7,22 @@ import { getConsultantHeaders } from "./consultantAuth.js";
 export const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 const V1 = `${API_BASE}/api/v1`;
 
+export const NETWORK_ERROR = "Couldn't reach the server. Check it's running and try again.";
+
+const FIELD_LABELS = { full_name: "Name", email: "Email", display_code: "Display code", name: "Name" };
+
+// FastAPI validation errors ([{loc, msg}]) as "Name: String should have at most 255 characters"
+export function validationMessage(detail) {
+  return detail
+    .map((d) => {
+      const field = Array.isArray(d?.loc) ? d.loc[d.loc.length - 1] : "";
+      const label = FIELD_LABELS[field] || (typeof field === "string" ? field.replace(/_/g, " ") : "");
+      return label ? `${label}: ${d?.msg || "invalid"}` : d?.msg || "";
+    })
+    .filter(Boolean)
+    .join("; ");
+}
+
 export async function request(path, { method = "GET", body, form } = {}) {
   const headers = getConsultantHeaders({ Accept: "application/json" });
   let payload;
@@ -16,7 +32,12 @@ export async function request(path, { method = "GET", body, form } = {}) {
     headers["Content-Type"] = "application/json";
     payload = JSON.stringify(body);
   }
-  const res = await fetch(`${V1}${path}`, { method, headers, body: payload });
+  let res;
+  try {
+    res = await fetch(`${V1}${path}`, { method, headers, body: payload });
+  } catch {
+    throw new Error(NETWORK_ERROR);
+  }
   const text = await res.text();
   let data = null;
   try {
@@ -29,7 +50,9 @@ export async function request(path, { method = "GET", body, form } = {}) {
     const message =
       typeof detail === "string"
         ? detail
-        : detail?.message || (detail ? JSON.stringify(detail) : `Request failed (${res.status})`);
+        : Array.isArray(detail)
+          ? validationMessage(detail)
+          : detail?.message || (detail ? JSON.stringify(detail) : `Request failed (${res.status})`);
     const err = new Error(message);
     err.status = res.status;
     // Validation errors listed one by one (e.g. the question bank)

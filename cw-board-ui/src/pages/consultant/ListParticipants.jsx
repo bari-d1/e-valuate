@@ -13,6 +13,15 @@ const ROLE_LABELS = {
   "Company Secretary": "Company secretary",
 };
 
+// "invited" is set when a participant is registered, whether or not an email went out
+const STATUS_LABELS = { invited: "Awaiting response", responded: "Responded" };
+
+const BOARD_MSG_COLOURS = {
+  ok: { border: "#A7F3D0", background: "#ECFDF5", color: "#065F46" },
+  warn: { border: "#FDE68A", background: "#FFFBEB", color: "#92400E" },
+  error: { border: "#FECACA", background: "#FEF2F2", color: "#7F1D1D" },
+};
+
 const READINESS = {
   ready: { label: "Ready", tone: "green" },
   needs_review: { label: "Needs review", tone: "amber" },
@@ -217,7 +226,11 @@ export default function ListParticipantsPage({
       if (r.placeholder_emails.length) {
         parts.push(`${r.placeholder_emails.length} member(s) have no email yet, so they got a placeholder address that is never emailed: ${r.placeholder_emails.join(", ")}.`);
       }
-      setBoardMsg({ tone: "ok", text: parts.join(" ") });
+      const sameName = r.same_name_not_added || [];
+      for (const s of sameName) {
+        parts.push(`Not added: ${s.label}. Someone with the same name is already on the roster as ${s.participant_email}, but isn't linked to this board member. Check whether it's the same person before adding them again.`);
+      }
+      setBoardMsg({ tone: sameName.length ? "warn" : "ok", text: parts.join(" ") });
       await listParticipants({ silent: true });
       await loadReadiness();
     } catch (e) {
@@ -368,9 +381,9 @@ export default function ListParticipantsPage({
             style={{
               padding: 10,
               borderRadius: 10,
-              border: `1px solid ${boardMsg.tone === "error" ? "#FECACA" : "#A7F3D0"}`,
-              background: boardMsg.tone === "error" ? "#FEF2F2" : "#ECFDF5",
-              color: boardMsg.tone === "error" ? "#7F1D1D" : "#065F46",
+              border: `1px solid ${BOARD_MSG_COLOURS[boardMsg.tone].border}`,
+              background: BOARD_MSG_COLOURS[boardMsg.tone].background,
+              color: BOARD_MSG_COLOURS[boardMsg.tone].color,
             }}
           >
             {boardMsg.text}
@@ -404,7 +417,7 @@ export default function ListParticipantsPage({
           <>
             <Badge tone="gray">Total: {total}</Badge>
             <Badge tone="green">Responded: {respondedCount}</Badge>
-            <Badge tone="amber">Invited: {invitedCount}</Badge>
+            <Badge tone="amber">Awaiting response: {invitedCount}</Badge>
             {hasAssignments ? (
               <Badge tone="green">Assignment rows: {assignmentsCount}</Badge>
             ) : (
@@ -427,7 +440,7 @@ export default function ListParticipantsPage({
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead style={{ background: "#F8FAFC" }}>
                 <tr>
-                  {["Name", "Email", "Role", "Profile", "Status", "Task hub", "Invited At", "Responded At"].map((h) => (
+                  {["Name", "Email", "Role", "Profile", "Status", "Task hub", "Registered", "Responded"].map((h) => (
                     <th
                       key={h}
                       style={{
@@ -469,7 +482,7 @@ export default function ListParticipantsPage({
                             String(p.status).toLowerCase() === "responded" ? "#065F46" : "#92400E",
                         }}
                       >
-                        {p.status}
+                        {STATUS_LABELS[String(p.status).toLowerCase()] || p.status}
                       </span>
                       {String(p.portal_status || "") === "pending_assignments" ? (
                         <span

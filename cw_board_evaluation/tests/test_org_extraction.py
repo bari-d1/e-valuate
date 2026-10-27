@@ -185,3 +185,52 @@ def test_unreadable_reply_is_reported(db_session, org, enabled) -> None:
     result = run_extraction(db_session, org, llm_call=lambda s, u: "not json")
     assert result.facts_added == 0
     assert any("unreadable" in d["reason"] for d in result.discarded)
+
+
+CHARTER = "The Board shall have between seven and eleven directors. The Company is regulated by NAICOM."
+REPORT = (
+    "As at 31 December 2025 the Board had eight members.\n\n"
+    "Acme Insurance Plc is regulated by the National Insurance Commission (NAICOM).\n\n"
+    "On 1 April 2025 a new Managing Director took office.\n\n"
+    "In May 2025 the regulator fined the Company for late filing of returns.\n\n"
+    "The Company is owned by Acme Holdings, which holds 51% of the shares."
+)
+REPLIES = {
+    "charter.txt": {"facts": [
+        {"key": "board_size", "value": 7, "source_excerpt": "The Board shall have between seven and eleven directors."},
+        {"key": "regulator", "value": ["NAICOM"], "source_excerpt": "The Company is regulated by NAICOM."},
+        {"key": "ownership", "value": "Regulated by NAICOM", "source_excerpt": "The Company is regulated by NAICOM."},
+    ]},
+    "report.txt": {"facts": [
+        {"key": "board_size", "value": 8, "source_excerpt": "As at 31 December 2025 the Board had eight members."},
+        {"key": "regulator", "value": ["National Insurance Commission (NAICOM)"],
+         "source_excerpt": "regulated by the National Insurance Commission (NAICOM)"},
+        # one entry per list item, each with its own quote
+        {"key": "recent_events", "value": ["New Managing Director from 1 April 2025"],
+         "source_excerpt": "On 1 April 2025 a new Managing Director took office."},
+        {"key": "recent_events", "value": ["Regulatory fine for late filing, May 2025"],
+         "source_excerpt": "In May 2025 the regulator fined the Company for late filing of returns."},
+        {"key": "ownership", "value": "Acme Holdings, 51%",
+         "source_excerpt": "The Company is owned by Acme Holdings, which holds 51% of the shares."},
+    ]},
+}
+
+
+def test_ranges_are_not_counts_and_lists_merge_cleanly(db_session, org, enabled) -> None:
+    _doc(db_session, org, CHARTER, doc_type="governance_policy", name="charter.txt")  # read first
+    _doc(db_session, org, REPORT, doc_type="annual_report", name="report.txt")
+
+    def llm(system, user):
+        return json.dumps(next(r for name, r in REPLIES.items() if f"Document: {name}" in user))
+
+    result = run_extraction(db_session, org, llm_call=llm)
+    facts = _facts(db_session, org)
+    assert facts["board_size"].value == 8
+    assert facts["board_size"].source_excerpt == "As at 31 December 2025 the Board had eight members."
+    assert {"key": "board_size", "label": "Board size", "filename": "charter.txt",
+            "reason": "the quote states a rule or range, not an actual number"} in result.discarded
+    assert facts["regulator"].value == ["National Insurance Commission (NAICOM)"]
+    assert facts["recent_events"].value == ["New Managing Director from 1 April 2025",
+                                            "Regulatory fine for late filing, May 2025"]
+    # Alternatives are listed as plain text, not JSON with escaped quotes
+    assert facts["ownership"].note == "Other values found: “Acme Holdings, 51%” (report.txt)"

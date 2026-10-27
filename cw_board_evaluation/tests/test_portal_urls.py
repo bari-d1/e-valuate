@@ -25,9 +25,9 @@ def test_assignment_portal_url_empty_token_returns_empty() -> None:
     assert assignment_portal_url("   ") == ""
 
 
-def test_portal_base_url_default_localhost(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_portal_base_url_default_matches_dev_server(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("PARTICIPANT_PORTAL_BASE_URL", raising=False)
-    assert portal_base_url() == "http://localhost:5173"
+    assert portal_base_url() == "http://127.0.0.1:5173"  # the host dev.sh serves the app on
 
 
 def test_participant_hub_url(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -15,9 +15,9 @@ def portal_base_url() -> str:
     Frontend base URL used to build member portal links.
 
     Environment:
-      PARTICIPANT_PORTAL_BASE_URL — e.g. http://localhost:5173 or https://app.example.com
+      PARTICIPANT_PORTAL_BASE_URL — e.g. http://127.0.0.1:5173 (dev.sh) or https://app.example.com
     """
-    base = (os.getenv("PARTICIPANT_PORTAL_BASE_URL") or "http://localhost:5173").strip()
+    base = (os.getenv("PARTICIPANT_PORTAL_BASE_URL") or "http://127.0.0.1:5173").strip()
     return base.rstrip("/")
 
 

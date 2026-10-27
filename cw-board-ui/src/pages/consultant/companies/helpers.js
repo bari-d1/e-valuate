@@ -44,8 +44,4 @@ export function useAsync() {
   return { busy, error, setError, run };
 }
 
-export function formatDate(iso) {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
-}
+export { formatDate } from "../../../utils/format.js";

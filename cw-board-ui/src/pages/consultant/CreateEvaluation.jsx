@@ -74,7 +74,8 @@ export default function CreateEvaluationPage({
     };
   }, []);
 
-  const defaultName = `${yearOf(periodEnd || deadline)} Board Evaluation`;
+  // Named after the year under review, not the year the evaluation runs
+  const defaultName = `${yearOf(periodEnd || periodStart || deadline)} Board Evaluation`;
   const effectiveName = nameEdited ? name : defaultName;
   const lockedOrg = lockedOrgId && orgs ? orgs.find((o) => o.organisation_id === lockedOrgId) : null;
   const scopeCount = scope ? scope.length : 0;
@@ -215,13 +216,18 @@ export default function CreateEvaluationPage({
 
       {/* Status */}
       <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-        <Button onClick={submit} disabled={busy || !canCreate} variant="primary" title={reasonCreate || "Create evaluation"}>
+        <Button
+          onClick={submit}
+          disabled={busy || !canCreate || !!created}
+          variant="primary"
+          title={created ? "Already created. Open it from the Evaluations list to change it." : reasonCreate || "Create evaluation"}
+        >
           {busy ? "Creating…" : "Create evaluation"}
         </Button>
         <Button onClick={() => go(lockedOrgId ? `/consultant/companies/${lockedOrgId}/evaluations` : "/consultant/evaluations")} disabled={busy} variant="secondary">
           Cancel
         </Button>
-        {reasonCreate ? <span style={{ fontSize: 13, color: "#92400E" }}>{reasonCreate}</span> : null}
+        {reasonCreate && !created ? <span style={{ fontSize: 13, color: "#92400E" }}>{reasonCreate}</span> : null}
         {created ? <Badge tone="green">Created: {created.name || created.evaluation_id}</Badge> : null}
       </div>
 
@@ -232,7 +238,7 @@ export default function CreateEvaluationPage({
         </div>
 
         <div style={{ marginTop: 6, color: "#64748B", fontSize: 13 }}>
-          This saves the questionnaire selection to the backend for this evaluation.
+          Saves which questionnaire this evaluation uses.
         </div>
 
         {savedForThisEval ? (
@@ -279,7 +285,7 @@ export default function CreateEvaluationPage({
             onClick={setEvaluationQuestionnaire}
             disabled={busy || !effectiveEvalId}
             variant="secondary"
-            title={reasonNeedsEval || "Save questionnaire to backend"}
+            title={reasonNeedsEval || "Save the questionnaire for this evaluation"}
           >
             Save Questionnaire
           </Button>

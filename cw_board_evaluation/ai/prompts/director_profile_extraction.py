@@ -22,7 +22,8 @@ Rules:
 5. personality_notes: only copy, word for word, what the document literally says about the person's style or manner.
    Never describe or characterise the person yourself. If nothing is said, leave it out.
 6. governance_role: only when the text states their role on THIS board.
-7. Dates as YYYY-MM-DD only when the document gives the full date; otherwise leave the date out.
+7. Dates as YYYY-MM-DD only when the document gives the day, month and year. If it gives only a month and year
+   (e.g. "joined the Board in July 2020"), leave the date out: never fill in a day.
 8. Use only the fact keys listed by the user, with the value shape given for each key.
 9. Reply with JSON only, matching the requested schema. No commentary."""
 

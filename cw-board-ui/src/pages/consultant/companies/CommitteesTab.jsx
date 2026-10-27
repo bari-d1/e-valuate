@@ -25,7 +25,7 @@ function CommitteeForm({ ui, initial, busy, submitLabel, onSubmit, onCancel, sho
     <div style={{ display: "grid", gap: space.sm, marginTop: space.sm }}>
       <div style={{ display: "grid", gap: space.sm, gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
         <Field label="Committee name">
-          <input value={name} onChange={(e) => setName(e.target.value)} style={inputCss()} />
+          <input value={name} onChange={(e) => setName(e.target.value)} style={inputCss()} maxLength={255} />
         </Field>
         <Field label="Type">
           <select value={type} onChange={(e) => setType(e.target.value)} style={inputCss()}>
@@ -81,10 +81,13 @@ function LinkedMembers({ ui, org, c, links, members, onChanged }) {
   const [adding, setAdding] = useState(false);
   const [memberId, setMemberId] = useState("");
   const [role, setRole] = useState("member");
+  const [redrafted, setRedrafted] = useState("");
   const id = org.organisation_id;
-  const act = (fn) =>
+  // Changing someone's committee seats sends their profile back to draft for re-review (who: their name)
+  const act = (fn, who) =>
     run(async () => {
       await fn();
+      setRedrafted(who || "");
       await onChanged();
     });
   const linked = links.filter((l) => l.status === "confirmed");
@@ -101,7 +104,7 @@ function LinkedMembers({ ui, org, c, links, members, onChanged }) {
             <li key={l.membership_id} style={{ display: "flex", gap: space.sm, alignItems: "center", flexWrap: "wrap", fontSize: 13 }}>
               <span style={{ color: color.text }}>{l.board_member}</span>
               {l.membership_role === "chair" ? <Badge tone="blue">Chair</Badge> : null}
-              <LinkButton danger disabled={busy} onClick={() => window.confirm(`Unlink ${l.board_member}?`) && act(() => boardApi.deleteMembership(id, l.membership_id))}>
+              <LinkButton danger disabled={busy} onClick={() => window.confirm(`Unlink ${l.board_member}?`) && act(() => boardApi.deleteMembership(id, l.membership_id), l.board_member)}>
                 Unlink
               </LinkButton>
             </li>
@@ -121,7 +124,7 @@ function LinkedMembers({ ui, org, c, links, members, onChanged }) {
             <div style={{ marginTop: 2, fontSize: font.small, color: color.textMuted }}>Matched “{l.matched_name}”</div>
           ) : null}
           <div style={{ display: "flex", gap: space.sm, flexWrap: "wrap", marginTop: space.sm }}>
-            <Button onClick={() => act(() => boardApi.confirmMembership(id, l.membership_id))} disabled={busy}>
+            <Button onClick={() => act(() => boardApi.confirmMembership(id, l.membership_id), l.board_member)} disabled={busy}>
               Confirm
             </Button>
             <Button variant="danger" onClick={() => act(() => boardApi.rejectMembership(id, l.membership_id))} disabled={busy}>
@@ -157,7 +160,7 @@ function LinkedMembers({ ui, org, c, links, members, onChanged }) {
                 await boardApi.addMembership(id, { committee_id: c.committee_id, board_member_id: memberId, membership_role: role });
                 setAdding(false);
                 setMemberId("");
-              })
+              }, available.find((m) => m.board_member_id === memberId)?.label)
             }
           >
             Link
@@ -169,6 +172,11 @@ function LinkedMembers({ ui, org, c, links, members, onChanged }) {
       ) : available.length ? (
         <div style={{ marginTop: space.sm }}>
           <LinkButton onClick={() => setAdding(true)}>Add a board member</LinkButton>
+        </div>
+      ) : null}
+      {redrafted && !error ? (
+        <div style={{ marginTop: space.sm }}>
+          <Notice tone="info">{`${redrafted}'s profile is back to Draft because their committee seats changed. Re-review it on the Board tab.`}</Notice>
         </div>
       ) : null}
       {error ? (
@@ -188,6 +196,7 @@ function MatchResults({ ui, org, result, onChanged }) {
   const { Button } = ui;
   const { busy, error, run } = useAsync();
   const [linkedNames, setLinkedNames] = useState([]);
+  const [redrafted, setRedrafted] = useState([]);
   const id = org.organisation_id;
   const entryKey = (e) => `${e.committee_id}-${e.name}`;
   const link = (entry, cand) =>
@@ -198,6 +207,7 @@ function MatchResults({ ui, org, result, onChanged }) {
         membership_role: entry.membership_role,
       });
       setLinkedNames((prev) => [...prev, entryKey(entry)]);
+      setRedrafted((prev) => [...prev, cand.board_member]);
       await onChanged();
     });
   const nearMisses = result.near_misses.filter((e) => !linkedNames.includes(entryKey(e)));
@@ -212,6 +222,11 @@ function MatchResults({ ui, org, result, onChanged }) {
         {rejected.length ? ` ${plural(rejected.length, "match was", "matches were")} rejected before and left alone.` : ""}
         {result.skipped_committees.length ? `\nNot matched: ${result.skipped_committees.map((s) => `${s.committee} (${s.reason})`).join(", ")}.` : ""}
       </Notice>
+      {redrafted.length ? (
+        <div style={{ marginTop: space.sm }}>
+          <Notice tone="info">{`Back to Draft because their committee seats changed: ${redrafted.join(", ")}. Re-review them on the Board tab.`}</Notice>
+        </div>
+      ) : null}
       {nearMisses.length ? (
         <div style={{ marginTop: space.md }}>
           <SectionTitle hint="Close but not exact, so nothing was proposed. Link one only if it's the same person.">Near-misses</SectionTitle>
