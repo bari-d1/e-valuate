@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { sectorLabel } from "../../api/orgApi.js";
 
 /**
  * List Evaluations page (router-based)
@@ -138,11 +139,12 @@ export default function ListEvaluationsPage({
                       title="Open this evaluation"
                     >
                       <td style={tdStyle()}>
-                        <div style={{ fontWeight: 900, color: "#0F172A" }}>{ev.evaluation_id}</div>
+                        <div style={{ fontWeight: 900, color: "#0F172A" }}>{ev.name || ev.evaluation_id}</div>
+                        {ev.name ? <div style={{ fontSize: 12, color: "#64748B" }}>{ev.evaluation_id}</div> : null}
                       </td>
 
                       <td style={tdStyle()}>{ev.tenant_name || "—"}</td>
-                      <td style={tdStyle()}>{ev.sector || "—"}</td>
+                      <td style={tdStyle()}>{ev.sector ? sectorLabel(ev.sector) : "—"}</td>
                       <td style={tdStyle()}>{ev.year ?? "—"}</td>
                       <td style={tdStyle()}>
                         {(ev.regulators || []).length ? (ev.regulators || []).join(", ") : "—"}

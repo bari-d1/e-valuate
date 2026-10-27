@@ -327,8 +327,8 @@ def test_committee_matching(db_session, org) -> None:
     svc.reject_membership(db_session, by_member[tunde.id])
     again = match_committee_members(db_session, org)
     assert again["proposed"] == []
-    assert {(e["name"], e["status"]) for e in again["already_linked"]} == {
-        ("Chief (Mrs.) Ada OBI", "confirmed"), ("Mr Tunde Bello.", "rejected")}
+    assert [(e["name"], e["status"]) for e in again["already_linked"]] == [("Chief (Mrs.) Ada OBI", "confirmed")]
+    assert [(e["name"], e["status"]) for e in again["previously_rejected"]] == [("Mr Tunde Bello.", "rejected")]
     [linked] = svc.member_committees(db_session, ada)
     assert linked["membership_role"] == "chair"
 
@@ -508,3 +508,33 @@ def test_profiles_carry_over_to_next_years_evaluation(api_client, db_session, or
         [item] = api_client.get(f"/api/v1/evaluations/{ev.id}/readiness").json()["items"]
         assert (item["board_member_id"], item["status"], item["profile_version"]) == (str(m.id), "ready", version)
     assert db_session.execute(select(BoardMember).where(BoardMember.organisation_id == org.id)).scalars().all() == [m]
+
+
+def test_matching_settles_hand_linked_near_misses_and_flags_inactive(db_session, org) -> None:
+    chi = _member(db_session, org, "Chi Eze", "chi@demo.test", "P003")
+    gone = _member(db_session, org, "Ada Obi", "ada@demo.test", "P001")
+    svc.update_member(db_session, gone, {"active": False})
+    _member(db_session, org, "Ada Obiora", "ada2@demo.test", "P002")
+    audit = _committee(db_session, org, "Audit Committee", chair="Mrs. Ada Obi", members=["Dr. Chi Ezeh"])
+
+    first = match_committee_members(db_session, org)
+    [inactive] = [e for e in first["near_misses"] if e["name"] == "Mrs. Ada Obi"]
+    assert inactive["reason"] == "matches an inactive board member"
+    assert [c["board_member"] for c in inactive["candidates"]] == ["P001 · Ada Obi"]
+    assert first["proposed"] == []
+
+    svc.add_membership(db_session, audit, chi)  # the consultant links the near-miss by hand
+    again = match_committee_members(db_session, org)
+    assert [(e["name"], e["board_member"], e["status"]) for e in again["already_linked"]] == [
+        ("Dr. Chi Ezeh", "P003 · Chi Eze", "confirmed")]
+    assert all(e["name"] != "Dr. Chi Ezeh" for e in again["near_misses"])
+
+
+def test_deleting_a_committee_sets_linked_profiles_to_draft(db_session, org) -> None:
+    m = _ready_member(db_session, org)
+    c = _committee(db_session, org, "Risk Committee")
+    svc.add_membership(db_session, c, m, membership_role="chair")
+    svc.mark_member_reviewed(db_session, m)
+    review.delete_committee(db_session, org, c)
+    assert m.profile_status == "draft"
+    assert svc.member_committees(db_session, m) == []

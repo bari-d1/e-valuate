@@ -55,29 +55,39 @@ def _near(a: str, b: str) -> Optional[str]:
     return None
 
 
+def _candidate(m: BoardMember, reason: str) -> Dict[str, Any]:
+    return {"board_member": member_label(m), "board_member_id": str(m.id), "reason": reason}
+
+
 def match_committee_members(db: Session, org: Organisation) -> Dict[str, Any]:
     """
     Propose memberships for the company's confirmed committees. Existing links
     (confirmed, proposed or rejected) are not changed, except that a proposed
-    link's member/chair role is refreshed. Flushes but does not commit.
+    link's member/chair role is refreshed. Inactive members are never proposed;
+    an exact match with one is listed as a near-miss saying so. Flushes but does
+    not commit.
+
+    Returns lists: proposed, already_linked (confirmed or proposed links),
+    previously_rejected, near_misses (with candidates), unmatched, skipped_committees.
     """
-    members = db.execute(
-        select(BoardMember).where(BoardMember.organisation_id == org.id, BoardMember.active.is_(True))
-    ).scalars().all()
+    members = db.execute(select(BoardMember).where(BoardMember.organisation_id == org.id)).scalars().all()
     by_norm: Dict[str, List[BoardMember]] = {}
+    inactive_by_norm: Dict[str, List[BoardMember]] = {}
     for m in members:
-        by_norm.setdefault(normalise_name(m.full_name), []).append(m)
+        (by_norm if m.active else inactive_by_norm).setdefault(normalise_name(m.full_name), []).append(m)
 
     committees = db.execute(
         select(OrgCommittee).where(OrgCommittee.organisation_id == org.id).order_by(OrgCommittee.name)
     ).scalars().all()
 
-    result: Dict[str, Any] = {"proposed": [], "already_linked": [], "near_misses": [], "unmatched": [],
-                              "skipped_committees": []}
+    result: Dict[str, Any] = {"proposed": [], "already_linked": [], "previously_rejected": [], "near_misses": [],
+                              "unmatched": [], "skipped_committees": []}
     for c in committees:
         if c.status != "confirmed":
             result["skipped_committees"].append({"committee": c.name, "reason": f"committee is {c.status}"})
             continue
+        links = {ms.board_member_id: ms for ms in db.execute(
+            select(CommitteeMembership).where(CommitteeMembership.committee_id == c.id)).scalars()}
         names: Dict[str, str] = {}  # written name -> role (chair wins if listed twice)
         for n in c.member_names or []:
             if (n or "").strip():
@@ -86,6 +96,11 @@ def match_committee_members(db: Session, org: Organisation) -> Dict[str, Any]:
             names[c.chair_name.strip()] = "chair"
         chair_norm = normalise_name(c.chair_name)
         seen_members = set()
+
+        def linked(entry, m, ms):
+            key = "previously_rejected" if ms.status == "rejected" else "already_linked"
+            result[key].append({**entry, "board_member_id": str(m.id), "board_member": member_label(m),
+                                "status": ms.status})
 
         for written, role in names.items():
             norm = normalise_name(written)
@@ -96,35 +111,42 @@ def match_committee_members(db: Session, org: Organisation) -> Dict[str, Any]:
             if len(hits) == 1 and hits[0].id not in seen_members:
                 m = hits[0]
                 seen_members.add(m.id)
-                ms = db.execute(select(CommitteeMembership).where(
-                    CommitteeMembership.committee_id == c.id, CommitteeMembership.board_member_id == m.id
-                )).scalar_one_or_none()
-                entry.update(board_member_id=str(m.id), board_member=member_label(m))
+                ms = links.get(m.id)
                 if ms is None:
-                    db.add(CommitteeMembership(
+                    ms = CommitteeMembership(
                         committee_id=c.id, board_member_id=m.id, membership_role=role, source=c.source,
                         status="proposed", origin="name_match", matched_name=written,
-                    ))
-                    result["proposed"].append(entry)
+                    )
+                    db.add(ms)
+                    links[m.id] = ms
+                    result["proposed"].append({**entry, "board_member_id": str(m.id), "board_member": member_label(m)})
                 else:
                     if ms.status == "proposed" and ms.membership_role != role:
                         ms.membership_role = role
-                    result["already_linked"].append({**entry, "status": ms.status})
+                    linked(entry, m, ms)
                 continue
             if len(hits) > 1:
                 result["near_misses"].append({**entry, "reason": "several board members have this name",
-                                              "candidates": [{"board_member": member_label(m), "board_member_id": str(m.id),
-                                                             "reason": "same name"} for m in hits]})
+                                              "candidates": [_candidate(m, "same name") for m in hits]})
+                continue
+            inactive = inactive_by_norm.get(norm, [])
+            if inactive:
+                result["near_misses"].append({**entry, "reason": "matches an inactive board member",
+                                              "candidates": [_candidate(m, "inactive") for m in inactive]})
                 continue
             scored = []
             for key, ms_ in by_norm.items():
                 why = _near(norm, key)
                 if why:
                     score = difflib.SequenceMatcher(None, norm, key).ratio()
-                    scored += [(score, {"board_member": member_label(m), "board_member_id": str(m.id), "reason": why})
-                               for m in ms_]
+                    scored += [(score, m, why) for m in ms_]
             scored.sort(key=lambda x: -x[0])
-            candidates = [c for _, c in scored[:MAX_CANDIDATES]]  # the closest few
+            # A near-miss someone has already linked by hand to this committee is settled
+            settled = next(((m, links[m.id]) for _, m, _ in scored if m.id in links), None)
+            if settled:
+                linked(entry, *settled)
+                continue
+            candidates = [_candidate(m, why) for _, m, why in scored[:MAX_CANDIDATES]]  # the closest few
             if candidates:
                 result["near_misses"].append({**entry, "candidates": candidates})
             else:

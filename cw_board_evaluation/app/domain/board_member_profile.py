@@ -144,9 +144,12 @@ def validate_profile_value(key: str, value: Any) -> Any:
 
     if t == "date":
         try:
-            return date.fromisoformat(str(value).strip()[:10]).isoformat()
+            d = date.fromisoformat(str(value).strip()[:10])
         except ValueError:
             raise FactValueError(f"{label} must be a date (YYYY-MM-DD).")
+        if d > date.today():
+            raise FactValueError(f"{label} can't be in the future.")
+        return d.isoformat()
 
     if t == "text":
         if not isinstance(value, str) or not value.strip():

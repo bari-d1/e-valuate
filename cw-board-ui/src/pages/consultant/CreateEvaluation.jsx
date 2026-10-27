@@ -18,7 +18,6 @@ export default function CreateEvaluationPage({
 
   // evaluation id sources / success cues
   evalId,
-  lastCreatedEvalId,
   questionnaireSavedAt,
   questionnaireSavedForEvalId,
   setQuestionnaireSavedAt,
@@ -88,10 +87,10 @@ export default function CreateEvaluationPage({
     : periodError;
   const canCreate = !reasonCreate;
 
-  // ✅ stable ID source (do not rely on `result.action`)
+  // Step 2 applies only to the evaluation created on this page, not the one already in focus
   const effectiveEvalId = useMemo(() => {
-    return String(evalId || lastCreatedEvalId || "").trim();
-  }, [evalId, lastCreatedEvalId]);
+    return created ? String(created.evaluation_id || evalId || "").trim() : "";
+  }, [created, evalId]);
 
   const reasonNeedsEval = !effectiveEvalId
     ? "Create an evaluation first (so an Evaluation ID exists)."
@@ -223,9 +222,7 @@ export default function CreateEvaluationPage({
           Cancel
         </Button>
         {reasonCreate ? <span style={{ fontSize: 13, color: "#92400E" }}>{reasonCreate}</span> : null}
-        {created || lastCreatedEvalId ? (
-          <Badge tone="green">Created: {(created && created.name) || lastCreatedEvalId}</Badge>
-        ) : null}
+        {created ? <Badge tone="green">Created: {created.name || created.evaluation_id}</Badge> : null}
       </div>
 
       {/* ---------------- Step 2: Questionnaire ---------------- */}

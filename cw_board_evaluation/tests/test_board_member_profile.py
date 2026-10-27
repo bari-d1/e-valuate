@@ -49,6 +49,12 @@ def test_independence_defaults_to_unknown() -> None:
     assert not all_independence_unknown({"holds_company_shares": {"answer": "no"}})
 
 
+def test_appointment_date_cannot_be_in_the_future() -> None:
+    assert validate_profile_value("board_appointment_date", "2015-06-01") == "2015-06-01"
+    with pytest.raises(FactValueError, match="future"):
+        validate_profile_value("board_appointment_date", "2999-01-01")
+
+
 def test_tristate_values() -> None:
     assert validate_profile_value("holds_company_shares", {"answer": "Yes", "detail": " 2% "}) == {"answer": "yes", "detail": "2%"}
     with pytest.raises(FactValueError):

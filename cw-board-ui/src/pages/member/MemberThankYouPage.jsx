@@ -22,6 +22,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { portalLoad, portalGetResponses } from "../../api/portalApi.js";
+import { formatDateTime, humanise } from "../../utils/format.js";
 
 export default function MemberThankYouPage() {
   const { token } = useParams();
@@ -101,9 +102,6 @@ export default function MemberThankYouPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  const instrument = evaluation?.instrument || {};
-  const templateCode = instrument?.template_code || "DEFAULT";
-  const version = instrument?.version ?? 1;
 
   // ✅ assignment-first “truth”
   const statusRaw = String(assignment?.status || participant?.status || "").trim();
@@ -132,10 +130,6 @@ export default function MemberThankYouPage() {
 
         {err ? <div style={errorBox()}>{err}</div> : null}
 
-        <div style={{ marginTop: 10, fontSize: 12, color: "#94A3B8" }}>
-          Token: <span style={{ fontFamily: "monospace" }}>{String(token || "")}</span>
-        </div>
-
         {!loading && portal ? (
           <>
             <div style={grid()}>
@@ -156,7 +150,7 @@ export default function MemberThankYouPage() {
 
                 <div style={row()}>
                   <span style={label()}>Responded at</span>
-                  <span style={value()}>{respondedAt || "—"}</span>
+                  <span style={value()}>{formatDateTime(respondedAt)}</span>
                 </div>
               </div>
 
@@ -183,13 +177,13 @@ export default function MemberThankYouPage() {
                 <div style={panelTitle()}>Evaluation</div>
 
                 <div style={row()}>
-                  <span style={label()}>Tenant</span>
+                  <span style={label()}>Company</span>
                   <span style={value()}>{evaluation?.tenant_name || "—"}</span>
                 </div>
 
                 <div style={row()}>
                   <span style={label()}>Sector</span>
-                  <span style={value()}>{evaluation?.sector || "—"}</span>
+                  <span style={value()}>{humanise(evaluation?.sector) || "—"}</span>
                 </div>
 
                 <div style={row()}>
@@ -197,12 +191,6 @@ export default function MemberThankYouPage() {
                   <span style={value()}>{evaluation?.year ?? "—"}</span>
                 </div>
 
-                <div style={row()}>
-                  <span style={label()}>Questionnaire</span>
-                  <span style={value()}>
-                    {String(templateCode)} v{String(version)}
-                  </span>
-                </div>
               </div>
             </div>
 

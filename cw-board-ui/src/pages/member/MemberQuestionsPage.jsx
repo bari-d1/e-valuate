@@ -20,6 +20,7 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import { portalLoad, portalGetResponses } from "../../api/portalApi.js";
 import { getHubTokenMisroute, redirectToHubFromMisroute } from "../../api/memberPortalErrors.js";
 import { MemberUI as ui } from "./memberUi.jsx";
+import { humanise } from "../../utils/format.js";
 
 /** Build the per-token storage key for draft answers. */
 function storageKey(token) {
@@ -276,9 +277,7 @@ export default function MemberQuestionsPage() {
   };
 
   // --- payload fields ---
-  const evalId = payload?.evaluation?.evaluation_id;
   const tenant = payload?.evaluation?.tenant_name;
-  const instrument = payload?.evaluation?.instrument;
 
   const assignment = payload?.assignment;
   const assignmentType = assignment?.assignment_type;
@@ -316,10 +315,9 @@ export default function MemberQuestionsPage() {
 
           {payload ? (
             <>
-              <ui.Badge tone="gray">Evaluation: {evalId || "—"}</ui.Badge>
-              <ui.Badge tone="gray">Tenant: {tenant || "—"}</ui.Badge>
+              <ui.Badge tone="gray">Company: {tenant || "—"}</ui.Badge>
 
-              <ui.Badge tone="gray">Assignment: {assignmentType || "—"}</ui.Badge>
+              <ui.Badge tone="gray">Assignment: {humanise(assignmentType) || "—"}</ui.Badge>
               <ui.Badge tone={assignmentStatus === "responded" ? "green" : "amber"}>
                 Status: {assignment?.status || "—"}
               </ui.Badge>
@@ -332,17 +330,11 @@ export default function MemberQuestionsPage() {
                 <ui.Badge tone="gray">Subject: {subject?.full_name || subject?.email}</ui.Badge>
               ) : null}
 
-              <ui.Badge tone="gray">
-                Questionnaire: {instrument?.template_code || "—"} v{instrument?.version ?? "—"}
-              </ui.Badge>
-
               <ui.Badge tone={remaining === 0 ? "green" : "amber"}>
                 Progress: {answeredCount}/{totalCount}
               </ui.Badge>
             </>
-          ) : (
-            <ui.Badge tone="gray">Token: {token ? `${String(token).slice(0, 8)}…` : "—"}</ui.Badge>
-          )}
+          ) : null}
         </div>
 
         {/* Error block */}
@@ -542,8 +534,7 @@ export default function MemberQuestionsPage() {
                               </div>
 
                               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                                <ui.Badge tone="purple">{at || "unknown"}</ui.Badge>
-                                <ui.Badge tone="gray">Weight: {q.weight ?? 1}</ui.Badge>
+                                {at ? <ui.Badge tone="purple">{humanise(at)}</ui.Badge> : null}
                                 {answered ? <ui.Badge tone="green">✓ Answered</ui.Badge> : <ui.Badge tone="amber">Pending</ui.Badge>}
                               </div>
                             </div>
