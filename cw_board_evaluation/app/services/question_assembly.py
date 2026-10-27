@@ -459,7 +459,7 @@ def set_metrics(db: Session, pset: ParticipantQuestionSet) -> Dict[str, Any]:
             "removed": sum(1 for q in rows if q.status == "removed"),
             "added": sum(1 for q in active if q.added_by),
             "pending_new": sum(1 for q in rows if q.text_source == "ai_new" and q.suggestion_status == "pending"),
-            "open_wording": sum(1 for q in active if q.ai_text and q.text_source == "bank"),
+            "open_wording": sum(1 for q in active if q.ai_text and q.text_source == "bank" and not q.suggestion_status),
         },
         "coverage": coverage,
         "coverage_gaps": gaps,
@@ -578,7 +578,7 @@ class TailoringContext:
         by_id = {str(q.id): q for q, _ in questions}
         for q, _ in questions:
             if q.text_source != "consultant_edited":
-                q.ai_text, q.ai_reason = None, None
+                q.ai_text, q.ai_reason, q.suggestion_status = None, None, None
         for s in checked.accepted:
             q = by_id[s["question_id"]]
             q.ai_text, q.ai_reason = s["text"], s["reason"]

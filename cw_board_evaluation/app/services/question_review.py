@@ -538,6 +538,8 @@ def by_subject(db: Session, ev: Evaluation, subject_id: str) -> Dict[str, Any]:
         "too_few_raters": len(raters) < MIN_RATERS,
         "min_raters": MIN_RATERS,
         "raters": sorted((people[r].full_name or people[r].email) for r in raters if r in people),
+        # Deep sets about this subject with too few raters, though the subject as a whole may have enough
+        "rater_warnings": [w for w in live_rater_warnings(db, ev.id) if w["subject_id"] == str(row.id)],
         "groups": out,
     }
 

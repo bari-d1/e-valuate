@@ -131,18 +131,21 @@ def choose_wording(db: Session, q: Question, use: str, by: str, text: Optional[s
             _record(db, q, "edit", by, note)
         log_event(db, pset, "edit", by, q=q, before=before, after=q.text, note=note)
         return q
+    # suggestion_status on a wording suggestion: None until decided, then accepted (AI wording) or rejected
     if use == "bank":
         q.text, q.text_source = q.bank_text, "bank"
+        q.suggestion_status = "rejected" if q.ai_text else None
         _record(db, q, "use_bank", by, note)
     elif use == "ai":
         if not q.ai_text:
             raise ValueError("There's no AI suggestion for this question.")
-        q.text, q.text_source = q.ai_text, "ai_tailored"
+        q.text, q.text_source, q.suggestion_status = q.ai_text, "ai_tailored", "accepted"
         _record(db, q, "use_ai", by, note)
     elif use == "edited":
         if not (text or "").strip():
             raise ValueError("Give the edited text.")
         q.text, q.text_source = text.strip(), "consultant_edited"
+        q.suggestion_status = "rejected" if q.ai_text else None
         _record(db, q, "edit", by, note)
     else:
         raise ValueError("use must be bank, ai or edited.")
@@ -168,7 +171,7 @@ def regenerate(db: Session, q: Question, note: str = "", llm_call: Optional[ai.L
     if not ai.ai_tailoring_enabled():
         raise SetConflict("AI tailoring is off (AI_TAILORING_ENABLED).")
     pset = _require_draft(db, q)
-    if q.text_source in ("ai_new", "consultant_edited"):
+    if q.text_source in ("ai_new", "consultant_edited", "consultant_written"):
         raise ValueError("Only bank or AI-tailored questions have wording suggestions.")
     ev = db.get(Evaluation, q.evaluation_id)
     run = db.get(AssemblyRun, pset.assembly_run_id) if pset.assembly_run_id else None
@@ -197,6 +200,7 @@ def regenerate(db: Session, q: Question, note: str = "", llm_call: Optional[ai.L
     before = q.ai_text
     if checked.accepted:
         q.ai_text, q.ai_reason = checked.accepted[0]["text"], checked.accepted[0]["reason"]
+        q.suggestion_status = None  # a new suggestion, not decided yet
     log_event(db, pset, "regenerate", by, q=q, note=note or None, before=before,
               after=q.ai_text if checked.accepted else None, dropped=len(checked.dropped) or None)
     db.flush()

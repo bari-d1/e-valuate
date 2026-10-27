@@ -226,6 +226,21 @@ def test_reorder_within_a_section(db_session, val001) -> None:
     assert [e.detail["after"] for e in _events(db_session, p6, "move")] == [1, 3, 2]
 
 
+def test_keeping_the_bank_wording_closes_a_suggestion(db_session, val001) -> None:
+    ev, parts, _ = val001
+    p6 = parts["P006"]
+    a, b = [q for q in _qs(db_session, p6) if q.section == "board"][:2]
+    for q in (a, b):
+        q.ai_text, q.ai_reason = f"Suggested: {q.bank_text}", "Clearer"
+    assert _metrics(db_session, p6)["counts"]["open_wording"] == 2
+    qs.choose_wording(db_session, a, "bank", BY)
+    qs.choose_wording(db_session, b, "ai", BY)
+    assert (a.text_source, a.suggestion_status, b.text_source, b.suggestion_status) == (
+        "bank", "rejected", "ai_tailored", "accepted")
+    assert _metrics(db_session, p6)["counts"]["open_wording"] == 0
+    assert [e.action for e in _events(db_session, p6)] == ["use_bank", "use_ai"]
+
+
 # ----------------------------
 # Lifecycle
 # ----------------------------
