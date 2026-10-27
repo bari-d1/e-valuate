@@ -49,6 +49,9 @@ import AssessmentTracksPage from "./pages/consultant/AssessmentTracksPage";
 import ConsultantResponsesPage from "./pages/consultant/ConsultantResponsesPage";
 import CompaniesListPage from "./pages/consultant/companies/CompaniesListPage";
 import CompanyPage from "./pages/consultant/companies/CompanyPage";
+import QuestionBankPage from "./pages/consultant/questionBank/QuestionBankPage";
+import QuestionBankItemPage from "./pages/consultant/questionBank/QuestionBankItemPage";
+import QuestionPreviewPage from "./pages/consultant/questionBank/QuestionPreviewPage";
 import { formatDateTime } from "./utils/format.js";
 
 
@@ -2250,9 +2253,11 @@ function getWorkflowProgress() {
       group: "Setup",
       items: [
         { to: "/consultant/companies", label: "Companies" },
+        { to: "/consultant/question-bank", label: "Question bank" },
         { to: "/consultant/evaluations", step: "evaluation", label: "Evaluations" },
         { to: "/consultant/questionnaire/select", step: "questionnaire", label: "Questionnaire" },
         { to: "/consultant/participants", step: "participants", label: "Participants" },
+        { to: "/consultant/question-preview", label: "Question preview" },
         { to: "/consultant/questions", step: "questions", label: "Questions" },
         { to: "/consultant/tracks", step: "tracks", label: "Tracks & assignments" },
       ],
@@ -2561,6 +2566,11 @@ function getWorkflowProgress() {
             <Route path="companies/:orgId" element={<Navigate to="documents" replace />} />
             <Route path="companies/:orgId/:tab" element={<CompanyPage ui={ui} />} />
             <Route path="companies/:orgId/:tab/:memberId" element={<CompanyPage ui={ui} />} />
+
+            {/* Question bank and preview */}
+            <Route path="question-bank" element={<QuestionBankPage ui={ui} />} />
+            <Route path="question-bank/:itemId" element={<QuestionBankItemPage ui={ui} />} />
+            <Route path="question-preview" element={<QuestionPreviewPage ui={ui} evalId={evalId} />} />
 
             {/* Evaluations */}
             <Route
