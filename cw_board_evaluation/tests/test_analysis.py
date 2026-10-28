@@ -268,6 +268,10 @@ def test_ai_drafts_are_checked_and_prompts_carry_no_names_or_personality_notes(d
         if comment:
             drafts.append({"kind": "concern", "statement": f"One colleague wrote \"{comment['answer']}\"",
                            "support": "limited", "evidence_ids": [comment["id"]]})
+        dynamics = [e["id"] for e in evidence if e["theme_code"] == "BOARD_DYNAMICS" and not e["fact"]]
+        if ctx["SUBJECT"]["description"] == "the board as a whole" and dynamics:
+            drafts.append({"kind": "strength", "statement": "Directors agree the board's dynamics are good.",
+                           "support": "strong", "evidence_ids": dynamics})
         return json.dumps({"findings": drafts, "conclusion": "A short draft conclusion."})
 
     run = an.start_run(db_session, ev, BY, ai=True)
@@ -280,7 +284,8 @@ def test_ai_drafts_are_checked_and_prompts_carry_no_names_or_personality_notes(d
     ai = run.results["ai"]
     reasons = {d["reason"].split(":")[0].split(" from ")[0] for d in ai["dropped"]}
     assert {"Cites no evidence.", "Cites evidence that isn't this subject's.", "Quotes text that isn't in the evidence",
-            "Names a person other than the subject.", "Claims strong support"} <= reasons
+            "Names a person other than the subject.", "Claims strong support",
+            "The cited ratings are divided, so the support must be conflicting."} <= reasons
     kept = [f for f in an.findings(db_session, run) if f.origin == "ai"]
     names = {sid: s["name"] for sid, s in run.results["subjects"].items()}
     for f in kept:
@@ -419,3 +424,27 @@ def test_legacy_evaluations_keep_analytics_and_assembled_ones_are_pointed_on(api
     db_session.flush()
     assert api_client.get(f"/api/v1/evaluations/{legacy.id}/analytics").status_code == 200
     assert api_client.get(f"/api/v1/evaluations/{legacy.id}/analysis/runs").status_code == 409
+
+
+def test_a_run_that_never_finished_does_not_block_new_ones(db_session, planted) -> None:
+    from datetime import datetime, timedelta, timezone
+    ev, _, _ = planted
+    stuck = an.start_run(db_session, ev, BY)
+    with pytest.raises(an.AnalysisError):  # a run in progress blocks a second one
+        an.start_run(db_session, ev, BY)
+    stuck.created_at = datetime.now(timezone.utc) - timedelta(minutes=31)
+    db_session.flush()
+    fresh = an.start_run(db_session, ev, BY)
+    assert fresh.status == "running" and stuck.status == "failed" and "30 minutes" in stuck.error
+
+
+def test_an_ai_reply_that_never_comes_does_not_hold_the_run(db_session, planted, monkeypatch) -> None:
+    import time
+    ev, _, _ = planted
+    monkeypatch.setenv("AI_ANALYSIS_ENABLED", "true")
+    monkeypatch.setattr(aai, "call_timeout", lambda: 0.2)
+    run = an.start_run(db_session, ev, BY, ai=True)
+    an.execute(db_session, run, llm_call=lambda s, u: time.sleep(1) or "{}")
+    assert run.status == "done" and run.results["ai"]["kept"] == 0
+    assert all("no reply within" in d["reason"] for d in run.results["ai"]["dropped"])
+

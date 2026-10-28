@@ -19,8 +19,12 @@ Every draft is checked in code (validate). A finding is dropped when it:
   - names a person other than the subject;
   - claims more support than its evidence allows: strong needs >= 5 distinct
     respondents, moderate >= 3, conflicting >= 2 (app.domain.analysis_rules);
+  - says views agree (any support but "conflicting") when the ratings it cites are
+    divided (app.domain.analysis_rules.consensus): disagreement is never averaged away;
   - is a compliance_gap that doesn't rest on a factual answer.
-Clause ids the subject doesn't relate to are removed. Dropped drafts and the
+Clause ids the subject doesn't relate to are removed. Each AI call has a time limit
+(AI_ANALYSIS_TIMEOUT seconds, default 120); a subject whose reply doesn't come is
+recorded as dropped and the run carries on. Dropped drafts and the
 reason are kept on the run so the consultant can see them.
 """
 
@@ -68,6 +72,27 @@ ROLE_WORDS = {"BOARD": "the board as a whole", "COMMITTEE": "a board committee",
 
 def enabled() -> bool:
     return (os.getenv("AI_ANALYSIS_ENABLED") or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def call_timeout() -> int:
+    """Seconds to wait for one AI reply (AI_ANALYSIS_TIMEOUT, default 120)."""
+    try:
+        return max(10, int(os.getenv("AI_ANALYSIS_TIMEOUT") or 120))
+    except ValueError:
+        return 120
+
+
+def _ask(call: "LLMCall", system: str, user: str) -> str:
+    """One AI call with a time limit, so a reply that never comes can't hold the run forever."""
+    import concurrent.futures
+
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+    try:
+        return pool.submit(call, system, user).result(timeout=call_timeout())
+    except concurrent.futures.TimeoutError as e:
+        raise ValueError(f"no reply within {call_timeout()} seconds") from e
+    finally:
+        pool.shutdown(wait=False)
 
 
 def default_llm_call(system: str, user: str) -> str:
@@ -255,6 +280,13 @@ def validate(draft: DraftFinding, check: Dict[str, Any]) -> Tuple[Optional[Draft
     people = len({r.respondent_ref for r in rows})
     if not R.support_allowed(draft.support, people):
         return None, f"Claims {draft.support} support from {people} respondent{'' if people == 1 else 's'}."
+    per: Dict[str, List[int]] = {}
+    for r in rows:
+        if r.answer_type == "rating" and "score" in r.value and not r.is_self:
+            per.setdefault(r.respondent_ref, []).append(r.value["score"])
+    if len(per) >= 2 and draft.support != "conflicting" \
+            and R.consensus([sum(v) / len(v) for v in per.values()]) == "divided":
+        return None, "The cited ratings are divided, so the support must be conflicting."
     if draft.kind == "compliance_gap" and not any(an._is_fact(r) for r in rows):
         return None, "A compliance gap must rest on a factual answer, not opinions."
     draft.clause_ids = [c for c in draft.clause_ids if c in check["clause_ids"]]
@@ -276,7 +308,7 @@ def draft(db: Session, run: AnalysisRun, llm_call: Optional[LLMCall] = None) -> 
         calls += 1
         name = run.results["subjects"][sid]["name"]
         try:
-            reply = SubjectDraft.model_validate(_parse(call(SUBJECT_SYSTEM_PROMPT, subject_user_prompt(context))))
+            reply = SubjectDraft.model_validate(_parse(_ask(call, SUBJECT_SYSTEM_PROMPT, subject_user_prompt(context))))
         except (ValueError, ValidationError) as e:
             dropped.append({"subject": name, "statement": None, "reason": f"The reply couldn't be read: {str(e)[:120]}"})
             continue
@@ -333,7 +365,7 @@ def _overall(db: Session, run: AnalysisRun, call: LLMCall) -> Optional[Conclusio
     if not context["SUBJECTS"]:
         return None
     try:
-        reply = OverallDraft.model_validate(_parse(call(OVERALL_SYSTEM_PROMPT, overall_user_prompt(context))))
+        reply = OverallDraft.model_validate(_parse(_ask(call, OVERALL_SYSTEM_PROMPT, overall_user_prompt(context))))
     except (ValueError, ValidationError):
         return None
     names = people_names(db, db.get(Evaluation, run.evaluation_id))

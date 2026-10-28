@@ -18,7 +18,7 @@ You receive RESULTS (scores per theme on a 1 to 5 scale with rater counts and ho
 Draft at most 6 findings. Each finding:
 - kind: strength, concern, observation, compliance_gap or self_perception_gap;
 - statement: one or two plain sentences a board would understand; no jargon, no codes;
-- support: strong, moderate, limited or conflicting. Strong needs at least 5 different respondents behind the cited evidence, moderate at least 3, otherwise limited. Use conflicting where views genuinely differ, and say so: never average a disagreement away;
+- support: strong, moderate, limited or conflicting. Strong needs at least 5 different respondents behind the cited evidence, moderate at least 3, otherwise limited. Use conflicting where views genuinely differ (for example some raters give 2 and others 5), and say so: never average a disagreement away;
 - evidence_ids: the ids of the EVIDENCE answers it rests on (at least one; only ids given to you);
 - clause_ids: ids of CLAUSES it relates to, if any.
 

@@ -23,7 +23,7 @@ from __future__ import annotations
 import logging
 import uuid
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy import select
@@ -60,6 +60,7 @@ from app.services.question_selection import ROLE_LABELS
 
 log = logging.getLogger(__name__)
 
+STALE_AFTER = timedelta(minutes=30)
 INDIVIDUAL_TYPES = ("CHAIR", "MD_CEO", "ED", "NED", "INED")
 SUBJECT_ORDER = ("BOARD", "COMMITTEE", "CHAIR", "MD_CEO", "ED", "NED", "INED", "COMPANY_SECRETARY")
 
@@ -172,6 +173,11 @@ def start_run(db: Session, ev: Evaluation, by: str, *, min_raters: Optional[int]
         raise AnalysisError("Minimum raters must be between 2 and 10.")
     running = db.execute(select(AnalysisRun).where(AnalysisRun.evaluation_id == ev.id,
                                                    AnalysisRun.status == "running")).scalars().first()
+    if running is not None and running.created_at < _now() - STALE_AFTER:
+        # A run that never finished (e.g. the server restarted, or an AI call hung) mustn't block new ones
+        running.status, running.finished_at = "failed", _now()
+        running.error = "Stopped: it didn't finish within 30 minutes."
+        running = None
     if running is not None:
         raise AnalysisError("An analysis is already running for this evaluation.")
     run = AnalysisRun(evaluation_id=ev.id, status="running", created_by=by or "consultant",
