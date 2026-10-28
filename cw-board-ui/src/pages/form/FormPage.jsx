@@ -386,8 +386,9 @@ export default function FormPage() {
     }
     focusAfter.current = null;
     const el = document.getElementById(id) || document.getElementById("section-heading");
+    if (id === "section-heading") window.scrollTo(0, 0); // new section: start at the top, progress in view
     if (el) {
-      el.scrollIntoView({ block: "start" });
+      if (id !== "section-heading") el.scrollIntoView({ block: "start" });
       const focusable = el.matches("input, select, textarea, h1, h2") ? el : el.querySelector("input, select, textarea");
       (focusable || el).focus?.({ preventScroll: true });
     }
