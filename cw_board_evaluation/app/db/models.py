@@ -101,6 +101,10 @@ class Evaluation(Base):
     # Shown at the start of the participant's form and in their invite email. NULL uses neutral
     # default wording (app.services.participant_portal.default_notice) that promises nothing about anonymity.
     participant_notice: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # Automatic reminders (app.services.reminders.DEFAULT_SETTINGS); missing keys use the defaults, off until switched on
+    reminder_settings: Mapped[Dict[str, Any]] = mapped_column(
+        MutableDict.as_mutable(JSONB), nullable=False, default=dict, server_default="{}"
+    )
 
     # Relationships
     reports: Mapped[list["Report"]] = relationship(
@@ -1677,4 +1681,45 @@ class QuestionSuggestionDecision(Base):
         ),
         Index("ix_question_suggestion_decisions_bank_item", "bank_item_code"),
         Index("ix_question_suggestion_decisions_evaluation", "evaluation_id"),
+    )
+
+
+PARTICIPANT_EVENT_TYPES = (
+    "invite_sent", "email_failed", "reminder_sent", "opened", "first_answer", "submitted", "link_resent",
+    "link_regenerated", "deadline_extended", "form_reopened", "evaluation_closed", "evaluation_reopened",
+    "reminder_settings_changed",
+)
+
+
+class ParticipantEvent(Base):
+    """
+    What happened to a participant's form, for tracking and the timeline: emails sent or failed,
+    opened, first answer, submitted, and consultant actions. Evaluation-wide actions (deadline,
+    close) have no participant. `detail` never holds email bodies, answers or link tokens.
+    `dedupe_key` is set on automatic reminders ("<assignment id>:auto:<slot>"): its unique index
+    is what stops a reminder slot being sent twice, even by two runs at once.
+    """
+
+    __tablename__ = "participant_events"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    evaluation_id: Mapped[str] = mapped_column(String(64), ForeignKey("evaluations.id", ondelete="CASCADE"), nullable=False)
+    participant_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("participants.id", ondelete="CASCADE"), nullable=True
+    )
+    assignment_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("assessment_assignments.id", ondelete="SET NULL"), nullable=True
+    )
+    event_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    detail: Mapped[Any] = mapped_column(JSONB, nullable=False, default=dict)
+    actor: Mapped[str] = mapped_column(String(255), nullable=False)  # "system" | "participant" | consultant name
+    dedupe_key: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint("event_type IN (" + ", ".join(f"'{t}'" for t in PARTICIPANT_EVENT_TYPES) + ")",
+                        name="ck_participant_events_type"),
+        Index("ix_participant_events_evaluation", "evaluation_id", "created_at"),
+        Index("ix_participant_events_participant", "participant_id", "created_at"),
+        UniqueConstraint("dedupe_key", name="uq_participant_events_dedupe_key"),
     )

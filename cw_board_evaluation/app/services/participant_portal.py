@@ -46,6 +46,7 @@ from app.db.models import (
 )
 from app.domain.question_bank import GRID_ITEM_PREFIX
 from app.domain.question_rules import fact_scope
+from app.services import participant_events as events
 from app.services.question_assembly import SECTIONS, set_metrics
 from app.services.question_sets import lock_set, question_set, set_questions
 from app.util.portal_urls import assembled_form_url
@@ -160,11 +161,12 @@ def form_link(a: AssessmentAssignment) -> str:
     return assembled_form_url(a.access_token or "")
 
 
-def send_form_link(db: Session, ev: Evaluation, participant: Participant, *, only_pending: bool = False
-                   ) -> Dict[str, Any]:
+def send_form_link(db: Session, ev: Evaluation, participant: Participant, *, only_pending: bool = False,
+                   actor: str = "consultant", event_type: str = "invite_sent", **detail: Any) -> Dict[str, Any]:
     """
     Email one participant their form link (the caller has already applied the invite gate).
-    Returns {"sent", "error", "skipped", "url"}; records when the email went.
+    Returns {"sent", "error", "skipped", "url"}; records when the email went, and an event:
+    `event_type` ("invite_sent" or "link_resent") on success, "email_failed" with the error otherwise.
     """
     from app.services.email_service import send_form_invite_email  # tests patch it here
 
@@ -181,7 +183,11 @@ def send_form_link(db: Session, ev: Evaluation, participant: Participant, *, onl
     )
     if ok:
         a.email_sent_at = _now()
-        db.flush()
+        events.record(db, ev.id, event_type, actor, participant_id=participant.id, assignment_id=a.id, **detail)
+    else:
+        events.record(db, ev.id, events.EMAIL_FAILED, actor, participant_id=participant.id, assignment_id=a.id,
+                      kind=event_type, error=events.short_error(err), **detail)
+    db.flush()
     return {"sent": bool(ok), "error": err, "skipped": None, "url": url}
 
 
@@ -319,15 +325,26 @@ def _visible(questions: List[Question], answers: Dict[str, Any]) -> Dict[str, bo
     return out
 
 
-def _progress(questions: List[Question], items, answers: Dict[str, Any]) -> Dict[str, Any]:
+def unanswered_required(questions: List[Question], items, answers: Dict[str, Any]) -> List[Question]:
+    """Required questions that are shown (follow-ups only when their condition is met) and not answered yet."""
+    visible = _visible(questions, answers)
+    return [q for q in questions if visible[str(q.id)] and is_required(q, items.get(q.bank_item_id))
+            and not _has_answer(q, answers.get(str(q.id)))]
+
+
+def progress_of(questions: List[Question], items, answers: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Answered and required counts over the visible questions. The submit check, the form and
+    consultant tracking all use this, so their numbers always agree.
+    """
     visible = _visible(questions, answers)
     shown = [q for q in questions if visible[str(q.id)]]
     required = [q for q in shown if is_required(q, items.get(q.bank_item_id))]
-    answered = [q for q in shown if _has_answer(q, answers.get(str(q.id)))]
     return {
-        "questions": len(shown), "answered": len(answered),
+        "questions": len(shown),
+        "answered": sum(1 for q in shown if _has_answer(q, answers.get(str(q.id)))),
         "required": len(required),
-        "required_answered": sum(1 for q in required if _has_answer(q, answers.get(str(q.id)))),
+        "required_answered": len(required) - len(unanswered_required(questions, items, answers)),
     }
 
 
@@ -416,7 +433,7 @@ def build_form(db: Session, a: AssessmentAssignment, ev: Evaluation, participant
         "opened_at": _iso(a.opened_at), "submitted_at": _iso(a.submitted_at),
         "sections": sections,
         "answers": answers,
-        "progress": _progress(questions, items, answers),
+        "progress": progress_of(questions, items, answers),
     }
 
 
@@ -427,6 +444,7 @@ def open_form(db: Session, token: str) -> Dict[str, Any]:
         lock_set(db, pset, by="participant")
     if a.opened_at is None:
         a.opened_at = _now()
+        events.record(db, ev.id, "opened", "participant", participant_id=participant.id, assignment_id=a.id)
     db.flush()
     return build_form(db, a, ev, participant, pset)
 
@@ -508,6 +526,7 @@ def save_answers(db: Session, token: str, answers: List[Dict[str, Any]]) -> Dict
         raise AnswerError(errors)
 
     existing = _responses(db, a)
+    first = not existing and any(parts is not None for _, parts in cleaned)
     now = _now()
     for q, parts in cleaned:
         r = existing.get(str(q.id))
@@ -523,11 +542,13 @@ def save_answers(db: Session, token: str, answers: List[Dict[str, Any]]) -> Dict
             existing[str(q.id)] = r
         r.score, r.comment, r.answer, r.updated_at = score, comment, answer, now
     a.last_activity_at = now
+    if first:
+        events.record(db, ev.id, "first_answer", "participant", participant_id=participant.id, assignment_id=a.id)
     db.flush()
     rows = form_questions(db, participant.id)
     current = {qid: answer_value(r, questions[qid]) for qid, r in _responses(db, a).items() if qid in questions}
     return {"saved": len(cleaned), "saved_at": now.isoformat(),
-            "progress": _progress(rows, _bank_items(db, rows), current)}
+            "progress": progress_of(rows, _bank_items(db, rows), current)}
 
 
 # ----------------------------
@@ -539,13 +560,11 @@ def missing_required(db: Session, a: AssessmentAssignment, participant: Particip
     items = _bank_items(db, questions)
     by_id = {str(q.id): q for q in questions}
     answers = {qid: answer_value(r, by_id[qid]) for qid, r in _responses(db, a).items() if qid in by_id}
-    visible = _visible(questions, answers)
     subjects = {s.id: s for s in db.execute(select(EvaluationSubject).where(
         EvaluationSubject.evaluation_id == participant.evaluation_id)).scalars().all()}
     return [{"question_id": str(q.id), "section": q.section, "text": q.text,
              "about": _about(subjects.get(q.evaluation_subject_id), participant.id)}
-            for q in questions if visible[str(q.id)] and is_required(q, items.get(q.bank_item_id))
-            and not _has_answer(q, answers.get(str(q.id)))]
+            for q in unanswered_required(questions, items, answers)]
 
 
 def submit(db: Session, token: str) -> Dict[str, Any]:
@@ -565,13 +584,17 @@ def submit(db: Session, token: str) -> Dict[str, Any]:
         if q is None or not visible.get(qid):  # answers to follow-ups that are no longer shown aren't kept
             db.delete(r)
             continue
-        if q.section == "confirm" and (r.answer or {}).get("confirm") == "needs_updating":
+        if q.section == "confirm" and (r.answer or {}).get("confirm") == "needs_updating" \
+                and not (r.answer or {}).get("proposed"):  # already proposed before the form was reopened
             fact = propose_correction(db, ev, participant, q, (r.answer or {}).get("correction"))
             if fact is not None:
                 proposals.append(str(fact.id))
+                r.answer = {**r.answer, "proposed": True}
     now = _now()
     a.submitted_at, a.responded_at, a.status, a.last_activity_at = now, now, "responded", now
     participant.status, participant.responded_at = "responded", now
+    events.record(db, ev.id, "submitted", "participant", participant_id=participant.id, assignment_id=a.id,
+                  proposals=len(proposals) or None)
     db.flush()
     return {"submitted": True, "submitted_at": now.isoformat(), "missing": [], "proposals": len(proposals)}
 
