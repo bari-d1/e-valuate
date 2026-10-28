@@ -9,7 +9,7 @@ const aq = (evalId, qid) => `${ev(evalId)}/assembled-questions/${encodeURICompon
 
 // Who made a change, for the audit trail (the shared key carries no identity)
 export const CONSULTANT_NAME_KEY = "consultant.name";
-function who() {
+export function who() {
   try {
     const name = (localStorage.getItem(CONSULTANT_NAME_KEY) || "").trim();
     return name ? { "X-Consultant-Name": name } : {};

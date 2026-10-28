@@ -27,6 +27,33 @@ Add your `OPENAI_API_KEY` to `cw_board_evaluation/.env` for AI question generati
 
 See [cw_board_evaluation/TESTING.md](cw_board_evaluation/TESTING.md): unit and integration tests, the recorded baseline, and an end-to-end smoke test (`scripts/e2e_smoke.py`).
 
+## Automatic reminders
+
+Consultants switch reminders on per evaluation (Responses page, Reminder settings). Nothing sends them by itself: run the reminder job on a schedule, either way below. The job sends only what's due, so it's safe to run as often as you like, and from more than one place at once: each reminder slot is recorded under a unique key before it goes out, so it is never sent twice. It never emails people who've submitted, closed evaluations, sets that aren't approved, or reserved test addresses (`example.com`, `.invalid`).
+
+**Cron (or any job runner on the server):**
+
+```bash
+cd cw_board_evaluation
+.venv/bin/python scripts/send_due_reminders.py --dry-run   # who would be reminded today, and why; sends nothing
+.venv/bin/python scripts/send_due_reminders.py             # send what's due
+```
+
+Example crontab line, weekdays at 09:00 server time:
+
+```
+# 0 9 * * 1-5  cd /srv/e-valuate/cw_board_evaluation && .venv/bin/python scripts/send_due_reminders.py >> /var/log/e-valuate-reminders.log 2>&1
+```
+
+**A hosted scheduler that can only call a URL:** set `REMINDER_SCHEDULER_SECRET` in `cw_board_evaluation/.env` to a long random value, then have the scheduler call
+
+```
+POST https://<your-api>/api/v1/scheduler/due-reminders            # add ?dry_run=true to check first
+X-Scheduler-Secret: <the same value>
+```
+
+This endpoint doesn't use the consultant key. Without `REMINDER_SCHEDULER_SECRET` it is switched off (503); a missing or wrong secret gets 401. The app itself has no scheduler built in.
+
 ## Branches
 
 `main` is kept demoable for client calls. Do new work on a feature branch and merge it into `main` once the tests and the end-to-end smoke test pass.

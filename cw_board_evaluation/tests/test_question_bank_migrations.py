@@ -180,3 +180,28 @@ def test_portal_upgrade_downgrade(migration_db) -> None:
             "SELECT column_name FROM information_schema.columns WHERE table_name = 'assessment_assignments'"))}
     assert "opened_at" not in cols and "question_set_id" not in cols
     command.upgrade(cfg, "head")
+
+
+TRACKING = "f4a9c3d7b215"
+
+
+def test_tracking_upgrade_downgrade(migration_db) -> None:
+    cfg, engine = migration_db
+    command.upgrade(cfg, TRACKING)
+    assert "participant_events" in _tables(engine)
+    row = ("INSERT INTO participant_events (id, evaluation_id, event_type, detail, actor, dedupe_key) "
+           "VALUES (:id, 'M-3', :t, '{}', 'system', :k)")
+    with engine.begin() as conn:
+        conn.execute(text("INSERT INTO evaluations (id, tenant_name, sector, year, instrument_template_code, "
+                          "instrument_version, regulators, status) VALUES ('M-3', 'Co', 'insurance', 2025, 'DEFAULT', 1, '{}', 'live')"))
+        assert conn.execute(text("SELECT reminder_settings FROM evaluations WHERE id = 'M-3'")).scalar() == {}
+        conn.execute(text(row), {"id": uuid.uuid4(), "t": "reminder_sent", "k": "a:auto:1"})
+        with pytest.raises(Exception):  # a reminder slot can only be recorded once
+            with conn.begin_nested():
+                conn.execute(text(row), {"id": uuid.uuid4(), "t": "reminder_sent", "k": "a:auto:1"})
+        with pytest.raises(Exception):  # unknown event types are refused
+            with conn.begin_nested():
+                conn.execute(text(row), {"id": uuid.uuid4(), "t": "shredded", "k": None})
+    command.downgrade(cfg, PORTAL)
+    assert "participant_events" not in _tables(engine)
+    command.upgrade(cfg, "head")
