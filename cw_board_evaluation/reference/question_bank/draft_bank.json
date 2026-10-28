@@ -228,6 +228,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": "tenure_years",
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -329,6 +330,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": "expertise",
       "known_from_behaviour": "confirm",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -450,6 +452,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -534,6 +537,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -619,6 +623,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -717,6 +722,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -802,6 +808,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -897,6 +904,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [
         "board_composition.women"
       ],
@@ -992,6 +1000,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -1076,6 +1085,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -1165,6 +1175,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -1258,6 +1269,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -1336,6 +1348,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -1425,6 +1438,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Knowledge check. 'Implement strategy' and 'Ensure the payment of pending insurance claims' are management matters (distractors).",
       "governance_refs": [
@@ -1511,6 +1525,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -1594,6 +1609,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -1677,6 +1693,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -1750,6 +1767,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -1824,6 +1842,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -1916,6 +1935,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -2008,6 +2028,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -2093,6 +2114,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -2188,6 +2210,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -2282,6 +2305,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -2366,6 +2390,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -2452,6 +2477,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -2535,6 +2561,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -2619,6 +2646,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -2711,6 +2739,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -2784,6 +2813,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -2858,6 +2888,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "yes",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -2944,6 +2975,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [
         "review_year"
       ],
@@ -3020,6 +3052,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -3106,6 +3139,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -3189,6 +3223,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -3281,6 +3316,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -3363,6 +3399,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -3449,6 +3486,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -3531,6 +3569,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -3613,6 +3652,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -3686,6 +3726,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -3772,6 +3813,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -3851,6 +3893,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "no",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -3939,6 +3982,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "no",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -4030,6 +4074,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Knowledge check. Approving claims and day-to-day operations are management matters (distractors).",
       "governance_refs": [
@@ -4122,6 +4167,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -4209,6 +4255,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "yes",
       "placeholders": [
         "review_year"
       ],
@@ -4302,6 +4349,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -4388,6 +4436,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -4480,6 +4529,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -4583,6 +4633,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "yes",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -4677,6 +4728,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [
         "review_year"
       ],
@@ -4779,6 +4831,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [
         "review_year"
       ],
@@ -4877,6 +4930,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [
         "review_year"
       ],
@@ -4966,6 +5020,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "yes",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -5060,6 +5115,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": "other_board_roles",
       "known_from_behaviour": "confirm",
+      "expected_answer": "no",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -5148,6 +5204,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "no",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -5239,6 +5296,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Knowledge check: evaluating and approving strategy and risk policies is the board's role.",
       "governance_refs": [
@@ -5324,6 +5382,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": "committee_types",
       "known_from_behaviour": "confirm",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -5415,6 +5474,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -5503,6 +5563,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [
         "review_year"
       ],
@@ -5591,6 +5652,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": "holds_company_shares",
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -5677,6 +5739,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": "represents_significant_shareholder",
       "known_from_behaviour": "skip",
+      "expected_answer": "no",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -5762,6 +5825,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": "employee_of_company_or_group_last_5y",
       "known_from_behaviour": "skip",
+      "expected_answer": "no",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -5848,6 +5912,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": "close_family_tie_to_director_adviser_or_auditor",
       "known_from_behaviour": "skip",
+      "expected_answer": "no",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -5934,6 +5999,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": "material_business_relationship_last_5y",
       "known_from_behaviour": "skip",
+      "expected_answer": "no",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -6020,6 +6086,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": "senior_service_with_regulator",
       "known_from_behaviour": "skip",
+      "expected_answer": "no",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -6106,6 +6173,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": "provides_advisory_services",
       "known_from_behaviour": "skip",
+      "expected_answer": "no",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -6192,6 +6260,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": "participates_in_share_or_incentive_scheme",
       "known_from_behaviour": "skip",
+      "expected_answer": "no",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -6278,6 +6347,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": "tenure_years",
       "known_from_behaviour": "skip",
+      "expected_answer": "no",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -6387,6 +6457,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -6491,6 +6562,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -6586,6 +6658,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -6681,6 +6754,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -6766,6 +6840,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -6861,6 +6936,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -6965,6 +7041,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -7060,6 +7137,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -7155,6 +7233,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -7250,6 +7329,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -7345,6 +7425,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -7440,6 +7521,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -7535,6 +7617,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -7630,6 +7713,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -7725,6 +7809,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -7820,6 +7905,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -7915,6 +8001,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -8009,6 +8096,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -8104,6 +8192,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -8199,6 +8288,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -8294,6 +8384,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -8379,6 +8470,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -8473,6 +8565,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -8558,6 +8651,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -8653,6 +8747,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -8748,6 +8843,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -8843,6 +8939,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -8937,6 +9034,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -9033,6 +9131,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -9149,6 +9248,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -9274,6 +9374,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -9390,6 +9491,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -9506,6 +9608,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -9622,6 +9725,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -9738,6 +9842,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -9854,6 +9959,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -9970,6 +10076,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -10086,6 +10193,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -10202,6 +10310,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -10318,6 +10427,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -10434,6 +10544,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -10550,6 +10661,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -10666,6 +10778,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -10782,6 +10895,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -10898,6 +11012,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -11014,6 +11129,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -11130,6 +11246,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -11246,6 +11363,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -11368,6 +11486,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "The answer is a percentage.",
       "governance_refs": [],
@@ -11473,6 +11592,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -11606,6 +11726,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -11739,6 +11860,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -11872,6 +11994,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -12005,6 +12128,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -12138,6 +12262,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -12271,6 +12396,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -12404,6 +12530,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -12537,6 +12664,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -12670,6 +12798,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -12803,6 +12932,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -12936,6 +13066,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -13069,6 +13200,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -13202,6 +13334,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -13335,6 +13468,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -13458,6 +13592,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "The form promises the assessing director's identity is not required or disclosed.",
       "governance_refs": [],
@@ -13553,6 +13688,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "yes",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -13650,6 +13786,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -13738,6 +13875,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": "committee_member_count",
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -13836,6 +13974,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -13929,6 +14068,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -14021,6 +14161,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -14120,6 +14261,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -14218,6 +14360,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -14315,6 +14458,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -14418,6 +14562,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -14516,6 +14661,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -14604,6 +14750,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -14703,6 +14850,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -14810,6 +14958,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -14902,6 +15051,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -15009,6 +15159,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -15107,6 +15258,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -15205,6 +15357,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -15299,6 +15452,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -15400,6 +15554,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -15497,6 +15652,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -15607,6 +15763,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -15709,6 +15866,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -15811,6 +15969,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -15909,6 +16068,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "yes",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -16007,6 +16167,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Knowledge check: succession and board composition reviews belong to the nomination or governance committee.",
       "governance_refs": [],
@@ -16094,6 +16255,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -16201,6 +16363,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -16301,6 +16464,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -16390,6 +16554,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -16477,6 +16642,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -16549,6 +16715,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -16641,6 +16808,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -16733,6 +16901,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -16815,6 +16984,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -16903,6 +17073,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -16974,6 +17145,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -17065,6 +17237,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -17136,6 +17309,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -17218,6 +17392,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -17296,6 +17471,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -17365,6 +17541,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "yes",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -17444,6 +17621,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -17522,6 +17700,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -17601,6 +17780,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": "board_size",
       "known_from_behaviour": "confirm",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -17684,6 +17864,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": "board_composition.executive_directors",
       "known_from_behaviour": "confirm",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -17766,6 +17947,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": "board_composition.non_executive_directors",
       "known_from_behaviour": "confirm",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -17848,6 +18030,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -17930,6 +18113,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -18008,6 +18192,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -18086,6 +18271,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -18164,6 +18350,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -18242,6 +18429,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Ask only if the answer to SEC-11 is yes.",
       "governance_refs": [
@@ -18320,6 +18508,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -18401,6 +18590,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Ask only if the answer to SEC-13 is yes.",
       "governance_refs": [
@@ -18480,6 +18670,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -18559,6 +18750,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Ask only if the answer to SEC-15 is yes.",
       "governance_refs": [
@@ -18637,6 +18829,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -18716,6 +18909,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Ask only if the answer to SEC-17 is yes.",
       "governance_refs": [
@@ -18794,6 +18988,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -18872,6 +19067,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -18950,6 +19146,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -19028,6 +19225,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -19106,6 +19304,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -19185,6 +19384,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "yes",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -19263,6 +19463,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Ask only if the answer to SEC-24 is yes.",
       "governance_refs": [
@@ -19341,6 +19542,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Ask only if the answer to SEC-24 is yes.",
       "governance_refs": [
@@ -19419,6 +19621,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -19503,6 +19706,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -19581,6 +19785,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "yes",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -19659,6 +19864,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "yes",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -19738,6 +19944,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Ask only if the answer to SEC-30 is yes.",
       "governance_refs": [
@@ -19816,6 +20023,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "yes",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -19894,6 +20102,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Ask only if the answer to SEC-32 is yes.",
       "governance_refs": [
@@ -19972,6 +20181,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Ask only if the answer to SEC-32 is yes.",
       "governance_refs": [
@@ -20051,6 +20261,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "yes",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -20130,6 +20341,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Ask only if the answer to SEC-35 is yes.",
       "governance_refs": [
@@ -20208,6 +20420,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "yes",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -20286,6 +20499,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Ask only if the answer to SEC-37 is yes.",
       "governance_refs": [
@@ -20364,6 +20578,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Ask only if the answer to SEC-37 is yes.",
       "governance_refs": [
@@ -20446,6 +20661,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Ask only if the answer to SEC-37 is yes.",
       "governance_refs": [
@@ -20525,6 +20741,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "yes",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -20604,6 +20821,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Ask only if the answer to SEC-41 is yes.",
       "governance_refs": [
@@ -20682,6 +20900,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -20760,6 +20979,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "yes",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -20838,6 +21058,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Ask only if the answer to SEC-44 is yes.",
       "governance_refs": [
@@ -20916,6 +21137,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Ask only if the answer to SEC-44 is yes.",
       "governance_refs": [
@@ -20994,6 +21216,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -21077,6 +21300,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "yes",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -21159,6 +21383,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "yes",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -21241,6 +21466,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -21310,6 +21536,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -21380,6 +21607,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -21458,6 +21686,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -21536,6 +21765,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -21614,6 +21844,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -21692,6 +21923,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "yes",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -21774,6 +22006,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Ask only if the answer to SEC-56 is yes.",
       "governance_refs": [
@@ -21856,6 +22089,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "yes",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -21939,6 +22173,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Ask only if the answer to SEC-58 is yes.",
       "governance_refs": [
@@ -22021,6 +22256,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Ask only if the answer to SEC-58 is yes.",
       "governance_refs": [
@@ -22103,6 +22339,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -22186,6 +22423,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -22264,6 +22502,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -22342,6 +22581,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -22420,6 +22660,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": "yes",
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -22498,6 +22739,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -22577,6 +22819,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -22655,6 +22898,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -22734,6 +22978,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [
@@ -22812,6 +23057,7 @@
       "evidence_source_code": "ORG_FACT",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -22911,6 +23157,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Shown with the other core items as one grid: colleagues in rows, the five items in columns.",
       "governance_refs": [],
@@ -23015,6 +23262,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Self-rating on the same item colleagues rate them on, so the two can be compared.",
       "governance_refs": [],
@@ -23119,6 +23367,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Shown with the other core items as one grid: colleagues in rows, the five items in columns.",
       "governance_refs": [],
@@ -23231,6 +23480,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Self-rating on the same item colleagues rate them on, so the two can be compared.",
       "governance_refs": [],
@@ -23343,6 +23593,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Shown with the other core items as one grid: colleagues in rows, the five items in columns.",
       "governance_refs": [],
@@ -23459,6 +23710,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Self-rating on the same item colleagues rate them on, so the two can be compared.",
       "governance_refs": [],
@@ -23575,6 +23827,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Shown with the other core items as one grid: colleagues in rows, the five items in columns.",
       "governance_refs": [],
@@ -23700,6 +23953,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Self-rating on the same item colleagues rate them on, so the two can be compared.",
       "governance_refs": [],
@@ -23836,6 +24090,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Shown with the other core items as one grid: colleagues in rows, the five items in columns.",
       "governance_refs": [],
@@ -23951,6 +24206,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Self-rating on the same item colleagues rate them on, so the two can be compared.",
       "governance_refs": [],
@@ -24065,6 +24321,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Shown with the other core items as one grid: colleagues in rows, the five items in columns.",
       "governance_refs": [],
@@ -24185,6 +24442,7 @@
       "evidence_source_code": "ROLE_SELF",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Self-rating on the same item colleagues rate them on, so the two can be compared.",
       "governance_refs": [],
@@ -24285,6 +24543,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "Optional: respondents may leave it blank. One comment per colleague.",
       "governance_refs": [],
@@ -24390,6 +24649,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -24483,6 +24743,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -24584,6 +24845,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -24677,6 +24939,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -24770,6 +25033,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -24864,6 +25128,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -24958,6 +25223,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -25052,6 +25318,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -25146,6 +25413,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -25240,6 +25508,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -25335,6 +25604,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -25430,6 +25700,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -25525,6 +25796,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -25620,6 +25892,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -25715,6 +25988,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -25810,6 +26084,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -25905,6 +26180,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -26000,6 +26276,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -26083,6 +26360,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "The answer is a percentage.",
       "governance_refs": [],
@@ -26177,6 +26455,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -26271,6 +26550,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -26365,6 +26645,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -26459,6 +26740,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -26553,6 +26835,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -26647,6 +26930,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -26741,6 +27025,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -26835,6 +27120,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -26929,6 +27215,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": null,
       "governance_refs": [],
@@ -27012,6 +27299,7 @@
       "evidence_source_code": "PERCEPTION",
       "known_from": null,
       "known_from_behaviour": "skip",
+      "expected_answer": null,
       "placeholders": [],
       "guidance": "The answer is a percentage.",
       "governance_refs": [],

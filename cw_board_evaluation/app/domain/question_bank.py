@@ -190,6 +190,15 @@ def validate_item(data: Dict[str, Any]) -> Dict[str, Any]:
         errors.append(f"known_from_behaviour must be one of: {', '.join(KNOWN_FROM_BEHAVIOURS)}.")
     out["known_from_behaviour"] = behaviour
 
+    # The answer good practice expects on a factual yes/no item ("yes" | "no"); a different answer
+    # is a compliance shortfall when the item is linked to a governance clause. Empty when unclear.
+    expected = data.get("expected_answer") or None
+    if expected is not None and expected not in ("yes", "no"):
+        errors.append("expected_answer must be yes, no or empty.")
+    elif expected is not None and answer_type != "yesno":
+        errors.append("expected_answer only applies to yes/no items.")
+    out["expected_answer"] = expected
+
     placeholders = data.get("placeholders") or []
     ph = _str_list(placeholders)
     if ph is None:
