@@ -2082,8 +2082,14 @@ def get_evaluation_analytics(
 ) -> Dict[str, Any]:
     """
     Rating-based analytics (overall + dimensions). Optional filters match responses export.
+    Legacy evaluations only: evaluations that use assembled question sets are analysed by subject
+    and theme under /evaluations/{id}/analysis (app.api.analysis).
     """
     _ensure_evaluation_exists(db, evaluation_id)
+    if form.uses_assembled_sets(db, evaluation_id):
+        raise HTTPException(status_code=409, detail=(
+            "This evaluation uses assembled question sets, so it's analysed by subject and theme: "
+            f"see the Findings page (GET /api/v1/evaluations/{evaluation_id}/analysis/runs)."))
     try:
         return build_analytics(
             db,

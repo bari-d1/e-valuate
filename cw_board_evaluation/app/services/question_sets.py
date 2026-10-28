@@ -96,6 +96,7 @@ def log_event(db: Session, pset: Optional[ParticipantQuestionSet], action: str, 
         participant_id=participant_id or (pset.participant_id if pset else q.participant_id),
         question_set_id=pset.id if pset else None, question_id=q.id if q else None, action=action,
         detail={k: v for k, v in detail.items() if v is not None}, created_by=by or "consultant",
+        created_at=_now(),  # app time, so events written in one transaction keep their order
     )
     db.add(e)
     db.flush()
