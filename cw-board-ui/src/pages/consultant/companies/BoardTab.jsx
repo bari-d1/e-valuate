@@ -76,7 +76,7 @@ function Committees({ items }) {
   );
 }
 
-export default function BoardTab({ ui, org }) {
+export default function BoardTab({ ui, org, refreshKey }) {
   const { Badge, Button } = ui;
   const [items, setItems] = useState(null);
   const [adding, setAdding] = useState(false);
@@ -87,7 +87,7 @@ export default function BoardTab({ ui, org }) {
   const load = useCallback(() => run(async () => setItems((await boardApi.list(id)).items)), [id, run]);
   useEffect(() => {
     load();
-  }, [load]);
+  }, [load, refreshKey]);
 
   return (
     <div>
