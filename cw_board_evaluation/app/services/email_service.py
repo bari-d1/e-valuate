@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import html
 import logging
+import math
 import os
 import smtplib
 from datetime import date
@@ -540,6 +541,113 @@ def send_form_invite_email(
         full_name=full_name, form_url=form_url, organisation=organisation, evaluation_name=evaluation_name,
         consultancy=consultancy, estimated_minutes=estimated_minutes, deadline=deadline, notice=notice,
     )
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = cfg["from_addr"]
+    msg["To"] = to_email
+    msg.set_content(plain)
+    msg.add_alternative(html_body, subtype="html")
+    return _send_message(cfg, msg)
+
+
+# ----------------------------
+# Reminders (assembled evaluations)
+# ----------------------------
+
+def progress_words(answered: int, required: int) -> str:
+    """How far along they are, in plain words. Never compares them with anyone else."""
+    if not answered:
+        return "You haven't started yet."
+    share = answered / required if required else 1
+    if share < 0.35:
+        return "You've made a start."
+    if share < 0.65:
+        return "You're about halfway through."
+    return "You're most of the way through."
+
+
+def minutes_left(estimated_minutes: Optional[int], answered: int, required: int) -> Optional[int]:
+    if not estimated_minutes:
+        return None
+    share = min(1, answered / required) if required else 0
+    return max(1, math.ceil(estimated_minutes * (1 - share))) if share < 1 else None
+
+
+def form_reminder_content(
+    *,
+    full_name: Optional[str],
+    form_url: str,
+    organisation: str,
+    evaluation_name: str,
+    consultancy: str,
+    answered: int,
+    required: int,
+    estimated_minutes: Optional[int],
+    deadline: Optional[date],
+    notice: str,
+    final: bool = False,
+    deadline_extended: bool = False,
+) -> Tuple[str, str, str]:
+    """
+    (subject, plain text, HTML) for a courteous reminder: their own progress, time left, the
+    deadline and the same link. No pressure tactics and nothing about anyone else's progress.
+    """
+    hello = f"Dear {full_name}," if full_name else "Hello,"
+    left = minutes_left(estimated_minutes, answered, required)
+    when = f" by {_long_date(deadline)}" if deadline else ""
+    if deadline_extended and deadline:
+        opening = f"The deadline for the {evaluation_name} for {organisation} has been extended to {_long_date(deadline)}."
+    elif final and deadline:
+        opening = (f"This is the last reminder before the deadline for the {evaluation_name} for {organisation} "
+                   f"on {_long_date(deadline)}.")
+    else:
+        opening = f"A gentle reminder about your questionnaire for the {evaluation_name} for {organisation}."
+    facts = [progress_words(answered, required)]
+    if left:
+        facts.append(f"It should take about {left} more minute{'' if left == 1 else 's'}.")
+    if deadline and not (final or deadline_extended):
+        facts.append(f"Please complete it{when}.")
+    facts.append("Your answers are saved as you go, so you can pick up where you left off.")
+    lines = [hello, "", opening, "", *facts, "", "Open your questionnaire with your personal link:", form_url, "",
+             notice, "", "Thank you for your time.", "", consultancy]
+    plain = "\n".join(lines)
+
+    e = lambda t: html.escape(t or "", quote=False)  # noqa: E731
+    html_body = f"""
+    <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #0f172a; max-width: 560px;">
+      <p>{e(hello)}</p>
+      <p>{e(opening)}</p>
+      <ul style="padding-left: 18px;">{"".join(f"<li>{e(t)}</li>" for t in facts)}</ul>
+      <p style="margin: 20px 0;">
+        <a href="{html.escape(form_url, quote=True)}" style="display:inline-block; padding:12px 18px; border-radius:10px;
+           background:#0f172a; color:#ffffff; text-decoration:none; font-weight:700;">Open my questionnaire</a>
+      </p>
+      <p style="padding: 12px; border-radius: 10px; background: #f1f5f9;">{e(notice)}</p>
+      <p style="font-size: 13px; color: #475569;">If the button doesn't work, copy this address into your browser:<br/>
+        <span style="word-break: break-all;">{e(form_url)}</span></p>
+      <p>Thank you for your time.<br/>{e(consultancy)}</p>
+    </div>
+    """.strip()
+    if deadline_extended:
+        subject = f"{organisation}: board evaluation deadline extended"
+    elif final:
+        subject = f"{organisation}: last reminder about your board evaluation questionnaire"
+    else:
+        subject = f"{organisation}: reminder about your board evaluation questionnaire"
+    return subject, plain, html_body
+
+
+def send_form_reminder_email(to_email: str, **content: Any) -> Tuple[bool, Optional[str]]:
+    """Send a reminder (same rules as the invite: off when email is disabled, never to reserved test domains)."""
+    cfg = _smtp_config()
+    if not cfg["enabled"]:
+        return True, None
+    to_email = (to_email or "").strip()
+    if not to_email:
+        return False, "to_email is required"
+    if _skip_reserved(to_email):
+        return False, RESERVED_SKIP_MESSAGE
+    subject, plain, html_body = form_reminder_content(**content)
     msg = EmailMessage()
     msg["Subject"] = subject
     msg["From"] = cfg["from_addr"]

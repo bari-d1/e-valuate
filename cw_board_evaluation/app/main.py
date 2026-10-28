@@ -28,6 +28,8 @@ from app.api.organisations import router as organisations_router
 from app.api.board_members import router as board_members_router
 from app.api.question_bank import router as question_bank_router
 from app.api.assembly import router as assembly_router
+from app.api.scheduler import router as scheduler_router
+from app.api.tracking import router as tracking_router
 
 try:
     from app.api.debug import router as debug_router
@@ -65,6 +67,9 @@ def create_app() -> FastAPI:
     app.include_router(board_members_router, prefix="/api/v1", tags=["board members"], dependencies=consultant_auth)
     app.include_router(question_bank_router, prefix="/api/v1", tags=["question bank"], dependencies=consultant_auth)
     app.include_router(assembly_router, prefix="/api/v1", tags=["assembly"], dependencies=consultant_auth)
+    app.include_router(tracking_router, prefix="/api/v1", tags=["tracking"], dependencies=consultant_auth)
+    # Scheduled reminders authenticate with their own secret, not the consultant key
+    app.include_router(scheduler_router, prefix="/api/v1", tags=["scheduler"])
 
     if debug_router is not None:
         app.include_router(debug_router, prefix="/api/v1", tags=["debug"], dependencies=consultant_auth)
