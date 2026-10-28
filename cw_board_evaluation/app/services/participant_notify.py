@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models import AssessmentAssignment, Evaluation, Participant
 from app.services.email_service import send_assignment_links_digest_email, send_invite_email
+from app.services.question_sets import invite_block_reasons
 from app.util.portal_urls import assignment_portal_url, participant_hub_url
 
 
@@ -74,6 +75,7 @@ def send_evaluation_link_notifications(
             "email_sent": 0,
             "email_failed": [],
             "skipped_no_links": [],
+            "blocked_not_approved": [],
             "only_pending": only_pending,
         }
 
@@ -91,8 +93,14 @@ def send_evaluation_link_notifications(
     email_sent = 0
     email_failed: List[Dict[str, Any]] = []
     skipped_no_links: List[Dict[str, Any]] = []
+    # Evaluations with assembled sets: nothing goes to a participant until a consultant approves their set
+    blocks = invite_block_reasons(db, evaluation_id)
+    blocked_not_approved: List[Dict[str, Any]] = []
 
     for p in participants:
+        if str(p.id) in blocks:
+            blocked_not_approved.append({"participant_id": str(p.id), "email": p.email, "reason": blocks[str(p.id)]})
+            continue
         email = _norm(p.email)
         if not email:
             email_failed.append(
@@ -148,5 +156,6 @@ def send_evaluation_link_notifications(
         "email_sent": email_sent,
         "email_failed": email_failed,
         "skipped_no_links": skipped_no_links,
+        "blocked_not_approved": blocked_not_approved,
         "only_pending": only_pending,
     }

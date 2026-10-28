@@ -610,12 +610,18 @@ class Question(Base):
     # "board" | "committees" | "colleagues" | "yourself" | "confirm" | "additional"
     section: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
     sort_order: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    # "draft" | "approved" | "locked" (follows the participant's set)
+    # "draft" | "approved" | "locked" (follows the participant's set), or "removed" by a consultant:
+    # kept for audit, left out of the participant's form, counts and coverage
     status: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    removed_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # The rule reasons selection included the question for ("Included: respondent is ...")
+    selection_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # Who added the question by hand (from the bank or written); NULL when assembly added it
+    added_by: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     bank_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # bank wording after placeholders
     ai_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # AI suggestion, never used until chosen
     ai_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    # Which wording `text` holds: "bank" | "ai_tailored" | "ai_new" | "consultant_edited"
+    # Which wording `text` holds: "bank" | "ai_tailored" | "ai_new" | "consultant_edited" | "consultant_written"
     text_source: Mapped[Optional[str]] = mapped_column(String(24), nullable=True)
     # AI new-question suggestions: "pending" | "accepted" | "rejected", and the fact they respond to
     suggestion_status: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
@@ -662,9 +668,11 @@ class Question(Base):
             "section IS NULL OR section IN ('board', 'committees', 'colleagues', 'yourself', 'confirm', 'additional')",
             name="ck_questions_section",
         ),
-        CheckConstraint("status IS NULL OR status IN ('draft', 'approved', 'locked')", name="ck_questions_status"),
+        CheckConstraint("status IS NULL OR status IN ('draft', 'approved', 'locked', 'removed')",
+                        name="ck_questions_status"),
         CheckConstraint(
-            "text_source IS NULL OR text_source IN ('bank', 'ai_tailored', 'ai_new', 'consultant_edited')",
+            "text_source IS NULL OR text_source IN ('bank', 'ai_tailored', 'ai_new', 'consultant_edited', "
+            "'consultant_written')",
             name="ck_questions_text_source",
         ),
     )
@@ -1559,6 +1567,47 @@ class ParticipantQuestionSet(Base):
         UniqueConstraint("participant_id", name="uq_participant_question_set_participant"),
         CheckConstraint("status IN ('draft', 'approved', 'locked')", name="ck_participant_question_sets_status"),
         Index("ix_participant_question_sets_evaluation", "evaluation_id"),
+    )
+
+
+QUESTION_SET_ACTIONS = (
+    "use_bank", "use_ai", "edit", "accept_new", "reject_new", "regenerate", "edit_tags", "remove", "restore",
+    "add_from_bank", "add_written", "move", "approve", "reopen", "lock",
+)
+
+
+class QuestionSetEvent(Base):
+    """
+    The audit trail of a participant's question set: every change, who made it
+    and when, with what changed in `detail` (e.g. {"before": ..., "after": ...}).
+    Set-level actions (approve, reopen, lock) have no question_id. Wording
+    decisions are also kept in question_suggestion_decisions for the bank
+    feedback loop.
+    """
+
+    __tablename__ = "question_set_events"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    evaluation_id: Mapped[str] = mapped_column(String(64), ForeignKey("evaluations.id", ondelete="CASCADE"), nullable=False)
+    participant_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("participants.id", ondelete="SET NULL"), nullable=True
+    )
+    question_set_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("participant_question_sets.id", ondelete="SET NULL"), nullable=True
+    )
+    question_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("questions.id", ondelete="SET NULL"), nullable=True
+    )
+    action: Mapped[str] = mapped_column(String(24), nullable=False)
+    detail: Mapped[Any] = mapped_column(JSONB, nullable=False, default=dict)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint("action IN (" + ", ".join(f"'{a}'" for a in QUESTION_SET_ACTIONS) + ")",
+                        name="ck_question_set_events_action"),
+        Index("ix_question_set_events_evaluation", "evaluation_id", "created_at"),
+        Index("ix_question_set_events_participant", "participant_id", "created_at"),
     )
 
 

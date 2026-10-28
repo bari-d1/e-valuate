@@ -331,6 +331,12 @@ export default function ListParticipantsPage({
               Failed: {(notifyResult.email_failed || []).length}
             </span>
           ) : null}
+          {(notifyResult.blocked_not_approved || []).length > 0 ? (
+            <div style={{ marginTop: 6, color: "#92400E" }}>
+              Not sent to {notifyResult.blocked_not_approved.length} participant(s) whose questions aren't approved yet:{" "}
+              {notifyResult.blocked_not_approved.map((b) => b.email).join(", ")}. Approve their sets on Review questions first.
+            </div>
+          ) : null}
         </div>
       ) : null}
 

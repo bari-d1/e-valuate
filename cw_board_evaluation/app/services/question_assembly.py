@@ -17,8 +17,13 @@ Per participant, assembly:
   and, across the evaluation, deep sets with fewer than 3 raters;
 - estimates completion time, counting the core peer grid as one fast block.
 
-Re-running replaces a draft set but keeps consultant-edited questions and
-accepted AI new questions, unless reset is requested.
+Re-running replaces a draft set but keeps consultant-edited questions,
+questions a consultant added or removed, and accepted AI new questions,
+unless reset is requested.
+
+Counts, coverage and the time estimate are recomputed from the set's current
+questions (set_metrics / refresh_summary) after assembly and after every
+consultant change, so they never go stale.
 
 Assembled questions live in the questions table with template_code
 "P:<participant id>", so legacy template queries never see them.
@@ -244,21 +249,6 @@ def rater_warnings(selections: Dict[str, Dict[str, Any]], base: Dict[str, Any]) 
     return sorted(out, key=lambda w: (w["set"], w["subject"]))
 
 
-def coverage_gaps(sel: Dict[str, Any], counts: Dict[str, int], floor: int) -> List[Dict[str, Any]]:
-    """In-scope subjects the participant is eligible to speak about with fewer than `floor` questions."""
-    eligible: Dict[str, Dict[str, Any]] = {}
-    for e in sel["included"] + sel["skipped"] + sel["blocked"]:
-        eligible.setdefault(e["subject"]["key"], e["subject"])
-    gaps = []
-    for key, subject in eligible.items():
-        n = counts.get(key, 0)
-        if n < floor:
-            gaps.append({"subject_key": key, "subject": subject["label"], "kind": subject["kind"], "questions": n,
-                         "floor": floor,
-                         "message": f"Only {n} question{'' if n == 1 else 's'} about {subject['label']} (floor {floor})."})
-    return gaps
-
-
 # ----------------------------
 # One participant
 # ----------------------------
@@ -283,8 +273,12 @@ def _subject_order(base: Dict[str, Any]) -> Dict[str, int]:
     return order
 
 
-def _question_seconds(q: Question, code: str, priority: str) -> int:
-    return estimate_seconds(q.answer_type, confirm=q.section == "confirm", code=code, priority=priority)
+def renumber(questions: List[Question]) -> None:
+    """Sort order by section, keeping the order within each section; steps of 10."""
+    questions.sort(key=lambda q: (SECTIONS.index(q.section) if q.section in SECTIONS else len(SECTIONS),
+                                  q.sort_order or 0))
+    for n, q in enumerate(questions, start=1):
+        q.sort_order = n * 10
 
 
 def assemble_participant(db: Session, run: AssemblyRun, ev: Evaluation, base: Dict[str, Any], person: Dict[str, Any],
@@ -309,14 +303,18 @@ def assemble_participant(db: Session, run: AssemblyRun, ev: Evaluation, base: Di
     order = _subject_order(base)
     codes_by_bank_id = {str(i.id): i.code for i in db.execute(select(QuestionBankItem)).scalars().all()}
 
-    # Existing draft questions: keep consultant edits and accepted new questions unless resetting
+    # Existing draft questions: unless resetting, keep consultant edits and removals (matched to the bank item
+    # and subject), questions a consultant added, and accepted new questions
     existing = db.execute(select(Question).where(Question.participant_id == pid)).scalars().all()
     kept: Dict[Tuple[str, Optional[str]], Question] = {}
     kept_new: List[Question] = []
     for q in existing:
-        if not run.reset and q.text_source == "consultant_edited" and q.bank_item_id:
-            kept[(codes_by_bank_id.get(str(q.bank_item_id), ""), str(q.evaluation_subject_id))] = q
-        elif not run.reset and q.text_source == "ai_new" and q.suggestion_status == "accepted":
+        key = (codes_by_bank_id.get(str(q.bank_item_id), ""), str(q.evaluation_subject_id))
+        if not run.reset and q.bank_item_id and (q.text_source == "consultant_edited" or q.status == "removed"
+                                                   or q.added_by):
+            kept[key] = q
+        elif not run.reset and (q.text_source == "consultant_written"
+                                or (q.text_source == "ai_new" and q.suggestion_status == "accepted")):
             kept_new.append(q)
         else:
             db.delete(q)
@@ -340,12 +338,16 @@ def assemble_participant(db: Session, run: AssemblyRun, ev: Evaluation, base: Di
             q.subject_type_links = [QuestionSubjectType(subject_type_code=e["subject"]["type"])]
             db.add(q)
         q.bank_text = e["text"]
+        q.selection_reason = e.get("why")
         q.section = section
         q.confirm_value = ({k: e["confirm"][k] for k in ("known_from", "known_from_label", "value", "value_text")}
                            if e.get("confirm") else None)
         questions.append((q, e))
-    for q in kept.values():  # edited questions whose item no longer applies
-        db.delete(q)
+    for q in list(kept.values()):  # edited or removed questions whose item no longer applies
+        if q.added_by:  # added by hand: stays even though selection doesn't pick it
+            kept_new.append(q)
+        else:
+            db.delete(q)
     db.flush()
 
     # Order: section, subject, bank sort order
@@ -357,7 +359,10 @@ def assemble_participant(db: Session, run: AssemblyRun, ev: Evaluation, base: Di
     for n, (q, _) in enumerate(questions, start=1):
         q.sort_order = n * 10
     for n, q in enumerate(kept_new, start=len(questions) + 1):
-        q.section, q.sort_order = "additional", n * 10
+        if q.text_source == "ai_new":
+            q.section = "additional"
+        q.sort_order = n * 10
+    renumber([q for q, _ in questions] + kept_new)  # hand-added questions back into their sections
 
     # Follow-ups: link to the question they follow, about the same subject
     by_code_subject = {(e["code"], str(q.evaluation_subject_id)): q for q, e in questions}
@@ -374,31 +379,24 @@ def assemble_participant(db: Session, run: AssemblyRun, ev: Evaluation, base: Di
         q.depends_on_question_id, q.show_if = parent.id, {"answer": "yes"}
     db.flush()
 
-    # Coverage and time
-    counts: Dict[str, int] = {}
-    seconds = 0
-    for q, e in questions:
-        counts[e["subject"]["key"]] = counts.get(e["subject"]["key"], 0) + 1
-        seconds += _question_seconds(q, e["code"], e.get("priority") or "standard")
-    seconds += sum(estimate_seconds(q.answer_type) for q in kept_new)
-    gaps = coverage_gaps(sel, counts, coverage_floor())
+    # Every subject they're eligible to speak about, for live coverage (even ones with no question yet)
+    coverage_subjects = []
+    for e in sel["included"] + sel["skipped"] + sel["blocked"]:
+        if any(c["key"] == e["subject"]["key"] for c in coverage_subjects):
+            continue
+        row = _ensure_subject(db, ev, e["subject"], subjects, secretary)
+        coverage_subjects.append({"key": e["subject"]["key"], "subject_id": str(row.id), "label": e["subject"]["label"],
+                                  "kind": e["subject"]["kind"], "type": e["subject"]["type"]})
 
     ai_summary = {"enabled": tailoring is not None}
     if tailoring is not None:
         ai_summary.update(tailoring.run_for(person, questions, kept_new))
 
-    minutes = round(seconds / 60)
     pset.status = "draft"
     pset.assembly_run_id = run.id
-    pset.estimated_minutes = minutes
     pset.override_reason = None
     pset.summary = {
         "counts": {
-            "questions": len(questions) + len(kept_new),
-            "by_section": {s: sum(1 for q, _ in questions if q.section == s) + (len(kept_new) if s == "additional" else 0)
-                           for s in SECTIONS},
-            "confirm": sum(1 for q, _ in questions if q.section == "confirm"),
-            "follow_ups": sum(1 for q, _ in questions if q.depends_on_question_id),
             "kept_edits": sum(1 for q, _ in questions if q.text_source == "consultant_edited"),
             "skipped_known": len(sel["skipped"]),
             "blocked": len(sel["blocked"]),
@@ -408,12 +406,110 @@ def assemble_participant(db: Session, run: AssemblyRun, ev: Evaluation, base: Di
         "blocked": [{"code": e["code"], "subject": e["subject"]["label"], "missing": e.get("missing") or []}
                     for e in sel["blocked"]],
         "follow_ups_without_parent": unlinked,
-        "coverage_gaps": gaps,
+        "coverage_subjects": coverage_subjects,
         "ai": ai_summary,
     }
+    m = refresh_summary(db, pset)
+    return {**result, "outcome": "assembled", "questions": m["counts"]["questions"],
+            "estimated_minutes": m["estimated_minutes"], "coverage_gaps": len(m["coverage_gaps"])}
+
+
+# ----------------------------
+# Live counts, coverage and time
+# ----------------------------
+
+def active_questions(questions: List[Question]) -> List[Question]:
+    """What the participant would actually get: not removed, and AI new questions only once accepted."""
+    return [q for q in questions if q.status != "removed"
+            and not (q.text_source == "ai_new" and q.suggestion_status != "accepted")]
+
+
+def set_metrics(db: Session, pset: ParticipantQuestionSet) -> Dict[str, Any]:
+    """Counts, coverage per eligible subject, gaps and the time estimate from the set's current questions."""
+    rows = list(db.execute(select(Question).where(Question.participant_id == pset.participant_id)).scalars().all())
+    active = active_questions(rows)
+    items = {i.id: i for i in db.execute(select(QuestionBankItem).where(
+        QuestionBankItem.id.in_({q.bank_item_id for q in active if q.bank_item_id}))).scalars().all()}
+    seconds = 0
+    by_subject: Dict[str, int] = {}
+    for q in active:
+        item = items.get(q.bank_item_id)
+        seconds += estimate_seconds(q.answer_type, confirm=q.section == "confirm", code=item.code if item else "",
+                                    priority=(item.priority if item else None) or "standard")
+        if q.evaluation_subject_id:
+            by_subject[str(q.evaluation_subject_id)] = by_subject.get(str(q.evaluation_subject_id), 0) + 1
+    floor = coverage_floor()
+    summary = pset.summary or {}
+    coverage, gaps = [], []
+    for s in summary.get("coverage_subjects") or []:
+        n = by_subject.get(s["subject_id"], 0)
+        coverage.append({**s, "questions": n, "covered": n >= floor})
+        if n < floor:
+            gaps.append({"subject_key": s["key"], "subject_id": s["subject_id"], "subject": s["label"],
+                         "kind": s["kind"], "questions": n, "floor": floor,
+                         "message": f"Only {n} question{'' if n == 1 else 's'} about {s['label']} (floor {floor})."})
+    if "coverage_subjects" not in summary:  # assembled before coverage was tracked live
+        gaps = summary.get("coverage_gaps") or []
+    return {
+        "counts": {
+            "questions": len(active),
+            "by_section": {s: sum(1 for q in active if q.section == s) for s in SECTIONS},
+            "confirm": sum(1 for q in active if q.section == "confirm"),
+            "follow_ups": sum(1 for q in active if q.depends_on_question_id),
+            "removed": sum(1 for q in rows if q.status == "removed"),
+            "added": sum(1 for q in active if q.added_by),
+            "pending_new": sum(1 for q in rows if q.text_source == "ai_new" and q.suggestion_status == "pending"),
+            "open_wording": sum(1 for q in active if q.ai_text and q.text_source == "bank" and not q.suggestion_status),
+        },
+        "coverage": coverage,
+        "coverage_gaps": gaps,
+        "estimated_minutes": round(seconds / 60),
+    }
+
+
+def refresh_summary(db: Session, pset: ParticipantQuestionSet) -> Dict[str, Any]:
+    """Recompute and store the set's counts, coverage gaps and time estimate; returns the metrics."""
     db.flush()
-    return {**result, "outcome": "assembled", "questions": len(questions) + len(kept_new),
-            "estimated_minutes": minutes, "coverage_gaps": len(gaps)}
+    m = set_metrics(db, pset)
+    summary = dict(pset.summary or {})
+    summary["counts"] = {**(summary.get("counts") or {}), **m["counts"]}
+    summary["coverage_gaps"] = m["coverage_gaps"]
+    pset.summary = summary
+    pset.estimated_minutes = m["estimated_minutes"]
+    db.flush()
+    return m
+
+
+def live_rater_warnings(db: Session, evaluation_id: str) -> List[Dict[str, Any]]:
+    """Deep sets with fewer than MIN_RATERS raters for a subject, from the current sets across the evaluation."""
+    rows = db.execute(
+        select(Question, QuestionBankItem.code, EvaluationSubject.label, Participant.full_name, Participant.email)
+        .join(QuestionBankItem, QuestionBankItem.id == Question.bank_item_id)
+        .join(EvaluationSubject, EvaluationSubject.id == Question.evaluation_subject_id)
+        .join(Participant, Participant.id == Question.participant_id)
+        .where(Question.evaluation_id == evaluation_id, Question.status != "removed")
+    ).all()
+    raters: Dict[Tuple[str, str], Dict[str, Any]] = {}
+    for q, code, subject_label, name, email in rows:
+        prefix = next((p for p in DEEP_SETS if code.startswith(p)), None)
+        if prefix is None:
+            continue
+        slot = raters.setdefault((prefix, str(q.evaluation_subject_id)), {
+            "set": DEEP_SETS[prefix], "subject": subject_label, "subject_id": str(q.evaluation_subject_id),
+            "raters": {}})
+        slot["raters"][str(q.participant_id)] = name or email
+    out = []
+    for slot in raters.values():
+        n = len(slot["raters"])
+        if n < MIN_RATERS:
+            out.append({
+                "set": slot["set"], "subject": slot["subject"], "subject_id": slot["subject_id"],
+                "subject_key": slot["subject_id"], "rater_count": n, "raters": sorted(slot["raters"].values()),
+                "participant_ids": sorted(slot["raters"]),
+                "message": (f"{slot['set']} about {slot['subject']} has {n} rater{'' if n == 1 else 's'}; results with "
+                            f"fewer than {MIN_RATERS} can't be reported individually."),
+            })
+    return sorted(out, key=lambda w: (w["set"], w["subject"]))
 
 
 # ----------------------------
@@ -482,7 +578,7 @@ class TailoringContext:
         by_id = {str(q.id): q for q, _ in questions}
         for q, _ in questions:
             if q.text_source != "consultant_edited":
-                q.ai_text, q.ai_reason = None, None
+                q.ai_text, q.ai_reason, q.suggestion_status = None, None, None
         for s in checked.accepted:
             q = by_id[s["question_id"]]
             q.ai_text, q.ai_reason = s["text"], s["reason"]

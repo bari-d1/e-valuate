@@ -12,9 +12,22 @@ Endpoints (all under /api/v1, consultant auth):
 - PATCH /evaluations/{id}/assembled-questions/{qid}          (use bank / ai / edited text)
 - POST /evaluations/{id}/assembled-questions/{qid}/regenerate
 - POST /evaluations/{id}/assembled-questions/{qid}/accept | /reject   (AI new questions)
-- POST /evaluations/{id}/participants/{pid}/question-set/approve | /lock
+- POST /evaluations/{id}/participants/{pid}/question-set/approve | /lock | /reopen
 - GET  /question-bank/suggestions-report
 - POST /question-bank/items/{item_id}/promote
+
+Consultant review:
+- GET  /evaluations/{id}/review                              (overview of every participant's set)
+- PATCH /evaluations/{id}/assembled-questions/{qid}/tags     (subject, theme, evidence source)
+- POST /evaluations/{id}/assembled-questions/{qid}/remove | /restore | /move
+- GET  /evaluations/{id}/review/bank-items                   (search the bank to add from)
+- POST /evaluations/{id}/participants/{pid}/question-set/questions   (add from the bank, or written)
+- POST /evaluations/{id}/question-sets/approve               (bulk approve, per-participant results)
+- GET  /evaluations/{id}/review/subjects, /evaluations/{id}/review/subjects/{subject_id}
+
+Every change to a set returns the question with "metrics": the set's fresh
+counts, coverage, gaps and time estimate and the evaluation's rater warnings.
+Every change is recorded in question_set_events.
 
 The consultant is identified by the optional X-Consultant-Name header (the
 shared API key carries no identity); decisions record it with the time.
@@ -34,6 +47,7 @@ from app.db.models import AssemblyRun, Evaluation, EvaluationSubject, Participan
 from app.db.session import get_db
 from app.domain.evaluation_options import EVALUATION_OPTIONS, OptionError, effective_options, validate_options
 from app.services import question_assembly as assembly
+from app.services import question_review as review
 from app.services import question_sets as sets
 from app.services.question_bank import item_dict
 
@@ -166,10 +180,13 @@ class NoteIn(BaseModel):
 
 
 def _question_response(db: Session, q: Question) -> Dict[str, Any]:
+    """The question, plus the set's fresh metrics after the change."""
     codes = {str(q.bank_item_id): db.get(QuestionBankItem, q.bank_item_id).code} if q.bank_item_id else {}
     subjects = {str(q.evaluation_subject_id): db.get(EvaluationSubject, q.evaluation_subject_id)} \
         if q.evaluation_subject_id else {}
-    return sets.question_dict(q, codes, subjects)
+    pset = sets.question_set(db, q.participant_id)
+    metrics = review.metrics_response(db, pset) if pset is not None else None
+    return {**sets.question_dict(q, codes, subjects), "metrics": metrics}
 
 
 @router.patch("/evaluations/{evaluation_id}/assembled-questions/{question_id}")
@@ -177,18 +194,20 @@ def choose_wording(evaluation_id: str, question_id: str, payload: WordingIn, db:
                    by: str = Depends(consultant_name)) -> Dict[str, Any]:
     ev = _evaluation_or_404(db, evaluation_id)
     q = _call(sets.choose_wording, db, _question_or_404(db, ev, question_id), payload.use, by, payload.text, payload.note)
+    out = _question_response(db, q)
     db.commit()
-    return _question_response(db, q)
+    return out
 
 
 @router.post("/evaluations/{evaluation_id}/assembled-questions/{question_id}/regenerate")
 def regenerate(evaluation_id: str, question_id: str, payload: Optional[NoteIn] = None,
-               db: Session = Depends(get_db)) -> Dict[str, Any]:
+               db: Session = Depends(get_db), by: str = Depends(consultant_name)) -> Dict[str, Any]:
     ev = _evaluation_or_404(db, evaluation_id)
     q = _question_or_404(db, ev, question_id)
-    outcome = _call(sets.regenerate, db, q, (payload.note if payload else None) or "")
+    outcome = _call(sets.regenerate, db, q, (payload.note if payload else None) or "", by=by)
+    out = {**outcome, "question": _question_response(db, q)}
     db.commit()
-    return {**outcome, "question": _question_response(db, q)}
+    return out
 
 
 @router.post("/evaluations/{evaluation_id}/assembled-questions/{question_id}/accept")
@@ -196,8 +215,9 @@ def accept_new(evaluation_id: str, question_id: str, payload: Optional[NoteIn] =
                by: str = Depends(consultant_name)) -> Dict[str, Any]:
     ev = _evaluation_or_404(db, evaluation_id)
     q = _call(sets.decide_new, db, _question_or_404(db, ev, question_id), True, by, payload.note if payload else None)
+    out = _question_response(db, q)
     db.commit()
-    return _question_response(db, q)
+    return out
 
 
 @router.post("/evaluations/{evaluation_id}/assembled-questions/{question_id}/reject")
@@ -205,8 +225,9 @@ def reject_new(evaluation_id: str, question_id: str, payload: Optional[NoteIn] =
                by: str = Depends(consultant_name)) -> Dict[str, Any]:
     ev = _evaluation_or_404(db, evaluation_id)
     q = _call(sets.decide_new, db, _question_or_404(db, ev, question_id), False, by, payload.note if payload else None)
+    out = _question_response(db, q)
     db.commit()
-    return _question_response(db, q)
+    return out
 
 
 class ApproveIn(BaseModel):
@@ -230,6 +251,164 @@ def lock_set(evaluation_id: str, participant_id: str, db: Session = Depends(get_
     _call(sets.lock_set, db, _set_or_404(db, p))
     db.commit()
     return sets.set_dict(db, ev.id, p)
+
+
+class ReasonIn(BaseModel):
+    reason: Optional[str] = None
+
+
+@router.post("/evaluations/{evaluation_id}/participants/{participant_id}/question-set/reopen")
+def reopen_set(evaluation_id: str, participant_id: str, payload: ReasonIn, db: Session = Depends(get_db),
+               by: str = Depends(consultant_name)) -> Dict[str, Any]:
+    """Back to draft, with a reason. Only while approved: a locked set (the participant has started) never reopens."""
+    ev = _evaluation_or_404(db, evaluation_id)
+    p = _participant_or_404(db, ev, participant_id)
+    _call(sets.reopen_set, db, _set_or_404(db, p), by, payload.reason or "")
+    db.commit()
+    return sets.set_dict(db, ev.id, p)
+
+
+# ----------------------------
+# Consultant review
+# ----------------------------
+
+@router.get("/evaluations/{evaluation_id}/review")
+def review_overview(evaluation_id: str, db: Session = Depends(get_db)) -> Dict[str, Any]:
+    ev = _evaluation_or_404(db, evaluation_id)
+    out = review.overview(db, ev)
+    db.commit()  # subject rows created for the pickers
+    return out
+
+
+@router.get("/evaluations/{evaluation_id}/participants/{participant_id}/question-set/review")
+def review_set(evaluation_id: str, participant_id: str, db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """The set for the review screen: the set itself plus the header, subject choices and history."""
+    ev = _evaluation_or_404(db, evaluation_id)
+    p = _participant_or_404(db, ev, participant_id)
+    out = sets.set_dict(db, ev.id, p)
+    out["header"] = review.participant_header(db, p)
+    out["subject_options"] = review.subject_options(db, ev)
+    out["history"] = sets.set_history(db, p.id)
+    db.commit()
+    return out
+
+
+class TagsIn(BaseModel):
+    subject_id: Optional[str] = None
+    theme_code: Optional[str] = None
+    evidence_source_code: Optional[str] = None
+
+
+@router.patch("/evaluations/{evaluation_id}/assembled-questions/{question_id}/tags")
+def edit_tags(evaluation_id: str, question_id: str, payload: TagsIn, db: Session = Depends(get_db),
+              by: str = Depends(consultant_name)) -> Dict[str, Any]:
+    """Change the subject, theme or evidence source. Fields left out are unchanged; an empty subject is refused."""
+    ev = _evaluation_or_404(db, evaluation_id)
+    q = _call(review.edit_tags, db, ev, _question_or_404(db, ev, question_id), by, payload.model_dump(exclude_unset=True))
+    out = _question_response(db, q)
+    db.commit()
+    return out
+
+
+@router.post("/evaluations/{evaluation_id}/assembled-questions/{question_id}/remove")
+def remove_question(evaluation_id: str, question_id: str, payload: Optional[ReasonIn] = None,
+                    db: Session = Depends(get_db), by: str = Depends(consultant_name)) -> Dict[str, Any]:
+    ev = _evaluation_or_404(db, evaluation_id)
+    q = _call(review.remove_question, db, _question_or_404(db, ev, question_id), by, payload.reason if payload else None)
+    out = _question_response(db, q)
+    db.commit()
+    return out
+
+
+@router.post("/evaluations/{evaluation_id}/assembled-questions/{question_id}/restore")
+def restore_question(evaluation_id: str, question_id: str, db: Session = Depends(get_db),
+                     by: str = Depends(consultant_name)) -> Dict[str, Any]:
+    ev = _evaluation_or_404(db, evaluation_id)
+    q = _call(review.restore_question, db, _question_or_404(db, ev, question_id), by)
+    out = _question_response(db, q)
+    db.commit()
+    return out
+
+
+class MoveIn(BaseModel):
+    direction: Optional[str] = None  # "up" | "down"
+    position: Optional[int] = None  # 1 = first in its section
+
+
+@router.post("/evaluations/{evaluation_id}/assembled-questions/{question_id}/move")
+def move_question(evaluation_id: str, question_id: str, payload: MoveIn, db: Session = Depends(get_db),
+                  by: str = Depends(consultant_name)) -> Dict[str, Any]:
+    ev = _evaluation_or_404(db, evaluation_id)
+    q = _call(review.move_question, db, _question_or_404(db, ev, question_id), by, direction=payload.direction,
+              position=payload.position)
+    out = _question_response(db, q)
+    db.commit()
+    return out
+
+
+@router.get("/evaluations/{evaluation_id}/review/bank-items")
+def search_bank(evaluation_id: str, text: str = "", subject_type: Optional[str] = None,
+                db: Session = Depends(get_db)) -> Dict[str, Any]:
+    _evaluation_or_404(db, evaluation_id)
+    return {"items": review.search_bank(db, text, subject_type)}
+
+
+class AddQuestionIn(BaseModel):
+    source: str  # "bank" | "written"
+    item_id: Optional[str] = None
+    subject_id: Optional[str] = None
+    text: Optional[str] = None
+    answer_type: Optional[str] = None
+    theme_code: Optional[str] = None
+    evidence_source_code: Optional[str] = None
+    options: Optional[List[str]] = None
+
+
+@router.post("/evaluations/{evaluation_id}/participants/{participant_id}/question-set/questions", status_code=201)
+def add_question(evaluation_id: str, participant_id: str, payload: AddQuestionIn, db: Session = Depends(get_db),
+                 by: str = Depends(consultant_name)) -> Dict[str, Any]:
+    ev = _evaluation_or_404(db, evaluation_id)
+    p = _participant_or_404(db, ev, participant_id)
+    if payload.source == "bank":
+        q = _call(review.add_from_bank, db, ev, p, payload.item_id or "", payload.subject_id or "", by)
+    elif payload.source == "written":
+        q = _call(review.add_written, db, ev, p, by, text=payload.text or "", answer_type=payload.answer_type or "",
+                  subject_id=payload.subject_id, theme_code=payload.theme_code,
+                  evidence_source_code=payload.evidence_source_code, options=payload.options)
+    else:
+        raise HTTPException(status_code=400, detail='source must be "bank" or "written".')
+    out = _question_response(db, q)
+    db.commit()
+    return out
+
+
+class BulkApproveIn(BaseModel):
+    participant_ids: List[str]
+    override_reason: Optional[str] = None
+
+
+@router.post("/evaluations/{evaluation_id}/question-sets/approve")
+def bulk_approve(evaluation_id: str, payload: BulkApproveIn, db: Session = Depends(get_db),
+                 by: str = Depends(consultant_name)) -> Dict[str, Any]:
+    """Approve several sets; one override reason covers the batch. Returns each participant's outcome."""
+    ev = _evaluation_or_404(db, evaluation_id)
+    results = review.bulk_approve(db, ev, payload.participant_ids, by, payload.override_reason)
+    db.commit()
+    return {"results": results, "approved": sum(1 for r in results if r["outcome"] == "approved")}
+
+
+@router.get("/evaluations/{evaluation_id}/review/subjects")
+def review_subjects(evaluation_id: str, db: Session = Depends(get_db)) -> Dict[str, Any]:
+    ev = _evaluation_or_404(db, evaluation_id)
+    out = {"items": review.subjects_overview(db, ev), "min_raters": assembly.MIN_RATERS}
+    db.commit()
+    return out
+
+
+@router.get("/evaluations/{evaluation_id}/review/subjects/{subject_id}")
+def review_subject(evaluation_id: str, subject_id: str, db: Session = Depends(get_db)) -> Dict[str, Any]:
+    ev = _evaluation_or_404(db, evaluation_id)
+    return _call(review.by_subject, db, ev, subject_id)
 
 
 # ----------------------------
