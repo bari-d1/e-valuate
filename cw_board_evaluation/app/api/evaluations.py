@@ -37,7 +37,7 @@ from __future__ import annotations
 import random
 import secrets
 from datetime import date, datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -68,7 +68,8 @@ from app.db.models import (
 from app.services.analytics import build_analytics
 from app.domain.board_member_profile import PARTICIPANT_ROLE_FOR, governance_role_from_participant_role
 from app.services.committee_matching import normalise_name
-from app.services.question_sets import invite_block_reasons
+from app.services import participant_portal as form
+from app.services.question_sets import invite_block_reasons, question_set
 from app.services.board_members import member_label, participant_readiness
 from app.services.organisations import sync_evaluation_from_organisation
 from app.services.profile_review import snapshot_context
@@ -85,7 +86,7 @@ from app.util.participant_api_links import (
     build_participant_links_payload,
     participant_hub_token,
 )
-from app.util.portal_urls import assignment_portal_url, participant_hub_url
+from app.util.portal_urls import assignment_portal_url, participant_hub_url, portal_url_for_assignment
 
 router = APIRouter()
 
@@ -159,7 +160,7 @@ def _assignment_portal_urls_for_respondent(
     for a in rows:
         t = (getattr(a, "access_token", None) or "").strip()
         if t:
-            out.append(assignment_portal_url(t))
+            out.append(portal_url_for_assignment(a.assignment_type, t))
     return out
 
 
@@ -446,6 +447,7 @@ class CreateEvaluationRequest(BaseModel):
     review_period_end: Optional[date] = None
     deadline: Optional[date] = None
     brief: Optional[str] = None
+    participant_notice: Optional[str] = Field(default=None, max_length=2000)  # default: neutral wording
     subject_type_codes: Optional[List[str]] = None  # default: all subject types
     year: Optional[int] = None  # default: year of review_period_end, deadline, or today
     # Legacy fields: ignored for tenant_name/sector (synced from the organisation).
@@ -462,6 +464,7 @@ class UpdateEvaluationRequest(BaseModel):
     review_period_end: Optional[date] = None
     deadline: Optional[date] = None
     brief: Optional[str] = None
+    participant_notice: Optional[str] = Field(default=None, max_length=2000)  # empty: neutral default wording
     status: Optional[str] = None  # draft | in_review | live | closed
     subject_type_codes: Optional[List[str]] = None
 
@@ -632,6 +635,8 @@ def _evaluation_dict(db: Session, ev: Evaluation) -> Dict[str, Any]:
         "review_period_end": ev.review_period_end.isoformat() if ev.review_period_end else None,
         "deadline": ev.deadline.isoformat() if ev.deadline else None,
         "brief": ev.brief,
+        "participant_notice": ev.participant_notice,
+        "participant_notice_default": form.default_notice(),
         "subject_type_codes": list(scope),
         "instrument": {
             "template_code": ev.instrument_template_code,
@@ -666,6 +671,7 @@ def create_evaluation(payload: CreateEvaluationRequest, db: Session = Depends(ge
         review_period_end=payload.review_period_end,
         deadline=payload.deadline,
         brief=(payload.brief or "").strip() or None,
+        participant_notice=(payload.participant_notice or "").strip() or None,
         status="draft",
     )
     sync_evaluation_from_organisation(db, ev, org)
@@ -706,6 +712,8 @@ def update_evaluation(evaluation_id: str, payload: UpdateEvaluationRequest, db: 
     _check_period(ev.review_period_start, ev.review_period_end)
     if "brief" in sent:
         ev.brief = (payload.brief or "").strip() or None
+    if "participant_notice" in sent:
+        ev.participant_notice = (payload.participant_notice or "").strip() or None
     if "status" in sent:
         if payload.status not in ("draft", "in_review", "live", "closed"):
             raise HTTPException(status_code=400, detail="Status must be draft, in_review, live or closed.")
@@ -952,6 +960,35 @@ def _new_participant(
     return p
 
 
+def _invite_email(db: Session, ev: Evaluation, p: Participant, send_email: bool, assembled: bool,
+                  portal_url: str, hub_url: str) -> Tuple[bool, Optional[str], bool, Optional[str]]:
+    """
+    (email_ok, email_error, email_skipped, invite_blocked) for one invited participant.
+
+    Evaluations that use assembled sets: nothing goes out until their set is approved; then they get
+    one form (created now, reused on every later invite) and one email with its link. Others: as before.
+    """
+    reason = invite_block_reasons(db, ev.id).get(str(p.id))
+    if assembled and reason is None:
+        form.ensure_form_assignment(db, p, question_set(db, p.id))
+    if not send_email:
+        return False, None, True, None
+    if reason:
+        return False, None, True, reason
+    if assembled:
+        sent = form.send_form_link(db, ev, p)
+        return sent["sent"], sent["error"], False, None
+    ok, err = send_invite_email(
+        to_email=p.email,
+        full_name=p.full_name,
+        portal_url=portal_url,
+        evaluation_id=ev.id,
+        tenant_name=ev.tenant_name,
+        hub_url=hub_url,
+    )
+    return ok, err, False, None
+
+
 @router.post("/evaluations/{evaluation_id}/participants/invite", status_code=status.HTTP_201_CREATED)
 def invite_participants(
     evaluation_id: str,
@@ -959,7 +996,7 @@ def invite_participants(
     db: Session = Depends(get_db),
 ) -> Dict[str, Any]:
     ev = _ensure_evaluation_exists(db, evaluation_id)
-    tenant_name = ev.tenant_name
+    assembled = form.uses_assembled_sets(db, evaluation_id)
 
     if not payload.participants:
         raise HTTPException(status_code=400, detail="participants list cannot be empty")
@@ -992,18 +1029,10 @@ def invite_participants(
             primary_portal_url = assignment_urls[0] if assignment_urls else None
             hub_url = _participant_hub_url(existing) or ""
 
-            email_ok, email_err, email_skipped = False, None, True
-            blocked = invite_block_reasons(db, evaluation_id).get(str(existing.id)) if payload.send_email else None
-            if payload.send_email and not blocked:
-                email_ok, email_err = send_invite_email(
-                    to_email=existing.email,
-                    full_name=existing.full_name,
-                    portal_url=primary_portal_url or "",
-                    evaluation_id=evaluation_id,
-                    tenant_name=tenant_name,
-                    hub_url=hub_url,
-                )
-                email_skipped = False
+            email_ok, email_err, email_skipped, blocked = _invite_email(
+                db, ev, existing, payload.send_email, assembled, primary_portal_url or "", hub_url)
+            if assembled:
+                assignment_urls = _assignment_portal_urls_for_respondent(db, evaluation_id, existing.id)
 
             existing_items.append(
                 {
@@ -1031,18 +1060,8 @@ def invite_participants(
         primary_portal_url = assignment_urls[0] if assignment_urls else None
         hub_url = _participant_hub_url(p) or ""
 
-        email_ok, email_err, email_skipped = False, None, True
-        blocked = invite_block_reasons(db, evaluation_id).get(str(p.id)) if payload.send_email else None
-        if payload.send_email and not blocked:
-            email_ok, email_err = send_invite_email(
-                to_email=p.email,
-                full_name=p.full_name,
-                portal_url=primary_portal_url or "",
-                evaluation_id=evaluation_id,
-                tenant_name=tenant_name,
-                hub_url=hub_url,
-            )
-            email_skipped = False
+        email_ok, email_err, email_skipped, blocked = _invite_email(
+            db, ev, p, payload.send_email, assembled, primary_portal_url or "", hub_url)
 
         created_items.append(
             {
@@ -1211,6 +1230,7 @@ def notify_participant_links(
         )
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    db.commit()  # assembled evaluations: form assignments created and email times recorded
 
     return {
         **result,
@@ -1512,7 +1532,7 @@ def list_assignments(evaluation_id: str, db: Session = Depends(get_db)) -> Dict[
                 "response_count": response_count_by_assignment_id.get(str(a.id), 0),
                 **build_assignment_links_payload(
                     assignment_token=tok,
-                    portal_url=_make_portal_url(a.access_token or ""),
+                    portal_url=portal_url_for_assignment(a.assignment_type, a.access_token or ""),
                 ),
             }
         )
@@ -1635,6 +1655,10 @@ def generate_assignments_from_tracks(
       - items with token + portal_url
     """
     ev = _ensure_evaluation_exists(db, evaluation_id)
+    if form.uses_assembled_sets(db, evaluation_id):
+        raise HTTPException(status_code=409, detail=(
+            "This evaluation uses assembled question sets, so tracks don't create assignments for it. "
+            "Each participant gets one questionnaire link when their set is approved and they're invited."))
 
     # Load participants for evaluation
     participants: List[Participant] = (

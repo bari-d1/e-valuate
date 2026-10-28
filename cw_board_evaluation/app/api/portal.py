@@ -8,11 +8,18 @@ Routes:
 - GET  /api/v1/portal/{token}
 - GET  /api/v1/portal/{token}/responses
 - POST /api/v1/portal/{token}/responses
+- GET  /api/v1/portal/a/{token}            (assembled form: load; the first open locks the set)
+- PUT  /api/v1/portal/a/{token}/answers    (assembled form: save answers)
+- POST /api/v1/portal/a/{token}/submit     (assembled form: submit)
 
 Purpose:
 - GET /portal/hub/{hub_token} — participant hub (Participant.access_token)
 - GET/POST /portal/{token} — single assignment questionnaire (AssessmentAssignment.access_token)
   If {token} is a hub token, returns 409 with hub_path for redirect to the hub.
+  If {token} is an assembled form's token, returns 409 with form_path.
+- /portal/a/{token} — the one form for evaluations that use assembled question sets
+  (app.services.participant_portal). For those evaluations the hub returns form_path instead
+  of a list of assignments.
 """
 
 from __future__ import annotations
@@ -27,8 +34,9 @@ from sqlalchemy.orm import Session
 
 from app.db.models import AssessmentAssignment, Evaluation, Participant, Question, Response
 from app.db.session import get_db
+from app.services import participant_portal as form
 from app.util.assignment_labels import assignment_link_label
-from app.util.portal_urls import assignment_portal_url, participant_hub_url
+from app.util.portal_urls import assembled_form_url, assignment_portal_url, participant_hub_url
 
 router = APIRouter()
 
@@ -101,6 +109,13 @@ def _ensure_assignment_by_token(
                 },
             )
         raise HTTPException(status_code=404, detail="Invalid or expired assignment link.")
+
+    if a.assignment_type == form.ASSEMBLED:  # the one-form portal handles these
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "assembled_form", "message": "This link opens your questionnaire.",
+                    "form_path": f"/form/{t}", "form_url": assembled_form_url(t)},
+        )
 
     # ✅ Only block completed when caller does NOT allow it
     if not allow_completed and str(a.status or "").lower() == "responded":
@@ -237,6 +252,11 @@ class PortalHubLoadOut(BaseModel):
     evaluation: PortalEvaluationOut
     respondent: PortalParticipantOut
     assignments: List[PortalHubAssignmentOut] = Field(default_factory=list)
+    # Evaluations that use assembled sets: the participant's one form (None until their set is approved
+    # and they're invited); assignments is then empty
+    form_path: Optional[str] = None
+    form_url: Optional[str] = None
+    form_message: Optional[str] = None
 
 
 class PortalLoadOut(BaseModel):
@@ -287,6 +307,16 @@ def portal_hub_load(hub_token: str, db: Session = Depends(get_db)) -> Dict[str, 
         .scalars()
         .all()
     )
+    form_fields: Dict[str, Any] = {}
+    if form.uses_assembled_sets(db, ev.id):  # one form, no task list
+        fa = form.form_assignment(db, participant.id)
+        token = (fa.access_token or "").strip() if fa else ""
+        rows = []
+        form_fields = (
+            {"form_path": f"/form/{token}", "form_url": assembled_form_url(token)}
+            if token
+            else {"form_message": "Your questionnaire isn't ready yet. You'll receive an email with your link."}
+        )
 
     assignment_items: List[Dict[str, Any]] = []
     for a in rows:
@@ -339,7 +369,63 @@ def portal_hub_load(hub_token: str, db: Session = Depends(get_db)) -> Dict[str, 
             "responded_at": participant.responded_at.isoformat() if participant.responded_at else None,
         },
         "assignments": assignment_items,
+        **form_fields,
     }
+
+
+# -------------------------
+# Assembled form (one per participant)
+# -------------------------
+
+class FormAnswerIn(BaseModel):
+    question_id: str
+    # rating: int or "dont_know"; yesno: "yes" | "no"; comment / single_select: str; multi_select: [str];
+    # confirm items: {"status": "correct" | "needs_updating", "correction": str}. null clears the answer.
+    value: Any = None
+
+
+class FormAnswersIn(BaseModel):
+    answers: List[FormAnswerIn] = Field(default_factory=list, max_length=500)
+
+
+def _form_error(e: form.PortalError) -> HTTPException:
+    return HTTPException(status_code=e.status, detail={"code": e.code, "message": e.message})
+
+
+@router.get("/portal/a/{token}", status_code=status.HTTP_200_OK)
+def form_load(token: str, db: Session = Depends(get_db)) -> Dict[str, Any]:
+    try:
+        out = form.open_form(db, token)
+    except form.PortalError as e:
+        raise _form_error(e) from e
+    db.commit()
+    return out
+
+
+@router.put("/portal/a/{token}/answers", status_code=status.HTTP_200_OK)
+def form_save_answers(token: str, payload: FormAnswersIn, db: Session = Depends(get_db)) -> Dict[str, Any]:
+    try:
+        out = form.save_answers(db, token, [a.model_dump() for a in payload.answers])
+    except form.PortalError as e:
+        raise _form_error(e) from e
+    except form.AnswerError as e:  # validated before anything is written: nothing to undo
+        raise HTTPException(status_code=422, detail={
+            "code": "invalid_answers", "message": "Some answers couldn't be saved.", "errors": e.errors}) from e
+    db.commit()
+    return out
+
+
+@router.post("/portal/a/{token}/submit", status_code=status.HTTP_200_OK)
+def form_submit(token: str, db: Session = Depends(get_db)) -> Dict[str, Any]:
+    try:
+        out = form.submit(db, token)
+    except form.PortalError as e:
+        raise _form_error(e) from e
+    if not out["submitted"]:
+        raise HTTPException(status_code=422, detail={
+            "code": "missing_answers", "message": "Some questions still need an answer.", "missing": out["missing"]})
+    db.commit()
+    return out
 
 
 @router.get("/portal/{token}", status_code=status.HTTP_200_OK, response_model=PortalLoadOut)

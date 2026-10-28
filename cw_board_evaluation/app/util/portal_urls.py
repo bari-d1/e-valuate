@@ -3,6 +3,8 @@ Shared helpers for Board Member portal URLs.
 
 - Assignment questionnaire: /api/v1/portal/{token} → AssessmentAssignment.access_token
 - Personal task hub: /api/v1/portal/hub/{hub_token} → Participant.access_token
+- Assembled form (one per participant): /api/v1/portal/a/{token} → AssessmentAssignment.access_token
+  of an ASSEMBLED assignment
 """
 
 from __future__ import annotations
@@ -31,6 +33,25 @@ def assignment_portal_url(access_token: str) -> str:
     if not t:
         return ""
     return f"{portal_base_url()}/member/{t}/questions"
+
+
+def assembled_form_url(access_token: str) -> str:
+    """
+    Full URL to a participant's one form for an evaluation that uses assembled question sets.
+
+    Matches React route: /form/:token
+    """
+    t = (access_token or "").strip()
+    if not t:
+        return ""
+    return f"{portal_base_url()}/form/{t}"
+
+
+def portal_url_for_assignment(assignment_type: str, access_token: str) -> str:
+    """The link for any assignment: the assembled form for ASSEMBLED ones, else the legacy questionnaire."""
+    if (assignment_type or "") == "ASSEMBLED":
+        return assembled_form_url(access_token)
+    return assignment_portal_url(access_token)
 
 
 def participant_hub_url(hub_token: str) -> str:

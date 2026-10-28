@@ -31,6 +31,7 @@ import html
 import logging
 import os
 import smtplib
+from datetime import date
 from email.message import EmailMessage
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -417,3 +418,132 @@ def send_assignment_links_digest_email(
         return True, None
     except Exception as e:
         return False, str(e)
+
+
+# ----------------------------
+# Assembled evaluations: one email, one link
+# ----------------------------
+
+def _send_message(cfg: dict, msg: EmailMessage) -> Tuple[bool, Optional[str]]:
+    try:
+        with smtplib.SMTP(cfg["host"], cfg["port"]) as s:
+            if cfg["use_tls"]:
+                s.starttls()
+            if cfg["username"]:
+                s.login(cfg["username"], cfg["password"])
+            s.send_message(msg)
+        return True, None
+    except Exception as e:
+        return False, str(e)
+
+
+def _long_date(d: Optional[date]) -> str:
+    return d.strftime("%d %B %Y").lstrip("0") if d else ""
+
+
+def form_invite_content(
+    *,
+    full_name: Optional[str],
+    form_url: str,
+    organisation: str,
+    evaluation_name: str,
+    consultancy: str,
+    estimated_minutes: Optional[int],
+    deadline: Optional[date],
+    notice: str,
+) -> Tuple[str, str, str]:
+    """(subject, plain text, HTML) for a participant's invite to their one form."""
+    hello = f"Dear {full_name}," if full_name else "Hello,"
+    minutes = f"about {estimated_minutes} minutes" if estimated_minutes else ""
+    lines = [
+        hello,
+        "",
+        f"{consultancy} is carrying out the {evaluation_name} for {organisation}, and would value your views.",
+        "",
+        "Your questionnaire is ready. Open it with your personal link:",
+        form_url,
+        "",
+    ]
+    if minutes:
+        lines.append(f"It takes {minutes}.")
+    if deadline:
+        lines.append(f"Please complete it by {_long_date(deadline)}.")
+    lines += [
+        "Your answers save as you go, so you can stop and come back to this link any time.",
+        "",
+        notice,
+        "",
+        "This link is personal to you; please don't forward it.",
+        "",
+        consultancy,
+    ]
+    plain = "\n".join(lines)
+
+    e = lambda s: html.escape(s or "", quote=False)  # noqa: E731
+    facts = "".join(
+        f"<li>{e(t)}</li>"
+        for t in (
+            f"It takes {minutes}." if minutes else "",
+            f"Please complete it by {_long_date(deadline)}." if deadline else "",
+            "Your answers save as you go, so you can stop and come back to this link any time.",
+        )
+        if t
+    )
+    html_body = f"""
+    <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #0f172a; max-width: 560px;">
+      <p>{e(hello)}</p>
+      <p>{e(consultancy)} is carrying out the {e(evaluation_name)} for {e(organisation)}, and would value your views.</p>
+      <p>Your questionnaire is ready.</p>
+      <p style="margin: 20px 0;">
+        <a href="{html.escape(form_url, quote=True)}" style="display:inline-block; padding:12px 18px; border-radius:10px;
+           background:#0f172a; color:#ffffff; text-decoration:none; font-weight:700;">Open my questionnaire</a>
+      </p>
+      <ul style="padding-left: 18px;">{facts}</ul>
+      <p style="padding: 12px; border-radius: 10px; background: #f1f5f9;">{e(notice)}</p>
+      <p style="font-size: 13px; color: #475569;">This link is personal to you; please don't forward it.<br/>
+        If the button doesn't work, copy this address into your browser:<br/>
+        <span style="word-break: break-all;">{e(form_url)}</span></p>
+      <p>{e(consultancy)}</p>
+    </div>
+    """.strip()
+    subject = f"{organisation}: your board evaluation questionnaire"
+    return subject, plain, html_body
+
+
+def send_form_invite_email(
+    to_email: str,
+    full_name: Optional[str],
+    form_url: str,
+    organisation: str,
+    evaluation_name: str,
+    consultancy: str,
+    estimated_minutes: Optional[int] = None,
+    deadline: Optional[date] = None,
+    notice: str = "",
+) -> Tuple[bool, Optional[str]]:
+    """
+    Send a participant the one link to their form (evaluations that use assembled sets).
+    Same rules as the other emails: skipped (ok) when email is disabled, never sent to reserved test domains.
+    """
+    cfg = _smtp_config()
+    if not cfg["enabled"]:
+        return True, None
+    to_email = (to_email or "").strip()
+    if not to_email:
+        return False, "to_email is required"
+    if _skip_reserved(to_email):
+        return False, RESERVED_SKIP_MESSAGE
+    if not (form_url or "").strip():
+        return False, "no form link"
+
+    subject, plain, html_body = form_invite_content(
+        full_name=full_name, form_url=form_url, organisation=organisation, evaluation_name=evaluation_name,
+        consultancy=consultancy, estimated_minutes=estimated_minutes, deadline=deadline, notice=notice,
+    )
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = cfg["from_addr"]
+    msg["To"] = to_email
+    msg.set_content(plain)
+    msg.add_alternative(html_body, subtype="html")
+    return _send_message(cfg, msg)
