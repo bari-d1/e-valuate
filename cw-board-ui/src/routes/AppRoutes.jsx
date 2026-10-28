@@ -10,6 +10,7 @@ import MemberQuestionsPage from "../pages/member/MemberQuestionsPage";
 import MemberSubmitPage from "../pages/member/MemberSubmitPage";
 import MemberThankYouPage from "../pages/member/MemberThankYouPage";
 import MemberHubPage from "../pages/member/MemberHubPage";
+import FormPage from "../pages/form/FormPage";
 
 export default function AppRoutes() {
   return (
@@ -18,6 +19,9 @@ export default function AppRoutes() {
 
       {/* Consultant */}
       <Route path="/consultant/*" element={<AppLegacy />} />
+
+      {/* Participant's one form (evaluations that use assembled question sets) */}
+      <Route path="/form/:token" element={<FormPage />} />
 
       {/* ✅ Board Member portal (nested) */}
       <Route path="/member" element={<MemberLayout />}>

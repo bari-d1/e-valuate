@@ -1,6 +1,16 @@
 /**
- * Parse portal API errors and handle hub vs assignment token confusion.
+ * Parse portal API errors and handle hub vs assignment token confusion, and
+ * assembled-form tokens opened on the legacy questionnaire pages.
  */
+
+/**
+ * The one-form path when a legacy page was given an assembled form's token.
+ * @param {unknown} err
+ * @returns {string} e.g. "/form/<token>", or "" when not applicable
+ */
+export function getAssembledFormPath(err) {
+  return err && typeof err === "object" && err.code === "assembled_form" ? String(err.formPath || "") : "";
+}
 
 /**
  * @param {unknown} err
@@ -81,6 +91,17 @@ export function redirectToHubFromMisroute(nav, token, misroute) {
  */
 export async function throwPortalLoadError(r) {
   const text = await r.text();
+  try {
+    const d = JSON.parse(text)?.detail;
+    if (d && typeof d === "object" && d.code === "assembled_form") {
+      const err = new Error(d.message || "This link opens your questionnaire.");
+      err.code = "assembled_form";
+      err.formPath = d.form_path;
+      throw err;
+    }
+  } catch (e) {
+    if (e?.code === "assembled_form") throw e;
+  }
   const detail = parsePortalApiDetail(text);
   if (detail?.code === "hub_token_not_assignment") {
     const err = new Error(

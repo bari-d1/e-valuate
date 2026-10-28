@@ -21,6 +21,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { portalHubLoad, portalLoad } from "../../api/portalApi.js";
+import { getAssembledFormPath } from "../../api/memberPortalErrors.js";
 
 export default function MemberInvitePage() {
   const nav = useNavigate();
@@ -57,6 +58,10 @@ export default function MemberInvitePage() {
       setBusy(true);
 
       const hub = await portalHubLoad(trimmed, { allowNotFound: true });
+      if (hub?.form_path) {
+        nav(hub.form_path, { replace: true }); // assembled evaluations: straight to the one form
+        return;
+      }
       if (hub) {
         setPreview({
           person: hub?.respondent || null,
@@ -83,6 +88,11 @@ export default function MemberInvitePage() {
 
       nav(`/member/${encodeURIComponent(trimmed)}/evaluation`, { replace: true });
     } catch (e) {
+      const formPath = getAssembledFormPath(e);
+      if (formPath) {
+        nav(formPath, { replace: true });
+        return;
+      }
       setError(String(e?.message || e || "Invalid or expired link."));
     } finally {
       setBusy(false);

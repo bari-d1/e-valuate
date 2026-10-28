@@ -18,7 +18,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { portalLoad, portalGetResponses } from "../../api/portalApi.js";
-import { getHubTokenMisroute, redirectToHubFromMisroute } from "../../api/memberPortalErrors.js";
+import { getAssembledFormPath, getHubTokenMisroute, redirectToHubFromMisroute } from "../../api/memberPortalErrors.js";
 import { MemberUI as ui } from "./memberUi.jsx";
 import { humanise } from "../../utils/format.js";
 
@@ -216,6 +216,11 @@ export default function MemberQuestionsPage() {
         }
       } catch (e) {
         if (!alive) return;
+        const formPath = getAssembledFormPath(e);
+        if (formPath) {
+          nav(formPath, { replace: true });
+          return;
+        }
         const misroute = getHubTokenMisroute(e);
         if (misroute && redirectToHubFromMisroute(nav, token, misroute)) {
           return;
