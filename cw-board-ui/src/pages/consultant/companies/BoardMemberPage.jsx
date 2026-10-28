@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router-dom";
 import { boardApi, downloadDocument } from "../../../api/orgApi.js";
 import { color, font, space } from "../../../theme.js";
-import { DroppedItems, Excerpt, LinkButton, Notice, Panel, SectionTitle, SourceTag } from "./shared.jsx";
+import { DroppedItems, Excerpt, LinkButton, Notice, Panel, ParticipantCorrections, SectionTitle, SourceTag } from "./shared.jsx";
 import { formatDate, inputCss, useAsync, visuallyHidden } from "./helpers.js";
 import { TRISTATE, roleLabel, useMemberRegistry } from "./boardHelpers.js";
 
@@ -118,7 +118,7 @@ function FactEditor({ ui, spec, initial, initialSource = "client", submitLabel, 
 
 function useFactActions(orgId, memberId, onChanged) {
   const { busy, error, run } = useAsync();
-  const [mode, setMode] = useState(null); // "add" | "edit" | "edit-proposal"
+  const [mode, setMode] = useState(null); // "add" | "edit" | "edit-proposal" | "fix:<fact id>"
   const act = (fn) =>
     run(async () => {
       await fn();
@@ -161,7 +161,7 @@ function Proposal({ ui, spec, proposal, confirmed, docNames, f }) {
   );
 }
 
-function FactBody({ ui, spec, confirmed, proposal, docNames, f }) {
+function FactBody({ ui, spec, confirmed, proposal, corrections, docNames, f }) {
   return (
     <>
       {f.mode === "add" ? (
@@ -174,6 +174,19 @@ function FactBody({ ui, spec, confirmed, proposal, docNames, f }) {
           onSubmit={(value, source) => f.act(() => f.api("updateFact", confirmed.fact_id, { value, source }))} />
       ) : null}
       {proposal ? <Proposal ui={ui} spec={spec} proposal={proposal} confirmed={confirmed} docNames={docNames} f={f} /> : null}
+      <ParticipantCorrections
+        ui={ui}
+        items={corrections}
+        busy={f.busy}
+        editingId={f.mode && f.mode.startsWith("fix:") ? f.mode.slice(4) : null}
+        onEdit={(factId) => f.setMode(`fix:${factId}`)}
+        onDismiss={(p) => f.act(() => f.api("rejectFact", p.fact_id))}
+        renderEditor={(p) => (
+          <FactEditor ui={ui} spec={spec} busy={f.busy} submitLabel="Confirm this value" initial={confirmed ? confirmed.value : undefined}
+            initialSource="client" onCancel={() => f.setMode(null)}
+            onSubmit={(value, source) => f.act(() => f.api("confirmFact", p.fact_id, { value, source }))} />
+        )}
+      />
       {f.error ? (
         <div style={{ marginTop: space.sm }}>
           <Notice tone="error">{f.error}</Notice>
@@ -206,7 +219,7 @@ function FactActions({ spec, confirmed, f }) {
   );
 }
 
-function FactRow({ ui, orgId, memberId, spec, confirmed, proposal, docNames, onChanged }) {
+function FactRow({ ui, orgId, memberId, spec, confirmed, proposal, corrections, docNames, onChanged }) {
   const f = useFactActions(orgId, memberId, onChanged);
   return (
     <div style={{ padding: `${space.md}px 0`, borderTop: `1px solid ${color.border}` }}>
@@ -226,17 +239,32 @@ function FactRow({ ui, orgId, memberId, spec, confirmed, proposal, docNames, onC
         </div>
         <FactActions spec={spec} confirmed={confirmed} f={f} />
       </div>
-      <FactBody ui={ui} spec={spec} confirmed={confirmed} proposal={proposal} docNames={docNames} f={f} />
+      <FactBody ui={ui} spec={spec} confirmed={confirmed} proposal={proposal} corrections={corrections} docNames={docNames} f={f} />
     </div>
   );
 }
 
-function IndependenceRow({ ui, orgId, memberId, spec, confirmed, proposal, docNames, onChanged }) {
+/** Participants' corrections to things the profile doesn't hold as a fact (e.g. their committees): dismiss once dealt with. */
+function OtherCorrections({ ui, orgId, memberId, registry, facts, onChanged }) {
+  const f = useFactActions(orgId, memberId, onChanged);
+  const known = new Set(registry.facts.map((s) => s.key));
+  const items = facts.filter((x) => x.status === "proposed" && x.origin === "participant" && !known.has(x.key));
+  if (!items.length) return null;
+  return (
+    <Panel style={{ marginTop: space.lg }}>
+      <SectionTitle hint="Update the committees or other records yourself, then dismiss the correction.">Other corrections from the participant</SectionTitle>
+      <ParticipantCorrections ui={ui} items={items} busy={f.busy} onDismiss={(p) => f.act(() => f.api("rejectFact", p.fact_id))} />
+      {f.error ? <Notice tone="error">{f.error}</Notice> : null}
+    </Panel>
+  );
+}
+
+function IndependenceRow({ ui, orgId, memberId, spec, confirmed, proposal, corrections, docNames, onChanged }) {
   const { Badge } = ui;
   const f = useFactActions(orgId, memberId, onChanged);
   const answer = confirmed ? confirmed.value.answer : "unknown";
   const tone = { yes: "red", no: "green", unknown: "gray" }[answer];
-  const open = f.mode !== null || proposal || f.error;
+  const open = f.mode !== null || proposal || (corrections && corrections.length) || f.error;
   return (
     <>
       <tr style={{ borderTop: `1px solid ${color.border}` }}>
@@ -258,7 +286,7 @@ function IndependenceRow({ ui, orgId, memberId, spec, confirmed, proposal, docNa
         <tr>
           <td colSpan={4} style={{ ...ui.tdStyle(), paddingTop: 0 }}>
             {confirmed && confirmed.source_excerpt ? <Excerpt text={confirmed.source_excerpt} filename={docNames[confirmed.source_document_id]} /> : null}
-            <FactBody ui={ui} spec={spec} confirmed={confirmed} proposal={proposal} docNames={docNames} f={f} />
+            <FactBody ui={ui} spec={spec} confirmed={confirmed} proposal={proposal} corrections={corrections} docNames={docNames} f={f} />
           </td>
         </tr>
       ) : null}
@@ -473,7 +501,9 @@ export default function BoardMemberPage({ ui, org, memberId }) {
     for (const f of facts || []) {
       out[f.key] = out[f.key] || {};
       if (f.status === "confirmed") out[f.key].confirmed = f;
-      if (f.status === "proposed") out[f.key].proposal = f;
+      // Participants' corrections sit beside any other proposal for the key
+      if (f.status === "proposed" && f.origin === "participant") out[f.key].corrections = [...(out[f.key].corrections || []), f];
+      else if (f.status === "proposed") out[f.key].proposal = f;
     }
     return out;
   }, [facts]);
@@ -505,6 +535,7 @@ export default function BoardMemberPage({ ui, org, memberId }) {
     spec,
     confirmed: byKey[spec.key] && byKey[spec.key].confirmed,
     proposal: byKey[spec.key] && byKey[spec.key].proposal,
+    corrections: byKey[spec.key] && byKey[spec.key].corrections,
     docNames,
     onChanged: load,
   });
@@ -587,6 +618,8 @@ export default function BoardMemberPage({ ui, org, memberId }) {
         <Documents ui={ui} orgId={orgId} member={member} docs={docs} onChanged={load} />
       </div>
       <ProposedCommittees ui={ui} orgId={orgId} items={member.proposed_committees} onChanged={load} />
+
+      <OtherCorrections ui={ui} orgId={orgId} memberId={memberId} registry={registry} facts={facts} onChanged={load} />
 
       {registry.groups.map((g) => {
         const specs = registry.facts.filter((s) => s.group === g.key);

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { orgApi } from "../../../api/orgApi.js";
 import { color, font, space } from "../../../theme.js";
-import { Excerpt, LinkButton, Notice, Panel, SectionTitle, SourceTag } from "./shared.jsx";
+import { Excerpt, LinkButton, Notice, Panel, ParticipantCorrections, SectionTitle, SourceTag } from "./shared.jsx";
 import { formatDate, inputCss, useAsync } from "./helpers.js";
 
 // ----------------------------
@@ -108,10 +108,10 @@ function FactEditor({ ui, spec, initial, initialSource = "consultant", showSourc
 // One fact row
 // ----------------------------
 
-function FactRow({ ui, org, spec, confirmed, proposal, docNames, onChanged }) {
+function FactRow({ ui, org, spec, confirmed, proposal, corrections, docNames, onChanged }) {
   const { Badge, Button } = ui;
   const { busy, error, run } = useAsync();
-  const [mode, setMode] = useState(null); // "add" | "edit" | "edit-proposal"
+  const [mode, setMode] = useState(null); // "add" | "edit" | "edit-proposal" | "fix:<fact id>"
   const id = org.organisation_id;
 
   const act = (fn) =>
@@ -203,6 +203,20 @@ function FactRow({ ui, org, spec, confirmed, proposal, docNames, onChanged }) {
         </Panel>
       ) : null}
 
+      <ParticipantCorrections
+        ui={ui}
+        items={corrections}
+        busy={busy}
+        editingId={mode && mode.startsWith("fix:") ? mode.slice(4) : null}
+        onEdit={(factId) => setMode(`fix:${factId}`)}
+        onDismiss={(p) => act(() => orgApi.rejectFact(id, p.fact_id))}
+        renderEditor={(p) => (
+          <FactEditor ui={ui} spec={spec} busy={busy} submitLabel="Confirm this value" initial={confirmed ? confirmed.value : undefined}
+            initialSource="client" onCancel={() => setMode(null)}
+            onSubmit={(value, source) => act(() => orgApi.confirmFact(id, p.fact_id, { value, source }))} />
+        )}
+      />
+
       {error ? (
         <div style={{ marginTop: space.sm }}>
           <Notice tone="error">{error}</Notice>
@@ -255,7 +269,9 @@ export default function ProfileTab({ ui, org, registry, reloadOrg }) {
     for (const f of facts || []) {
       m[f.key] = m[f.key] || {};
       if (f.status === "confirmed") m[f.key].confirmed = f;
-      if (f.status === "proposed") m[f.key].proposal = f;
+      // Participants' corrections sit beside any other proposal for the key
+      if (f.status === "proposed" && f.origin === "participant") m[f.key].corrections = [...(m[f.key].corrections || []), f];
+      else if (f.status === "proposed") m[f.key].proposal = f;
     }
     return m;
   }, [facts]);
@@ -304,6 +320,7 @@ export default function ProfileTab({ ui, org, registry, reloadOrg }) {
                   spec={spec}
                   confirmed={byKey[spec.key] && byKey[spec.key].confirmed}
                   proposal={byKey[spec.key] && byKey[spec.key].proposal}
+                  corrections={byKey[spec.key] && byKey[spec.key].corrections}
                   docNames={docNames}
                   onChanged={refresh}
                 />

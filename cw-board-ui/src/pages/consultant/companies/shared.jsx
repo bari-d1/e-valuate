@@ -111,6 +111,41 @@ export function SourceTag({ ui, source }) {
   return <Badge tone={tone}>{SOURCE_LABELS[source] || source}</Badge>;
 }
 
+/**
+ * Corrections participants gave on their form ("Needs updating" on a confirm item). They are the
+ * participant's own words, never applied by themselves: the consultant confirms a proper value
+ * (renderEditor) or dismisses them. Without renderEditor (a fact the profile doesn't hold), only dismiss.
+ */
+export function ParticipantCorrections({ ui, items, editingId, onEdit, onDismiss, renderEditor, busy }) {
+  const { Badge, Button } = ui;
+  if (!items || !items.length) return null;
+  return items.map((p) => (
+    <Panel highlight key={p.fact_id} style={{ marginTop: space.sm }}>
+      <div style={{ display: "flex", gap: space.sm, alignItems: "center", flexWrap: "wrap" }}>
+        <Badge tone="purple">From the participant</Badge>
+        <span style={{ fontWeight: font.weight.bold, color: color.text, whiteSpace: "pre-wrap" }}>
+          {p.value ? `“${p.value}”` : "No correction given"}
+        </span>
+      </div>
+      {p.note ? <div style={{ marginTop: 4, fontSize: font.small, color: color.textMuted }}>{p.note}</div> : null}
+      {editingId === p.fact_id && renderEditor ? (
+        <div style={{ marginTop: space.sm }}>{renderEditor(p)}</div>
+      ) : (
+        <div style={{ display: "flex", gap: space.sm, flexWrap: "wrap", marginTop: space.sm }}>
+          {renderEditor ? (
+            <Button onClick={() => onEdit(p.fact_id)} disabled={busy}>
+              Set the correct value
+            </Button>
+          ) : null}
+          <Button variant="danger" onClick={() => onDismiss(p)} disabled={busy}>
+            Dismiss
+          </Button>
+        </div>
+      )}
+    </Panel>
+  ));
+}
+
 /** What an extraction run dropped and why, collapsed under a one-line count. */
 export function DroppedItems({ items }) {
   if (!items || !items.length) return null;
