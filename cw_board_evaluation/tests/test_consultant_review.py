@@ -412,12 +412,14 @@ def test_api_edits_return_fresh_metrics(api_client, db_session, val001) -> None:
 
 def test_invites_and_links_wait_for_an_approved_set(api_client, db_session, val001, monkeypatch) -> None:
     import app.api.evaluations as evaluations_api
+    import app.services.email_service as email_service
     import app.services.participant_notify as notify
 
     sent = []
     fake = lambda **kw: (sent.append(kw["to_email"]) or True, None)  # noqa: E731
     monkeypatch.setattr(evaluations_api, "send_invite_email", fake)
     monkeypatch.setattr(notify, "send_invite_email", fake)
+    monkeypatch.setattr(email_service, "send_form_invite_email", fake)  # approved sets get one form link
     ev, parts, _ = val001
     p6 = parts["P006"]
     p6.email = p6.email.lower()  # invite looks emails up in lower case

@@ -151,3 +151,32 @@ def test_review_upgrade_downgrade(migration_db) -> None:
         assert [r[0] for r in conn.execute(text("SELECT text FROM questions WHERE evaluation_id = 'M-2'"))] == ["Kept"]
     assert "question_set_events" not in _tables(engine)
     command.upgrade(cfg, "head")
+
+
+PORTAL = "e3b7f2a94c1d"
+
+
+def test_portal_upgrade_downgrade(migration_db) -> None:
+    cfg, engine = migration_db
+    command.upgrade(cfg, PORTAL)
+    org = uuid.uuid4()
+    fact = ("INSERT INTO organisation_facts (id, organisation_id, key, value, source, status, origin) "
+            "VALUES (:id, :org, 'board_size', :v, 'client', 'proposed', :o)")
+    with engine.begin() as conn:
+        conn.execute(text("INSERT INTO organisations (id, name, country, profile_status, profile_version) "
+                          "VALUES (:id, 'Portal Plc', 'NG', 'draft', 1)"), {"id": org})
+        # Participant corrections sit beside another proposal for the same key, and beside each other
+        for v, o in (("7", "ai_extraction"), ('"Eight"', "participant"), ('"Nine"', "participant")):
+            conn.execute(text(fact), {"id": uuid.uuid4(), "org": org, "v": v, "o": o})
+        with pytest.raises(Exception):  # still one non-participant proposal per key
+            with conn.begin_nested():
+                conn.execute(text(fact), {"id": uuid.uuid4(), "org": org, "v": "5", "o": "manual"})
+        conn.execute(text("UPDATE evaluations SET participant_notice = 'Notice' WHERE false"))
+
+    command.downgrade(cfg, REVIEW)
+    with engine.connect() as conn:
+        assert [r[0] for r in conn.execute(text("SELECT origin FROM organisation_facts"))] == ["ai_extraction"]
+        cols = {r[0] for r in conn.execute(text(
+            "SELECT column_name FROM information_schema.columns WHERE table_name = 'assessment_assignments'"))}
+    assert "opened_at" not in cols and "question_set_id" not in cols
+    command.upgrade(cfg, "head")

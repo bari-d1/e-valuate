@@ -44,6 +44,10 @@ export default function MemberHubPage() {
       setError("");
       try {
         const res = await portalHubLoad(t);
+        if (!cancelled && res?.form_path) {
+          nav(res.form_path, { replace: true }); // assembled evaluations: one form, no task list
+          return;
+        }
         if (!cancelled) setData(res);
       } catch (e) {
         if (!cancelled) setError(String(e?.message || e || "Could not load your tasks."));
@@ -55,7 +59,7 @@ export default function MemberHubPage() {
     return () => {
       cancelled = true;
     };
-  }, [hubToken]);
+  }, [hubToken, nav]);
 
   const ev = data?.evaluation;
   const person = data?.respondent;
@@ -136,9 +140,15 @@ export default function MemberHubPage() {
                   lineHeight: 1.45,
                 }}
               >
-                <b>No questionnaires yet.</b> You are registered for this evaluation. Your consultant will
-                generate your assessment tasks soon—you can bookmark this page and check back, or wait for
-                an email with your task links.
+                {data?.form_message ? (
+                  data.form_message
+                ) : (
+                  <>
+                    <b>No questionnaires yet.</b> You are registered for this evaluation. Your consultant will
+                    generate your assessment tasks soon—you can bookmark this page and check back, or wait for
+                    an email with your task links.
+                  </>
+                )}
               </div>
             ) : (
               <div style={{ marginTop: 14, overflowX: "auto" }}>

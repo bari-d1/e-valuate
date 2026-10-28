@@ -2696,6 +2696,7 @@ function getWorkflowProgress() {
               element={
                 <InviteParticipantsPage
                   ui={ui}
+                  evalId={evalId}
                   busy={busy}
                   focus={focus}
                   inviteText={inviteText}

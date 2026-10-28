@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ParticipantNotice from "./ParticipantNotice.jsx";
 
 /**
  * src/pages/consultant/InviteParticipants.jsx
@@ -11,6 +12,7 @@ import React, { useEffect, useMemo, useState } from "react";
  */
 export default function InviteParticipantsPage({
   ui,
+  evalId,
   busy,
   focus,
   inviteText,
@@ -119,6 +121,7 @@ export default function InviteParticipantsPage({
       subtitle="Add board members to this evaluation. They get their questionnaire links once you generate tasks on the Tracks page."
     >
       <div style={{ marginTop: 6 }}>{focus}</div>
+      <ParticipantNotice ui={ui} evalId={evalId} />
 
       <div style={{ marginTop: 14 }}>
         <Field

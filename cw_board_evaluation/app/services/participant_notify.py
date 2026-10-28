@@ -1,5 +1,9 @@
 """
 Send participant hub / assignment link emails for an evaluation.
+
+Evaluations that use assembled question sets send one email per approved
+participant with the one link to their form (app.services.participant_portal);
+legacy evaluations send the hub and assignment digest as before.
 """
 
 from __future__ import annotations
@@ -12,9 +16,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.models import AssessmentAssignment, Evaluation, Participant
+from app.services import participant_portal as form
 from app.services.email_service import send_assignment_links_digest_email, send_invite_email
 from app.services.question_sets import invite_block_reasons
-from app.util.portal_urls import assignment_portal_url, participant_hub_url
+from app.util.portal_urls import participant_hub_url, portal_url_for_assignment
 
 
 def _norm(s: Optional[str]) -> str:
@@ -30,7 +35,7 @@ def assignment_link_items_for_rows(assignments: List[AssessmentAssignment]) -> L
             continue
         out.append(
             {
-                "portal_url": assignment_portal_url(token),
+                "portal_url": portal_url_for_assignment(a.assignment_type, token),
                 "assignment_type": a.assignment_type,
                 "committee_name": a.committee_name,
                 "track_code": a.assignment_type,
@@ -97,6 +102,8 @@ def send_evaluation_link_notifications(
     blocks = invite_block_reasons(db, evaluation_id)
     blocked_not_approved: List[Dict[str, Any]] = []
 
+    assembled = form.uses_assembled_sets(db, evaluation_id)
+
     for p in participants:
         if str(p.id) in blocks:
             blocked_not_approved.append({"participant_id": str(p.id), "email": p.email, "reason": blocks[str(p.id)]})
@@ -106,6 +113,16 @@ def send_evaluation_link_notifications(
             email_failed.append(
                 {"participant_id": str(p.id), "email": None, "error": "no email on participant"}
             )
+            continue
+
+        if assembled:  # one email with the one form link
+            sent = form.send_form_link(db, ev, p, only_pending=only_pending)
+            if sent["skipped"]:
+                skipped_no_links.append({"participant_id": str(p.id), "email": email, "reason": sent["skipped"]})
+            elif sent["sent"]:
+                email_sent += 1
+            else:
+                email_failed.append({"participant_id": str(p.id), "email": email, "error": sent["error"]})
             continue
 
         rid = str(p.id)

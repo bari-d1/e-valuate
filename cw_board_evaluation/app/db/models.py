@@ -98,6 +98,9 @@ class Evaluation(Base):
     options: Mapped[Dict[str, Any]] = mapped_column(
         MutableDict.as_mutable(JSONB), nullable=False, default=dict, server_default="{}"
     )
+    # Shown at the start of the participant's form and in their invite email. NULL uses neutral
+    # default wording (app.services.participant_portal.default_notice) that promises nothing about anonymity.
+    participant_notice: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Relationships
     reports: Mapped[list["Report"]] = relationship(
@@ -481,6 +484,7 @@ class AssessmentAssignment(Base):
     # e.g.:
     # "BOARD_AS_WHOLE" | "DIRECTOR_SELF" | "DIRECTOR_PEER" | "CHAIR_EVAL" | "COMMITTEE_EVAL"
     # "CEO_SELF" | "CEO_EVAL" | "ED_SELF" | "ED_EVAL" | "GOV_AUDIT"
+    # "ASSEMBLED": the participant's one form for their approved question set (question_set_id)
     assignment_type: Mapped[str] = mapped_column(String(64), nullable=False, default="BOARD_AS_WHOLE")
 
     # Optional detail fields (useful for reporting + UX)
@@ -509,6 +513,16 @@ class AssessmentAssignment(Base):
         nullable=False,
     )
 
+    # ASSEMBLED assignments: the question set behind the form, and when the participant
+    # first opened it, last saved an answer, submitted, and when their link was last emailed
+    question_set_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("participant_question_sets.id", ondelete="SET NULL"), nullable=True
+    )
+    opened_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_activity_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    submitted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    email_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
     # Relationships
     evaluation: Mapped["Evaluation"] = relationship(back_populates="assignments")
 
@@ -527,6 +541,9 @@ class AssessmentAssignment(Base):
         Index("ix_assignments_respondent", "respondent_participant_id"),
         Index("ix_assignments_subject", "subject_participant_id"),
         Index("ix_assignments_token", "access_token"),
+        # One form per participant for assembled evaluations (the dedup constraint below treats NULLs as distinct)
+        Index("uq_assignment_one_assembled", "respondent_participant_id", unique=True,
+              postgresql_where=sql_text("assignment_type = 'ASSEMBLED'")),
         UniqueConstraint("access_token", name="uq_assignment_access_token"),
         # Prevent accidental duplicates for common cases:
         # same respondent doing same type for same subject/committee within same evaluation
@@ -806,12 +823,20 @@ class Response(Base):
 
     score: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # Assembled forms: the full answer (e.g. {"value": "yes"}, {"values": [...]}, {"dont_know": true},
+    # {"confirm": "needs_updating", "correction": "..."}) and the subject it's about, copied from the question.
+    # score still holds ratings (and 1/0 for yes/no) so existing analytics keep working.
+    answer: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)
+    evaluation_subject_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("evaluation_subjects.id", ondelete="SET NULL"), nullable=True
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
     )
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     evaluation: Mapped["Evaluation"] = relationship(back_populates="responses")
     participant: Mapped["Participant"] = relationship(back_populates="responses")
@@ -1123,7 +1148,8 @@ class OrganisationFact(Base):
     value: Mapped[Any] = mapped_column(JSONB, nullable=True)
     source: Mapped[str] = mapped_column(String(16), nullable=False)  # public | client | consultant
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="proposed")  # proposed | confirmed | rejected
-    origin: Mapped[str] = mapped_column(String(16), nullable=False, default="manual")  # ai_extraction | manual
+    # ai_extraction | manual | participant (a correction from a participant's confirm item, always proposed)
+    origin: Mapped[str] = mapped_column(String(16), nullable=False, default="manual")
     source_document_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True), ForeignKey("org_documents.id", ondelete="SET NULL"), nullable=True
     )
@@ -1135,15 +1161,16 @@ class OrganisationFact(Base):
     __table_args__ = (
         CheckConstraint("source IN ('public', 'client', 'consultant')", name="ck_organisation_facts_source"),
         CheckConstraint("status IN ('proposed', 'confirmed', 'rejected')", name="ck_organisation_facts_status"),
-        CheckConstraint("origin IN ('ai_extraction', 'manual')", name="ck_organisation_facts_origin"),
+        CheckConstraint("origin IN ('ai_extraction', 'manual', 'participant')", name="ck_organisation_facts_origin"),
         Index("ix_organisation_facts_organisation", "organisation_id"),
         Index(
             "uq_organisation_facts_one_confirmed", "organisation_id", "key",
             unique=True, postgresql_where=text("status = 'confirmed'"),
         ),
+        # Participant corrections sit beside any other proposal: several participants may correct the same fact
         Index(
             "uq_organisation_facts_one_proposed", "organisation_id", "key",
-            unique=True, postgresql_where=text("status = 'proposed'"),
+            unique=True, postgresql_where=text("status = 'proposed' AND origin <> 'participant'"),
         ),
     )
 
@@ -1314,7 +1341,8 @@ class BoardMemberFact(Base):
     value: Mapped[Any] = mapped_column(JSONB, nullable=True)
     source: Mapped[str] = mapped_column(String(16), nullable=False)  # public | client | consultant
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="proposed")  # proposed | confirmed | rejected
-    origin: Mapped[str] = mapped_column(String(16), nullable=False, default="manual")  # ai_extraction | manual
+    # ai_extraction | manual | participant (a correction from a participant's confirm item, always proposed)
+    origin: Mapped[str] = mapped_column(String(16), nullable=False, default="manual")
     source_document_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True), ForeignKey("org_documents.id", ondelete="SET NULL"), nullable=True
     )
@@ -1326,7 +1354,7 @@ class BoardMemberFact(Base):
     __table_args__ = (
         CheckConstraint("source IN ('public', 'client', 'consultant')", name="ck_board_member_facts_source"),
         CheckConstraint("status IN ('proposed', 'confirmed', 'rejected')", name="ck_board_member_facts_status"),
-        CheckConstraint("origin IN ('ai_extraction', 'manual')", name="ck_board_member_facts_origin"),
+        CheckConstraint("origin IN ('ai_extraction', 'manual', 'participant')", name="ck_board_member_facts_origin"),
         Index("ix_board_member_facts_member", "board_member_id"),
         Index(
             "uq_board_member_facts_one_confirmed", "board_member_id", "key",
@@ -1334,7 +1362,7 @@ class BoardMemberFact(Base):
         ),
         Index(
             "uq_board_member_facts_one_proposed", "board_member_id", "key",
-            unique=True, postgresql_where=text("status = 'proposed'"),
+            unique=True, postgresql_where=text("status = 'proposed' AND origin <> 'participant'"),
         ),
     )
 

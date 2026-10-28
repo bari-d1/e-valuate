@@ -143,6 +143,11 @@ export const boardApi = {
 
 const ev = (evalId) => `/evaluations/${encodeURIComponent(evalId)}`;
 
+export const evaluationApi = {
+  get: (evalId) => request(ev(evalId)),
+  update: (evalId, body) => request(ev(evalId), { method: "PATCH", body }),
+};
+
 export const readinessApi = {
   readiness: (evalId) => request(`${ev(evalId)}/readiness`),
   fromBoardMembers: (evalId, boardMemberIds) =>
