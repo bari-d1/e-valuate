@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import { boardApi, downloadDocument } from "../../../api/orgApi.js";
 import { color, font, space } from "../../../theme.js";
 import { DroppedItems, Excerpt, LinkButton, Notice, Panel, ParticipantCorrections, SectionTitle, SourceTag } from "./shared.jsx";
@@ -509,17 +508,10 @@ export default function BoardMemberPage({ ui, org, memberId }) {
   }, [facts]);
   const docNames = useMemo(() => Object.fromEntries(docs.map((d) => [d.document_id, d.filename])), [docs]);
 
-  const back = (
-    <p style={{ margin: `0 0 ${space.md}px` }}>
-      <Link to={`/consultant/companies/${orgId}/board`} style={{ fontSize: 13, color: color.primaryText }}>
-        ← Board
-      </Link>
-    </p>
-  );
   if (!member || !registry || !facts) {
     return (
       <div>
-        {back}
+        <h2 id="board-member-title" style={visuallyHidden}>Board member</h2>
         {error ? <Notice tone="error">{error}</Notice> : <p style={{ color: color.textMuted }}>Loading…</p>}
       </div>
     );
@@ -543,10 +535,9 @@ export default function BoardMemberPage({ ui, org, memberId }) {
 
   return (
     <div>
-      {back}
       <div style={{ display: "flex", justifyContent: "space-between", gap: space.md, flexWrap: "wrap", alignItems: "flex-start" }}>
         <div style={{ minWidth: 0 }}>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: font.weight.heavy, color: color.text, wordBreak: "break-word" }}>
+          <h2 id="board-member-title" style={{ margin: 0, fontSize: 18, fontWeight: font.weight.heavy, color: color.text, wordBreak: "break-word" }}>
             {member.display_code ? <span style={{ color: color.textMuted }}>{member.display_code} · </span> : null}
             {member.full_name}
           </h2>

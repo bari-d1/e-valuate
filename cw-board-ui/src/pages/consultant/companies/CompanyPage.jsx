@@ -4,6 +4,7 @@ import { SECTOR_OPTIONS, orgApi, sectorFromOption, sectorLabel } from "../../../
 import { color, font, radius, space } from "../../../theme.js";
 import BoardMemberPage from "./BoardMemberPage.jsx";
 import BoardTab from "./BoardTab.jsx";
+import Modal from "./Modal.jsx";
 import CommitteesTab from "./CommitteesTab.jsx";
 import DocumentsTab from "./DocumentsTab.jsx";
 import EvaluationsTab from "./EvaluationsTab.jsx";
@@ -87,6 +88,7 @@ export default function CompanyPage({ ui, onEvaluationCreatedPath }) {
   const [org, setOrg] = useState(null);
   const [registry, setRegistry] = useState(null);
   const [editing, setEditing] = useState(false);
+  const [boardVersion, setBoardVersion] = useState(0); // reloads the board list after the member dialog closes
 
   const reloadOrg = useCallback(() => run(async () => setOrg(await orgApi.get(orgId))), [orgId, run]);
   useEffect(() => {
@@ -96,7 +98,12 @@ export default function CompanyPage({ ui, onEvaluationCreatedPath }) {
 
   const active = TABS.find((t) => t.key === tab);
   if (!active) return <Navigate to={`/consultant/companies/${orgId}/documents`} replace />;
-  const Component = tab === "board" && memberId ? BoardMemberPage : active.Component;
+  const Component = active.Component;
+  const memberOpen = tab === "board" && !!memberId;
+  const closeMember = () => {
+    setBoardVersion((v) => v + 1);
+    navigate(`/consultant/companies/${orgId}/board`);
+  };
 
   return (
     <Card
@@ -172,11 +179,18 @@ export default function CompanyPage({ ui, onEvaluationCreatedPath }) {
           registry={registry}
           reloadOrg={reloadOrg}
           onEvaluationCreatedPath={onEvaluationCreatedPath}
-          memberId={memberId}
+          refreshKey={boardVersion}
         />
       ) : (
         <p style={{ color: color.textMuted }}>Loading…</p>
       )}
+
+      {/* A board member opens over the board list; the URL keeps a direct link to them */}
+      {memberOpen && org && registry ? (
+        <Modal labelledBy="board-member-title" onClose={closeMember}>
+          <BoardMemberPage key={memberId} ui={ui} org={org} memberId={memberId} />
+        </Modal>
+      ) : null}
     </Card>
   );
 }
