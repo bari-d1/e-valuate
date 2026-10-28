@@ -53,6 +53,7 @@ import QuestionBankPage from "./pages/consultant/questionBank/QuestionBankPage";
 import QuestionBankItemPage from "./pages/consultant/questionBank/QuestionBankItemPage";
 import QuestionPreviewPage from "./pages/consultant/questionBank/QuestionPreviewPage";
 import ReviewPage from "./pages/consultant/review/ReviewPage.jsx";
+import TrackingPage from "./pages/consultant/tracking/TrackingPage.jsx";
 import { formatDateTime } from "./utils/format.js";
 
 
@@ -2280,6 +2281,7 @@ function getWorkflowProgress() {
         { to: "/consultant/participants", step: "participants", label: "Participants" },
         { to: "/consultant/question-preview", label: "Question preview" },
         { to: "/consultant/review", label: "Review questions" },
+        { to: "/consultant/responses", label: "Responses" },
         { to: "/consultant/questions", step: "questions", label: "Questions" },
         { to: "/consultant/tracks", step: "tracks", label: "Tracks & assignments" },
       ],
@@ -2606,6 +2608,7 @@ function getWorkflowProgress() {
             <Route path="question-bank/:itemId" element={<QuestionBankItemPage ui={ui} />} />
             <Route path="question-preview" element={<QuestionPreviewPage ui={ui} evalId={evalId} />} />
             <Route path="review/*" element={<ReviewPage ui={ui} evalId={evalId} />} />
+            <Route path="responses" element={<TrackingPage ui={ui} evalId={evalId} />} />
 
             {/* Evaluations */}
             <Route
