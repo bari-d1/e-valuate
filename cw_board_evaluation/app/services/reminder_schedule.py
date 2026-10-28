@@ -17,7 +17,7 @@ column, so a slot can never be sent twice.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 DEFAULT_SETTINGS: Dict[str, Any] = {
@@ -133,10 +133,18 @@ def due_slot(settings: Dict[str, Any], slots: List[Slot], today: date, *, deadli
                   else f"Reminder {slot.number}, due {slot.on.strftime('%a %d %b').replace(' 0', ' ')}.")
 
 
-def next_slot_on(slots: List[Slot], today: date, sent_keys: set) -> Optional[date]:
-    """The next date this participant is due a reminder (today if one is due and unsent)."""
-    due = [x for x in slots if x.on <= today]
-    if due and due[-1].key not in sent_keys:
-        return today
-    upcoming = next((x for x in slots if x.on > today), None)
-    return upcoming.on if upcoming else None
+def next_due_on(settings: Dict[str, Any], slots: List[Slot], now: datetime, *, deadline: Optional[date],
+                sent_keys: set, reminders_sent: int, last_reminder_at: Optional[datetime], horizon: int = 90
+                ) -> Optional[date]:
+    """
+    The next day the reminder job would send this participant one, asking due_slot itself day by
+    day (later days at 09:00 UTC), so the date shown always matches what the job will do.
+    """
+    for i in range(horizon):
+        day = now.date() + timedelta(days=i)
+        at = now if i == 0 else datetime.combine(day, time(9), tzinfo=timezone.utc)
+        slot, _ = due_slot(settings, slots, day, deadline=deadline, sent_keys=sent_keys,
+                           reminders_sent=reminders_sent, last_reminder_at=last_reminder_at, now=at)
+        if slot is not None:
+            return day
+    return None

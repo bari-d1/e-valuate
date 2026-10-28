@@ -10,6 +10,7 @@ Never put email bodies, answers or link tokens in `detail`.
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -37,6 +38,14 @@ def record(db: Session, evaluation_id: str, event_type: str, actor: str, *, part
     return e
 
 
+# smtplib reports refused recipients as "{'a@b': (550, b'5.1.1 Mailbox unavailable')}"
+_SMTP_REFUSAL = re.compile(r"\((\d{3}),\s*b?['\"](.+?)['\"]\)")
+
+
 def short_error(err: Optional[str]) -> str:
-    """The mail server's error, trimmed: enough to act on, never the message itself."""
-    return " ".join(str(err or "Unknown error").split())[:300]
+    """The mail server's error in readable form ("550 5.1.1 Mailbox unavailable"), never the message itself."""
+    text = str(err or "Unknown error")
+    m = _SMTP_REFUSAL.search(text)
+    if m:
+        text = f"{m.group(1)} {m.group(2)}"
+    return " ".join(text.split())[:300]

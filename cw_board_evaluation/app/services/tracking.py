@@ -137,7 +137,7 @@ class Row:
 def load_rows(db: Session, ev: Evaluation) -> List[Row]:
     """Every participant's state in seven queries, whatever the number of participants."""
     participants = db.execute(select(Participant).where(Participant.evaluation_id == ev.id)
-                              .order_by(Participant.created_at, Participant.id)).scalars().all()
+                              .order_by(Participant.created_at, Participant.full_name, Participant.id)).scalars().all()
     sets = {s.participant_id: s for s in db.execute(select(ParticipantQuestionSet).where(
         ParticipantQuestionSet.evaluation_id == ev.id)).scalars()}
     assignments = {a.respondent_participant_id: a for a in db.execute(select(AssessmentAssignment).where(
@@ -196,11 +196,15 @@ def _days_left(ev: Evaluation, today: date) -> Optional[int]:
     return (ev.deadline - today).days if ev.deadline else None
 
 
-def participant_dict(row: Row, ev: Evaluation, settings: Dict[str, Any], today: date) -> Dict[str, Any]:
+def participant_dict(row: Row, ev: Evaluation, settings: Dict[str, Any], now: datetime) -> Dict[str, Any]:
     p, a, status = row.participant, row.assignment, row.status
+    today = now.date()
     next_on = None
-    if settings["enabled"] and status in OUTSTANDING and ev.status != "closed":
-        next_on = sched.next_slot_on(_slots(row, ev, settings), today, row.sent_keys)
+    if settings["enabled"] and status in OUTSTANDING and status != "email_failed" and ev.status != "closed" \
+            and not is_reserved_address(p.email):
+        next_on = sched.next_due_on(settings, _slots(row, ev, settings), now, deadline=ev.deadline,
+                                    sent_keys=row.sent_keys, reminders_sent=len(row.reminders),
+                                    last_reminder_at=row.last_reminder_at)
     reminders = row.reminders
     return {
         "participant_id": str(p.id), "name": p.full_name or p.email, "email": p.email,
@@ -222,7 +226,7 @@ def summary(db: Session, ev: Evaluation, now: Optional[datetime] = None) -> Dict
     today = now.date()
     settings = settings_of(ev)
     rows = load_rows(db, ev)
-    people = [participant_dict(r, ev, settings, today) for r in rows]
+    people = [participant_dict(r, ev, settings, now) for r in rows]
     counts = {k: 0 for k in STATUS_LABELS}
     for x in people:
         counts[x["status"]] += 1

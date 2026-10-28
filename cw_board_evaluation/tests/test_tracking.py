@@ -254,6 +254,11 @@ def test_manual_reminders_are_refused_where_they_should_be_unless_overridden(api
     assert tracking.remind(db_session, ev, BY, [str(p1.id)], override=True)[0]["outcome"] == "sent"
     assert len(_events(db_session, p1, "reminder_sent")) == 2
 
+    # Reminders on: the next automatic one respects the 24 hours since this manual one
+    tracking.update_settings(db_session, ev, {"enabled": True}, BY)
+    nxt = _rows(db_session, ev)[str(p1.id)]["next_reminder_on"]
+    assert nxt is None or nxt > date.today().isoformat()
+
     preview = tracking.remind(db_session, ev, BY, dry_run=True, override=True)  # everyone outstanding
     assert {x["participant_id"] for x in preview} == {str(p1.id), str(p4.id)}
     assert all(x["outcome"] == "would_send" for x in preview) and len(mailer.reminders) == 3
@@ -549,6 +554,8 @@ def test_reminder_settings_preview_and_dry_run(api_client, db_session, val001, m
 # ----------------------------
 
 def test_reminder_wording_progress_final_and_nobody_else() -> None:
+    from app.services.participant_events import short_error
+    assert short_error("{'p003@val001.test': (550, b'5.1.1 Mailbox unavailable')}") == "550 5.1.1 Mailbox unavailable"
     assert progress_words(0, 40) == "You haven't started yet."
     assert progress_words(10, 40) == "You've made a start."
     assert progress_words(20, 40) == "You're about halfway through."
