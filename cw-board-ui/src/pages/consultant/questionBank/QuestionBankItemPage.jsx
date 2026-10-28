@@ -118,6 +118,7 @@ function toDraft(item, meta) {
     evidence_source_code: item.evidence_source_code,
     known_from: item.known_from || "",
     known_from_behaviour: item.known_from_behaviour,
+    expected_answer: item.expected_answer || "",
     guidance: item.guidance || "",
     review_notes: item.review_notes || "",
     respondent_rule: item.respondent_rule,
@@ -149,6 +150,7 @@ function toPayload(d, meta, item) {
     evidence_source_code: d.evidence_source_code,
     known_from: d.known_from || null,
     known_from_behaviour: d.known_from_behaviour,
+    expected_answer: d.answer_type === "yesno" ? d.expected_answer || null : null,
     placeholders: placeholdersIn(d.text, ...(options || [])),
     guidance: d.guidance || null,
     review_notes: d.review_notes || null,
@@ -295,6 +297,18 @@ function Editor({ ui, meta, data, editable, onSaved }) {
               ))}
             </select>
           </Field>
+          {d.answer_type === "yesno" ? (
+            <Field
+              label="Expected answer"
+              hint="For factual items linked to a governance clause: the other answer is flagged as a compliance gap in the analysis. Leave empty when it isn't clear-cut."
+            >
+              <select value={d.expected_answer} onChange={(e) => set("expected_answer", e.target.value)} style={inputCss()}>
+                <option value="">None (no compliance check)</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </Field>
+          ) : null}
           {d.known_from ? (
             <Field label="When known">
               <select value={d.known_from_behaviour} onChange={(e) => set("known_from_behaviour", e.target.value)} style={inputCss()}>

@@ -205,3 +205,29 @@ def test_tracking_upgrade_downgrade(migration_db) -> None:
     command.downgrade(cfg, PORTAL)
     assert "participant_events" not in _tables(engine)
     command.upgrade(cfg, "head")
+
+
+ANALYSIS = "c68ecb986b88"
+
+
+def test_analysis_upgrade_downgrade(migration_db) -> None:
+    cfg, engine = migration_db
+    command.upgrade(cfg, TRACKING)
+    item = uuid.uuid4()
+    with engine.begin() as conn:  # an item loaded before expected_answer existed
+        conn.execute(text("INSERT INTO question_bank_items (id, code, version, status, text, answer_type, theme_code, "
+                          "evidence_source_code, subject_binding, known_from_behaviour, placeholders, source_refs, tag_notes, "
+                          "weight, sort_order, priority) SELECT :id, 'SEC-56', 1, 'approved', 'Induction?', 'yesno', "
+                          "t.code, e.code, 'none', 'skip', '[]', '[]', '{}', 1, 0, 'standard' "
+                          "FROM themes t, evidence_sources e LIMIT 1"), {"id": item})
+    command.upgrade(cfg, ANALYSIS)
+    tables = _tables(engine)
+    assert {"analysis_runs", "analysis_evidence", "findings", "finding_evidence", "finding_clauses", "conclusions"} <= tables
+    with engine.begin() as conn:
+        assert conn.execute(text("SELECT expected_answer FROM question_bank_items WHERE id = :id"), {"id": item}).scalar() == "yes"
+        with pytest.raises(Exception):
+            with conn.begin_nested():
+                conn.execute(text("UPDATE question_bank_items SET expected_answer = 'maybe' WHERE id = :id"), {"id": item})
+    command.downgrade(cfg, TRACKING)
+    assert "analysis_runs" not in _tables(engine)
+    command.upgrade(cfg, "head")

@@ -1441,6 +1441,9 @@ class QuestionBankItem(Base):
     # A fact key whose confirmed value answers the item; "skip" it or ask to "confirm" the stored value
     known_from: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     known_from_behaviour: Mapped[str] = mapped_column(String(16), nullable=False, default="skip")
+    # Factual yes/no items: the answer good practice expects; another answer is a compliance shortfall
+    # when the item is linked to a governance clause. NULL where it isn't clear-cut.
+    expected_answer: Mapped[Optional[str]] = mapped_column(String(8), nullable=True)
     placeholders: Mapped[Any] = mapped_column(JSONB, nullable=False, default=list)  # fact keys used in the text
 
     guidance: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # for later AI phrasing
@@ -1487,6 +1490,8 @@ class QuestionBankItem(Base):
             name="ck_question_bank_items_subject_binding",
         ),
         CheckConstraint("known_from_behaviour IN ('skip', 'confirm')", name="ck_question_bank_items_known_from_behaviour"),
+        CheckConstraint("expected_answer IS NULL OR expected_answer IN ('yes', 'no')",
+                        name="ck_question_bank_items_expected_answer"),
         CheckConstraint("priority IN ('core', 'standard', 'optional')", name="ck_question_bank_items_priority"),
         Index("ix_question_bank_items_code", "code"),
         Index("ix_question_bank_items_status", "status"),
@@ -1722,4 +1727,163 @@ class ParticipantEvent(Base):
         Index("ix_participant_events_evaluation", "evaluation_id", "created_at"),
         Index("ix_participant_events_participant", "participant_id", "created_at"),
         UniqueConstraint("dedupe_key", name="uq_participant_events_dedupe_key"),
+    )
+
+
+# ----------------------------
+# Analysis (assembled evaluations)
+# ----------------------------
+
+FINDING_KINDS = ("strength", "concern", "observation", "compliance_gap", "self_perception_gap")
+SUPPORT_LEVELS = ("strong", "moderate", "limited", "conflicting")
+DRAFT_ORIGINS = ("computed", "ai", "consultant")
+REVIEW_STATUSES = ("draft", "accepted", "edited", "rejected")
+
+
+class AnalysisRun(Base):
+    """
+    One analysis of an evaluation's answers (app.services.analysis). Its evidence and results never
+    change once done; re-running (e.g. after late answers) makes a new run and keeps this one for
+    comparison. Findings and conclusions on a run are the consultant's work and stay editable.
+    """
+
+    __tablename__ = "analysis_runs"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    evaluation_id: Mapped[str] = mapped_column(String(64), ForeignKey("evaluations.id", ondelete="CASCADE"), nullable=False)
+    # "running" | "done" | "failed"
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="running")
+    settings: Mapped[Any] = mapped_column(JSONB, nullable=False, default=dict)  # min_raters, include_unsubmitted, ai_used
+    inputs: Mapped[Any] = mapped_column(JSONB, nullable=False, default=dict)  # participants and submission times, bank versions, snapshot
+    results: Mapped[Any] = mapped_column(JSONB, nullable=False, default=dict)  # per subject and theme; the UI and report read these
+    error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    # "Mark analysis complete": every subject has an accepted finding or a "no findings" note, and an overall conclusion
+    completed_by: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("status IN ('running', 'done', 'failed')", name="ck_analysis_runs_status"),
+        Index("ix_analysis_runs_evaluation", "evaluation_id", "created_at"),
+    )
+
+
+class AnalysisEvidence(Base):
+    """
+    One answer used by a run: the single source every number and finding traces back to. Holds the
+    respondent's category and a per-run pseudonym ("R3"), never their name. Copies the question text
+    and tags so the evidence still reads correctly if the question changes later.
+    """
+
+    __tablename__ = "analysis_evidence"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("analysis_runs.id", ondelete="CASCADE"),
+                                              nullable=False)
+    response_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("responses.id", ondelete="SET NULL"), nullable=True
+    )
+    question_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("questions.id", ondelete="SET NULL"), nullable=True
+    )
+    evaluation_subject_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("evaluation_subjects.id", ondelete="SET NULL"), nullable=True
+    )
+    theme_code: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    evidence_source_code: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    bank_item_code: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    answer_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    question_text: Mapped[str] = mapped_column(Text, nullable=False)
+    # executive | non_executive | independent | chair | company_secretary | other
+    respondent_category: Mapped[str] = mapped_column(String(32), nullable=False)
+    respondent_ref: Mapped[str] = mapped_column(String(16), nullable=False)  # "R1", "R2", ... within this run
+    is_self: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)  # the respondent is the subject
+    in_progress: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)  # from an unsubmitted form
+    # {"score": 4} | {"answer": "yes"} | {"choice": "..."} | {"choices": [...]} | {"text": "..."} | {"dont_know": true}
+    value: Mapped[Any] = mapped_column(JSONB, nullable=False, default=dict)
+
+    __table_args__ = (
+        Index("ix_analysis_evidence_run_subject", "run_id", "evaluation_subject_id"),
+    )
+
+
+class Finding(Base):
+    """A finding on a run, about one subject (or the whole evaluation): drafted by rules, AI or a consultant."""
+
+    __tablename__ = "findings"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("analysis_runs.id", ondelete="CASCADE"),
+                                              nullable=False)
+    evaluation_subject_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("evaluation_subjects.id", ondelete="SET NULL"), nullable=True
+    )
+    theme_code: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    bank_item_code: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    kind: Mapped[str] = mapped_column(String(24), nullable=False)
+    statement: Mapped[str] = mapped_column(Text, nullable=False)
+    support: Mapped[str] = mapped_column(String(16), nullable=False)
+    origin: Mapped[str] = mapped_column(String(16), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")
+    original_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # the draft as computed or AI wrote it
+    rule: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)  # which computed rule drafted it
+    edited_by: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    edited_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint("kind IN (" + ", ".join(f"'{k}'" for k in FINDING_KINDS) + ")", name="ck_findings_kind"),
+        CheckConstraint("support IN (" + ", ".join(f"'{k}'" for k in SUPPORT_LEVELS) + ")", name="ck_findings_support"),
+        CheckConstraint("origin IN (" + ", ".join(f"'{k}'" for k in DRAFT_ORIGINS) + ")", name="ck_findings_origin"),
+        CheckConstraint("status IN (" + ", ".join(f"'{k}'" for k in REVIEW_STATUSES) + ")", name="ck_findings_status"),
+        Index("ix_findings_run_subject", "run_id", "evaluation_subject_id"),
+    )
+
+
+class FindingEvidence(Base):
+    __tablename__ = "finding_evidence"
+
+    finding_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("findings.id", ondelete="CASCADE"),
+                                                  primary_key=True)
+    evidence_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("analysis_evidence.id", ondelete="CASCADE"),
+                                                   primary_key=True)
+
+
+class FindingClause(Base):
+    __tablename__ = "finding_clauses"
+
+    finding_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("findings.id", ondelete="CASCADE"),
+                                                  primary_key=True)
+    clause_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("governance_clauses.id", ondelete="CASCADE"),
+                                                 primary_key=True)
+
+
+class Conclusion(Base):
+    """The conclusion for one subject on a run, or the overall one (evaluation_subject_id NULL)."""
+
+    __tablename__ = "conclusions"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("analysis_runs.id", ondelete="CASCADE"),
+                                              nullable=False)
+    evaluation_subject_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("evaluation_subjects.id", ondelete="CASCADE"), nullable=True
+    )
+    text: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")
+    origin: Mapped[str] = mapped_column(String(16), nullable=False, default="consultant")
+    original_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # The consultant's explicit "nothing to report for this subject"
+    no_findings: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    edited_by: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    edited_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint("origin IN (" + ", ".join(f"'{k}'" for k in DRAFT_ORIGINS) + ")", name="ck_conclusions_origin"),
+        CheckConstraint("status IN (" + ", ".join(f"'{k}'" for k in REVIEW_STATUSES) + ")", name="ck_conclusions_status"),
+        UniqueConstraint("run_id", "evaluation_subject_id", name="uq_conclusions_run_subject",
+                         postgresql_nulls_not_distinct=True),
     )

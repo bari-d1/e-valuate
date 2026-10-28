@@ -31,7 +31,7 @@ from app.services.taxonomy import validate_tag_codes
 CONTENT_FIELDS = (
     "code", "text", "answer_type", "options", "scale", "subject_types", "subject_binding", "respondent_rule",
     "activation_rule", "theme_code", "evidence_source_code", "known_from", "known_from_behaviour", "placeholders",
-    "guidance", "source_refs", "tag_notes", "weight", "sort_order", "priority", "review_notes",
+    "guidance", "source_refs", "tag_notes", "weight", "sort_order", "priority", "review_notes", "expected_answer",
 )
 
 
@@ -260,6 +260,7 @@ def item_dict(item: QuestionBankItem) -> Dict[str, Any]:
         "known_from": item.known_from,
         "known_from_label": fact_label(item.known_from) if item.known_from else None,
         "known_from_behaviour": item.known_from_behaviour,
+        "expected_answer": item.expected_answer,
         "placeholders": item.placeholders or [],
         "templated": bool(item.placeholders),
         "guidance": item.guidance,

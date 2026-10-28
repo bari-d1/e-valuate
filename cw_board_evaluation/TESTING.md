@@ -43,6 +43,7 @@ Each run adds a new "E2E Test Plc" evaluation to the app's database. The report 
 | 2026-10-28 | `feature/consultant-review` | 402 passed (unit and integration), 0 failed, 0 skipped |
 | 2026-10-28 | `feature/participant-portal` | 416 passed (unit and integration), 0 failed, 0 skipped |
 | 2026-10-28 | `feature/tracking-reminders` | 433 passed (unit and integration), 0 failed, 0 skipped |
+| 2026-10-28 | `feature/analysis` | 451 passed (unit and integration), 0 failed, 0 skipped |
 
 ## Known failures
 

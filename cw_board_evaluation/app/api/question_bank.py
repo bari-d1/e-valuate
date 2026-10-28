@@ -131,6 +131,7 @@ class ItemIn(BaseModel):
     evidence_source_code: str
     known_from: Optional[str] = None
     known_from_behaviour: str = "skip"
+    expected_answer: Optional[str] = None
     placeholders: List[str] = []
     guidance: Optional[str] = None
     source_refs: List[Dict[str, Any]] = []
@@ -154,6 +155,7 @@ class ItemPatch(BaseModel):
     evidence_source_code: Optional[str] = None
     known_from: Optional[str] = None
     known_from_behaviour: Optional[str] = None
+    expected_answer: Optional[str] = None
     placeholders: Optional[List[str]] = None
     guidance: Optional[str] = None
     tag_notes: Optional[Dict[str, Any]] = None
