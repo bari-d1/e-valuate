@@ -160,7 +160,7 @@ function SubjectCard({ ui, s, counts }) {
         <div style={{ display: "flex", gap: space.xs, flexWrap: "wrap" }}>
           {s.small_sample ? <Badge tone="amber">Small sample</Badge> : null}
           {s.suppressed.length ? <Badge tone="gray">{plural(s.suppressed.length, "result")} withheld</Badge> : null}
-          {s.facts.some((f) => f.check && !f.check.met) ? <Badge tone="red">Compliance gap</Badge> : null}
+          {s.facts.some((f) => f.check && !f.check.met) ? <Badge tone="amber">Practice differs (unverified)</Badge> : null}
           {s.self_peer.some((x) => x.flagged) ? <Badge tone="purple">Self/peer gap</Badge> : null}
         </div>
       </Link>
@@ -303,7 +303,7 @@ function SubjectView({ ui, ctx }) {
       ) : null}
 
       {s.facts.length || s.profile_facts?.length ? (
-        <Section title="Facts and compliance checks" hint="Factual answers are listed, never averaged. A check appears where good practice expects a particular answer under a governance clause.">
+        <Section title="Facts and expected answers" hint="Factual answers as respondents reported them, never averaged and not verified. A check appears where good practice expects a particular answer under a governance clause; a different answer needs checking against the company's documents.">
           <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "grid", gap: space.sm, fontSize: 13 }}>
             {[...s.facts].sort((a, b) => (b.check && !b.check.met) - (a.check && !a.check.met)).map((f) => (
               <li key={f.code} style={{ padding: space.sm, borderRadius: radius.sm, border: `1px solid ${f.check && !f.check.met ? color.dangerBorder : color.border}` }}>
@@ -311,7 +311,7 @@ function SubjectView({ ui, ctx }) {
                 <div>{f.answers.map((a) => `${a.value} (${a.category})`).join("; ")}</div>
                 {f.check ? (
                   <div style={{ color: f.check.met ? "#047857" : color.danger, fontWeight: font.weight.bold }}>
-                    {f.check.met ? "Meets" : "Falls short of"} good practice (expected “{f.check.expected}”)
+                    {f.check.met ? "Matches" : "Differs from"} the expected answer “{f.check.expected}” (self-reported)
                   </div>
                 ) : null}
                 {f.clauses.length ? (
@@ -630,7 +630,7 @@ export default function FindingsPage({ ui, evalId }) {
   };
 
   return (
-    <Card title="Findings" subtitle="What the answers show, subject by subject: scores, self versus colleagues, facts and compliance, and the findings that go into the report.">
+    <Card title="Findings" subtitle="What the answers show, subject by subject: scores, self versus colleagues, facts and expected answers, and the findings that go into the report.">
       {!evalId ? <Notice>Choose an evaluation first.</Notice> : null}
       {legacy ? <Notice>{legacy}</Notice> : null}
       {error ? <Notice tone="error">{error}</Notice> : null}

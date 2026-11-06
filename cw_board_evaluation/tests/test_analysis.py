@@ -1,7 +1,7 @@
 """
 Analysis of an assembled evaluation on the VAL-001-style fixture with planted
 answers (tests/analysis_seed.py): the evidence register, results, suppression,
-facts and compliance, computed findings, AI drafts (mocked) and their checks,
+facts and practice gaps, computed findings, AI drafts (mocked) and their checks,
 runs and comparisons, completion, and legacy evaluations. Placeholder names only.
 
 Requires: RUN_INTEGRATION_TESTS=1 and PostgreSQL.
@@ -167,7 +167,7 @@ def test_facts_never_reach_averages(db_session, planted) -> None:
     assert sec["themes"] == {} and len(sec["facts"]) > 20  # all ORG_FACT: listed, never scored
 
 
-def test_compliance_gaps_only_from_facts_with_an_expected_answer(db_session, planted) -> None:
+def test_practice_gaps_only_from_facts_with_an_expected_answer(db_session, planted) -> None:
     ev, _, _ = planted
     run = _run(db_session, ev)
     sec = _subject(run, "The company secretariat")
@@ -176,17 +176,22 @@ def test_compliance_gaps_only_from_facts_with_an_expected_answer(db_session, pla
     assert {c["label"] for c in induction["clauses"]} == {"NCCG 2018 13", "NAICOM 2021 3.0"}
     unchecked = next(f for f in sec["facts"] if f["code"] == "SEC-11")  # no expected answer
     assert unchecked["check"] is None
-    gaps = [f for f in an.findings(db_session, run) if f.kind == "compliance_gap"]
+    gaps = [f for f in an.findings(db_session, run) if f.kind == "practice_gap"]
     [gap] = gaps
-    assert gap.bank_item_code == "SEC-56" and "induction programme" in gap.statement
+    assert gap.bank_item_code == "SEC-56" and gap.rule == "practice_differs" and "induction programme" in gap.statement
+    # Self-reported practice to verify, never a compliance conclusion (spec v1.1)
+    assert "self-reported" in gap.statement.lower() and "check it against the company's documents" in gap.statement
+    for word in ("compliance", "breach", "non-compliant"):
+        assert word not in gap.statement.lower()
     clauses = db_session.execute(select(FindingClause).where(FindingClause.finding_id == gap.id)).scalars().all()
-    assert len(clauses) == 2
+    assert {str(c.clause_id) for c in clauses} == {c["clause_id"] for c in induction["clauses"]}
     ev_rows = db_session.execute(select(AnalysisEvidence).join(FindingEvidence, FindingEvidence.evidence_id == AnalysisEvidence.id)
                                  .where(FindingEvidence.finding_id == gap.id)).scalars().all()
-    assert ev_rows and all(e.evidence_source_code == "ORG_FACT" for e in ev_rows)
+    assert {str(e.id) for e in ev_rows} == {a["evidence_id"] for a in induction["answers"]}
+    assert all(e.evidence_source_code == "ORG_FACT" for e in ev_rows)
 
 
-def test_an_opinion_answer_never_becomes_a_compliance_gap(db_session, reference_seeded, monkeypatch) -> None:
+def test_an_opinion_answer_never_becomes_a_practice_gap(db_session, reference_seeded, monkeypatch) -> None:
     # Give an opinion (PERCEPTION) yes/no item an expected answer; answers against it still produce no gap
     load_clause_fixtures(db_session, [read_fixture(p) for p in fixture_paths()])
     load_fixture(db_session, json.loads(FIXTURE.read_text(encoding="utf-8")))
@@ -194,7 +199,7 @@ def test_an_opinion_answer_never_becomes_a_compliance_gap(db_session, reference_
     db_session.flush()
     ev, _, _ = _build(db_session, monkeypatch)
     run = _run(db_session, ev)
-    assert all(f.bank_item_code != "BOARD-RISK-05" for f in an.findings(db_session, run) if f.kind == "compliance_gap")
+    assert all(f.bank_item_code != "BOARD-RISK-05" for f in an.findings(db_session, run) if f.kind == "practice_gap")
     board = _subject(run, "The board")
     assert all(c["code"] != "BOARD-RISK-05" or c["counts"] for c in board["choices"])
 
@@ -208,7 +213,7 @@ def test_each_planted_pattern_gives_the_expected_finding(db_session, planted) ->
     assert ("strength", "theme_strength") in kinds("The board")  # meeting management (board effectiveness)
     assert ("observation", "theme_divided") in kinds("The board")  # executives versus everyone else
     assert ("concern", "theme_concern") in kinds("Enterprise Risk Management and Governance Committee")  # succession
-    assert ("compliance_gap", "compliance_shortfall") in kinds("The company secretariat")
+    assert ("practice_gap", "practice_differs") in kinds("The company secretariat")
     divided = _findings(db_session, run, _subject(run, "The board"), "theme_divided")[0]
     assert divided.support == "conflicting"
     gap2 = _findings(db_session, run, _subject(run, "Board Member 002"), "self_peer_gap")[0]
@@ -303,6 +308,27 @@ def test_ai_drafts_are_checked_and_prompts_carry_no_names_or_personality_notes(d
     context, _ = aai.build_context(db_session, run, sid)
     text = json.dumps(context)
     assert secret not in text and p2_name not in text and context["SUBJECT"]["description"].startswith("the managing")
+
+
+def test_an_ai_practice_gap_must_rest_on_a_fact_and_draw_no_compliance_conclusion(db_session, planted) -> None:
+    ev, _, _ = planted
+    run = _run(db_session, ev)
+    _, board = aai.build_context(db_session, run, _subject(run, "The board")["subject_id"])
+    opinion = next(i for i, e in board["evidence"].items() if not an._is_fact(e))
+    draft = aai.DraftFinding(kind="practice_gap", statement="Directors say risk reporting is thin.", support="limited",
+                             evidence_ids=[opinion])
+    ok, why = aai.validate(draft, board)
+    assert ok is None and why == "A practice gap must rest on a factual answer, not opinions."
+
+    _, sec = aai.build_context(db_session, run, _subject(run, "The company secretariat")["subject_id"])
+    fact = next(i for i, e in sec["evidence"].items() if e.bank_item_code == "SEC-56")
+    reported = aai.DraftFinding(kind="practice_gap", support="limited", evidence_ids=[fact],
+                                statement="The secretariat reports no induction programme; this needs checking against documents.")
+    assert aai.validate(reported, sec) == (reported, None)
+    for claim in ("The company is non-compliant with the code.", "This is a breach of NCCG 13.",
+                  "A compliance failure on induction."):
+        bad = aai.DraftFinding(kind="practice_gap", statement=claim, support="limited", evidence_ids=[fact])
+        assert aai.validate(bad, sec)[1].startswith("A practice gap is self-reported"), claim
 
 
 def test_ai_never_sees_suppressed_results(db_session, planted, monkeypatch) -> None:

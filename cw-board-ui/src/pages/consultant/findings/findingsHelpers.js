@@ -4,14 +4,14 @@ export const KIND_LABELS = {
   strength: "Strength",
   concern: "Concern",
   observation: "Observation",
-  compliance_gap: "Compliance gap",
+  practice_gap: "Practice differs from expectation (unverified)",
   self_perception_gap: "Self-perception gap",
 };
 export const KIND_TONES = {
   strength: "green",
   concern: "red",
   observation: "blue",
-  compliance_gap: "amber",
+  practice_gap: "amber",
   self_perception_gap: "purple",
 };
 export const SUPPORT_LABELS = {
@@ -22,7 +22,7 @@ export const SUPPORT_LABELS = {
 };
 export const ORIGIN_LABELS = { computed: "Drafted from the numbers", ai: "Drafted by AI", consultant: "Added by a consultant" };
 export const STATUS_LABELS = { draft: "Draft", accepted: "Accepted", edited: "Accepted (edited)", rejected: "Rejected" };
-export const KIND_ORDER = ["compliance_gap", "concern", "self_perception_gap", "observation", "strength"];
+export const KIND_ORDER = ["practice_gap", "concern", "self_perception_gap", "observation", "strength"];
 
 export const SUBJECT_KIND_LABELS = {
   board: "The board",

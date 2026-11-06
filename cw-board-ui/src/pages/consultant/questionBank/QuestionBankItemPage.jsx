@@ -300,10 +300,10 @@ function Editor({ ui, meta, data, editable, onSaved }) {
           {d.answer_type === "yesno" ? (
             <Field
               label="Expected answer"
-              hint="For factual items linked to a governance clause: the other answer is flagged as a compliance gap in the analysis. Leave empty when it isn't clear-cut."
+              hint="For factual items linked to a governance clause: the other answer is flagged in the analysis as practice that differs from expectation, to verify against documents. Leave empty when it isn't clear-cut."
             >
               <select value={d.expected_answer} onChange={(e) => set("expected_answer", e.target.value)} style={inputCss()}>
-                <option value="">None (no compliance check)</option>
+                <option value="">None (no check)</option>
                 <option value="yes">Yes</option>
                 <option value="no">No</option>
               </select>
