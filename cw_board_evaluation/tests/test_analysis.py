@@ -25,6 +25,7 @@ from app.db.models import (
     QuestionBankItem,
     Response,
 )
+from app.domain import analysis_rules as R
 from app.domain.board_member_profile import GENERATION_ONLY_KEYS
 from app.services import analysis as an
 from app.services import analysis_ai as aai
@@ -223,6 +224,44 @@ def test_each_planted_pattern_gives_the_expected_finding(db_session, planted) ->
     assert db_session.execute(select(FindingClause).where(FindingClause.finding_id == concern.id)).first()
     for f in an.findings(db_session, run):  # every computed finding traces back to answers
         assert db_session.execute(select(FindingEvidence).where(FindingEvidence.finding_id == f.id)).first(), f.statement
+
+
+def test_a_run_without_thresholds_records_the_defaults_as_unapproved(db_session, planted) -> None:
+    ev, _, _ = planted
+    run = _run(db_session, ev)
+    assert run.settings["thresholds"] == R.DEFAULT_THRESHOLDS
+    assert run.settings["thresholds_status"] == "unapproved"
+    assert _findings(db_session, run, _subject(run, "Enterprise Risk Management and Governance Committee"), "theme_concern")
+    assert _findings(db_session, run, _subject(run, "Board Member 002"), "self_peer_gap")
+
+
+def test_custom_thresholds_change_the_findings_and_are_recorded(api_client, db_session, planted, monkeypatch) -> None:
+    ev, _, _ = planted
+    custom = {"concern_mean": 1.9, "self_peer_gap": 2.5}  # the committee's succession theme averages 2.0; gaps are 2.2 and 1.6
+    run = _run(db_session, ev, thresholds=custom)
+    assert run.settings["thresholds"] == {**R.DEFAULT_THRESHOLDS, **custom}
+    assert run.settings["thresholds_status"] == "unapproved"
+    assert not _findings(db_session, run, _subject(run, "Enterprise Risk Management and Governance Committee"), "theme_concern")
+    assert not [f for f in an.findings(db_session, run) if f.rule == "self_peer_gap"]
+    assert not any(sp["flagged"] for s in run.results["subjects"].values() for sp in s["self_peer"])
+    assert _findings(db_session, run, _subject(run, "The board"), "theme_strength")  # untouched default still applies
+    with pytest.raises(ValueError, match="between 1 and 5"):
+        an.start_run(db_session, ev, BY, thresholds={"concern_mean": 9})
+
+    class Shared:
+        def __getattr__(self, name):
+            return getattr(db_session, name)
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(an, "session_factory", lambda: Shared())
+    url = f"/api/v1/evaluations/{ev.id}/analysis/runs"
+    assert api_client.post(url, json={"thresholds": {"concern_mean": 9}}).status_code == 422
+    r = api_client.post(url, json={"thresholds": {"theme_strength_mean": 4.8}})
+    assert r.status_code == 202
+    assert r.json()["settings"]["thresholds"] == {**R.DEFAULT_THRESHOLDS, "theme_strength_mean": 4.8}
+    assert r.json()["settings"]["thresholds_status"] == "unapproved"
 
 
 # ----------------------------

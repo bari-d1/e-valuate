@@ -4,7 +4,7 @@ app.api.analysis
 Analysis of assembled evaluations (app.services.analysis). Consultant auth like
 the other consultant routes; X-Consultant-Name names who decided what.
 
-- POST  /evaluations/{id}/analysis/runs                         start a run (min_raters, include_unsubmitted, ai)
+- POST  /evaluations/{id}/analysis/runs                         start a run (min_raters, include_unsubmitted, ai, thresholds)
 - GET   /evaluations/{id}/analysis/runs                         runs, newest first
 - GET   /evaluations/{id}/analysis/runs/{run_id}                status, settings and results for every subject
 - GET   /evaluations/{id}/analysis/runs/{run_id}/subjects/{sid}/evidence   the anonymised answers behind a subject
@@ -68,10 +68,19 @@ def _act(db: Session, fn, *args, **kwargs):
     return out
 
 
+class ThresholdsIn(BaseModel):
+    """Draft-signal thresholds for one run; any left out use the defaults (app.domain.analysis_rules)."""
+    theme_strength_mean: Optional[float] = None
+    item_strength_mean: Optional[float] = None
+    concern_mean: Optional[float] = None
+    self_peer_gap: Optional[float] = None
+
+
 class RunIn(BaseModel):
     min_raters: Optional[int] = None
     include_unsubmitted: bool = False
     ai: bool = False
+    thresholds: Optional[ThresholdsIn] = None
 
 
 class FindingIn(BaseModel):
@@ -105,7 +114,7 @@ def start_run(evaluation_id: str, background: BackgroundTasks, payload: Optional
     ev = _evaluation(db, evaluation_id)
     p = payload or RunIn()
     run = _act(db, an.start_run, db, ev, by, min_raters=p.min_raters, include_unsubmitted=p.include_unsubmitted,
-               ai=p.ai and analysis_ai.enabled())
+               ai=p.ai and analysis_ai.enabled(), thresholds=p.thresholds.model_dump() if p.thresholds else None)
     background.add_task(an.execute_run, run.id)
     return an.run_dict(run)
 

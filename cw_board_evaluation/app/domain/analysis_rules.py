@@ -4,6 +4,13 @@ app.domain.analysis_rules
 Every threshold and rule the analysis uses, in one place. Change them here;
 nothing else in the analysis hard-codes a number.
 
+Draft-signal thresholds (strength, concern, self/peer gap) are not methodology:
+scoring and thresholds belong to the client, and a high average is never taken
+to mean effectiveness (spec v1.1). The values below are only defaults. Each run
+records the thresholds it used in settings["thresholds"] (a run can be started
+with its own), and settings["thresholds_status"] is "unapproved" until the client
+approves them; until then computed strengths, concerns and gaps are draft signals.
+
 Small numbers
   MIN_RATERS (default 3, set per run): results about an individual director, or
   a rater-group split, need at least this many distinct people behind them, or
@@ -24,12 +31,14 @@ count once; for an item, over the ratings themselves)
   strong agreement  SD <= 0.75
   mixed             anything else
 
-Computed findings
-  strength             theme average >= 4.2 with strong agreement; or an item linked to a
-                       governance clause averaging >= 4.5 with strong agreement
-  concern              theme average <= 2.5; or a clause-linked item averaging <= 2.5
+Computed findings (default thresholds in brackets; a run may use others)
+  strength             theme average >= theme_strength_mean (4.2) with strong agreement; or
+                       an item linked to a governance clause averaging >= item_strength_mean
+                       (4.5) with strong agreement
+  concern              theme average <= concern_mean (2.5); or a clause-linked item averaging
+                       <= concern_mean
   observation          a theme where views are divided (support "conflicting")
-  self_perception_gap  |self - peer average| >= 1.0 on a core peer statement
+  self_perception_gap  |self - peer average| >= self_peer_gap (1.0) on a core peer statement
   practice_gap         a factual yes/no item with an expected answer and a governance
                        clause, answered the other way. Self-reported practice that needs
                        verifying against documents, never a conclusion about compliance.
@@ -47,7 +56,7 @@ Support levels (distinct people behind the evidence)
 from __future__ import annotations
 
 import math
-from typing import Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 DEFAULT_MIN_RATERS = 3
 
@@ -55,10 +64,16 @@ STRONG_AGREEMENT_SD = 0.75
 DIVIDED_SD = 1.25
 DIVIDED_END_SHARE = 0.25  # share of ratings at each end of the scale that makes views "divided"
 
+# Default draft-signal thresholds; read a run's own with thresholds(run.settings)
 THEME_STRENGTH_MEAN = 4.2
 ITEM_STRENGTH_MEAN = 4.5
 CONCERN_MEAN = 2.5
 SELF_PEER_GAP = 1.0
+DEFAULT_THRESHOLDS = {"theme_strength_mean": THEME_STRENGTH_MEAN, "item_strength_mean": ITEM_STRENGTH_MEAN,
+                      "concern_mean": CONCERN_MEAN, "self_peer_gap": SELF_PEER_GAP}
+THRESHOLD_RANGES = {"theme_strength_mean": (1.0, 5.0), "item_strength_mean": (1.0, 5.0),
+                    "concern_mean": (1.0, 5.0), "self_peer_gap": (0.1, 4.0)}
+THRESHOLDS_UNAPPROVED = "unapproved"
 
 STRONG_SUPPORT_PEOPLE = 5
 MODERATE_SUPPORT_PEOPLE = 3
@@ -83,6 +98,30 @@ SPLIT_GROUPS = {
 
 # Self and peer versions of the core statements: PEER-CORE-0n pairs with SELF-CORE-0n
 PEER_PREFIX, SELF_PREFIX = "PEER-CORE-", "SELF-CORE-"
+
+
+def resolve_thresholds(given: Optional[Mapping[str, Any]] = None) -> Dict[str, float]:
+    """The thresholds a new run uses: the given values where set, the defaults for the rest."""
+    out = dict(DEFAULT_THRESHOLDS)
+    for key, value in (given or {}).items():
+        if key not in DEFAULT_THRESHOLDS:
+            raise ValueError(f"Unknown threshold: {key}.")
+        if value is None:
+            continue
+        lo, hi = THRESHOLD_RANGES[key]
+        try:
+            x = float(value)
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Threshold {key} must be a number.") from e
+        if not lo <= x <= hi:
+            raise ValueError(f"Threshold {key} must be between {lo:g} and {hi:g}.")
+        out[key] = x
+    return out
+
+
+def thresholds(settings: Optional[Mapping[str, Any]]) -> Dict[str, float]:
+    """A run's thresholds. Runs from before thresholds were recorded used the defaults."""
+    return {**DEFAULT_THRESHOLDS, **((settings or {}).get("thresholds") or {})}
 
 
 def mean(xs: List[float]) -> Optional[float]:

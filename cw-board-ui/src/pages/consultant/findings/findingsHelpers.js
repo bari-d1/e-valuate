@@ -43,6 +43,29 @@ export const ROLE_LABELS = {
 
 export const isAccepted = (f) => f.status === "accepted" || f.status === "edited";
 
+/**
+ * Computed strengths, concerns and self/peer gaps come from the run's thresholds, which are the
+ * client's to approve. Until they are, those findings are draft signals.
+ */
+export const DRAFT_SIGNAL_KINDS = ["strength", "concern", "self_perception_gap"];
+export const THRESHOLD_LABELS = {
+  theme_strength_mean: "Theme strength: average at least",
+  item_strength_mean: "Clause-linked item strength: average at least",
+  concern_mean: "Concern: average at most",
+  self_peer_gap: "Self/peer gap: at least",
+};
+export const thresholdsApproved = (settings) => settings?.thresholds_status === "approved";
+export const isDraftSignal = (f, settings) =>
+  f.origin === "computed" && DRAFT_SIGNAL_KINDS.includes(f.kind) && !thresholdsApproved(settings);
+
+/** Colour for an average, from the run's own thresholds (none recorded: no colour). */
+export function scoreTone(mean, thresholds) {
+  if (!thresholds || mean === null || mean === undefined) return "neutral";
+  if (mean <= thresholds.concern_mean) return "low";
+  if (mean >= thresholds.theme_strength_mean) return "high";
+  return "neutral";
+}
+
 export function fmt(x) {
   return x === null || x === undefined ? "—" : Number(x).toFixed(1);
 }

@@ -22,6 +22,7 @@ pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[1]
 ANALYSIS = "c68ecb986b88"
 PRACTICE_GAP = "d1a6f0c3e8b2"
+THRESHOLDS = "e5c2a7d40f19"
 
 
 @pytest.fixture
@@ -107,3 +108,25 @@ def test_compliance_gaps_become_practice_gaps_and_back(migration_db) -> None:
 
     command.upgrade(cfg, "head")
     assert _finding(engine, gap)["kind"] == "practice_gap"
+
+
+def _settings(engine, run_id):
+    with engine.connect() as conn:
+        return conn.execute(text("SELECT settings FROM analysis_runs WHERE id = :id"), {"id": run_id}).scalar()
+
+
+def test_earlier_runs_record_the_default_thresholds_as_unapproved(migration_db) -> None:
+    cfg, engine = migration_db
+    command.upgrade(cfg, PRACTICE_GAP)
+    run_id = _seed_run(engine)
+
+    command.upgrade(cfg, THRESHOLDS)
+    assert _settings(engine, run_id) == {
+        "min_raters": 3, "thresholds_status": "unapproved",
+        "thresholds": {"theme_strength_mean": 4.2, "item_strength_mean": 4.5, "concern_mean": 2.5, "self_peer_gap": 1.0},
+    }
+
+    command.downgrade(cfg, PRACTICE_GAP)
+    assert _settings(engine, run_id) == {"min_raters": 3}
+    command.upgrade(cfg, "head")
+    assert _settings(engine, run_id)["thresholds_status"] == "unapproved"

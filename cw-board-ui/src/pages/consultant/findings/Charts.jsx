@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { color, font, radius, space } from "../../../theme.js";
-import { fmt } from "./findingsHelpers.js";
+import { fmt, scoreTone } from "./findingsHelpers.js";
 
 /**
  * Charts drawn to scale on a 1 to 5 axis. Each is also readable as text (labels and values are
@@ -62,7 +62,7 @@ function Distribution({ dist }) {
 }
 
 /** One horizontal bar per theme (or item): the average on a 1 to 5 axis, rater count and agreement. Tap for the spread of ratings. */
-export function ScoreBars({ rows }) {
+export function ScoreBars({ rows, thresholds }) {
   const [open, setOpen] = useState(null);
   return (
     <div style={{ display: "grid", gap: space.md }}>
@@ -92,7 +92,7 @@ export function ScoreBars({ rows }) {
                       bottom: 2,
                       width: pos(r.mean),
                       minWidth: 3,
-                      background: r.mean <= 2.5 ? color.danger : r.mean >= 4.2 ? "#059669" : color.primary,
+                      background: { low: color.danger, high: "#059669", neutral: color.primary }[scoreTone(r.mean, thresholds)],
                       borderRadius: radius.sm,
                     }}
                   />
@@ -109,7 +109,7 @@ export function ScoreBars({ rows }) {
   );
 }
 
-/** Self-rating against the colleagues' average for each core statement. Gaps of 1 point or more are flagged. */
+/** Self-rating against the colleagues' average for each core statement. Gaps at or over the run's threshold are flagged. */
 export function SelfPeerChart({ rows }) {
   return (
     <div style={{ display: "grid", gap: space.md }}>
