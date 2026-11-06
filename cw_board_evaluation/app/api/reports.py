@@ -4,7 +4,8 @@ app.api.reports
 API endpoints related to evaluation reports.
 
 Endpoints:
-- POST  /evaluations/{evaluation_id}/report/generate  -> generate + persist report
+- POST  /evaluations/{evaluation_id}/report/generate  -> generate + persist a report from the latest
+                                                         completed analysis (approved findings only; 409 if none)
 - GET   /evaluations/{evaluation_id}/report           -> latest report payload for evaluation (DB)
 - GET   /reports/{report_id}                          -> get report by id (DB)
 - GET   /reports/{report_id}/docx                     -> export report to DOCX (from DB payload)
@@ -25,9 +26,8 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.services.docx_exporter import export_report_to_docx
-from app.services.reporting import generate_report_for_evaluation, llm_sanity_check
+from app.services.reporting import ReportError, generate_report_for_evaluation, llm_sanity_check
 from app.services.report_store import (
-    ensure_demo_evaluation_exists,
     create_report,
     get_report_by_id as db_get_report_by_id,
     get_latest_report_for_evaluation as db_get_latest_report_for_evaluation,
@@ -62,10 +62,10 @@ def get_current_user() -> CurrentUser:
 
 
 class GenerateReportRequest(BaseModel):
-    """Request body for triggering report generation."""
-
-    include_trends: bool = True
-    include_compliance: bool = True
+    """
+    Request body for triggering report generation. The report is built from the latest completed
+    analysis run; older clients still send include_trends / include_compliance, which are ignored.
+    """
 
 
 class GenerateReportResponse(BaseModel):
@@ -83,29 +83,18 @@ class GenerateReportResponse(BaseModel):
     response_model=GenerateReportResponse,
     status_code=status.HTTP_201_CREATED,
 )
-async def generate_report_endpoint(
+def generate_report_endpoint(
     evaluation_id: str,
-    payload: GenerateReportRequest,
+    payload: GenerateReportRequest | None = None,
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> GenerateReportResponse:
     """
-    Trigger AI-powered report generation for a specific evaluation
-    and persist the result to Postgres.
+    Build the report from the latest completed analysis run (approved findings, approved
+    conclusions and the evidence they cite) and persist it to Postgres.
     """
     try:
-        # MVP seed so FK is valid (replace later with real create-evaluation flow)
-        ensure_demo_evaluation_exists(db, evaluation_id)
-
-        # Generate JSON payload using LLM pipeline
-        _tmp_report_id, summary_json = generate_report_for_evaluation(
-            evaluation_id=evaluation_id,
-            user_id=current_user.id,
-            include_trends=payload.include_trends,
-            include_compliance=payload.include_compliance,
-            return_summary_json=True,
-            db=db,  # ✅ keep: pipeline can now compute analytics from DB
-        )
+        summary_json = generate_report_for_evaluation(db, evaluation_id, current_user.id)
 
         # Persist to Postgres
         report = create_report(
@@ -116,21 +105,21 @@ async def generate_report_endpoint(
             summary_json=summary_json,
         )
 
-        # --- Fix meta.report_id to match DB report id ---
-        try:
-            sj = dict(report.summary_json or {})
-            meta = dict((sj.get("meta") or {}))
-            meta["report_id"] = str(report.id)
-            sj["meta"] = meta
-
-            report.summary_json = sj  # IMPORTANT: reassign whole JSON
-            db.add(report)
-            db.commit()
-            db.refresh(report)
-        except Exception:
-            pass
+        # Record the report id with the rest of the traceability
+        sj = dict(report.summary_json or {})
+        sj["traceability"] = {**(sj.get("traceability") or {}), "report_id": str(report.id)}
+        report.summary_json = sj  # IMPORTANT: reassign whole JSON
+        db.add(report)
+        db.commit()
+        db.refresh(report)
 
         return GenerateReportResponse(report_id=str(report.id), status=report.status)
+
+    except LookupError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    except ReportError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc

@@ -1,12 +1,14 @@
 """
 End-to-end smoke test against a running app (./dev.sh):
-create evaluation -> questions -> invite -> tasks -> director submits in portal -> report .docx.
+create evaluation -> questions -> invite -> tasks -> director submits in portal -> report refused.
 
 Usage (from cw_board_evaluation/, with the app running):
   .venv-mac/bin/python scripts/e2e_smoke.py
 
 Creates a new "E2E Test Plc" evaluation in whatever database the app uses each time.
-The report step needs OPENAI_API_KEY set for the app.
+Reports are built only from a completed analysis of approved findings, which this
+evaluation (older questionnaire, no analysis) doesn't have: the report step checks the
+app refuses with a clear 409. tests/test_reporting.py covers reports and the Word file.
 """
 import json
 import os
@@ -17,7 +19,7 @@ import urllib.request
 API = os.getenv("E2E_API", "http://127.0.0.1:8000/api/v1")
 
 
-def call(method, path, body=None, raw=False):
+def call(method, path, body=None, raw=False, expect=None):
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(API + path, data=data, method=method, headers={"Content-Type": "application/json"})
     try:
@@ -25,6 +27,8 @@ def call(method, path, body=None, raw=False):
             payload = r.read()
             return r.status, (payload if raw else json.loads(payload or b"null"))
     except urllib.error.HTTPError as e:
+        if expect == e.code:
+            return e.code, json.loads(e.read() or b"null")
         print(f"FAIL {method} {path} -> {e.code}: {e.read()[:400]!r}")
         sys.exit(1)
 
@@ -73,12 +77,9 @@ _, after = call("GET", f"/evaluations/{eid}/assignments")
 done = sum(1 for x in after["items"] if x["status"] == "responded")
 step(f"director submitted {len(answers)} answers via portal; tasks completed: {done}")
 
-# 6. Report
-_, rep = call("POST", f"/evaluations/{eid}/report/generate", {"include_trends": True, "include_compliance": True})
-rid = rep["report_id"]
-step(f"report generated ({rep['status']}) id={rid}")
-status, docx = call("GET", f"/reports/{rid}/docx", raw=True)
-ok = docx[:2] == b"PK"
-step(f"report .docx downloaded: {len(docx)} bytes, valid Word file: {ok}")
-print("E2E PASSED" if ok else "E2E FAILED: docx invalid")
+# 6. Report: refused without a completed analysis
+code, rep = call("POST", f"/evaluations/{eid}/report/generate", {}, expect=409)
+ok = code == 409 and "no completed analysis" in (rep or {}).get("detail", "")
+step(f"report refused without a completed analysis ({code})")
+print("E2E PASSED" if ok else f"E2E FAILED: expected 409, got {code}: {rep}")
 sys.exit(0 if ok else 1)
