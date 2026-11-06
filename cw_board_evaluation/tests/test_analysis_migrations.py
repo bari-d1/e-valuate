@@ -23,6 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ANALYSIS = "c68ecb986b88"
 PRACTICE_GAP = "d1a6f0c3e8b2"
 THRESHOLDS = "e5c2a7d40f19"
+EVIDENCE = "f7d3b9e2a614"
 
 
 @pytest.fixture
@@ -130,3 +131,38 @@ def test_earlier_runs_record_the_default_thresholds_as_unapproved(migration_db) 
     assert _settings(engine, run_id) == {"min_raters": 3}
     command.upgrade(cfg, "head")
     assert _settings(engine, run_id)["thresholds_status"] == "unapproved"
+
+
+def _add_evidence(engine, run_id, finding_id) -> None:
+    eid = uuid.uuid4()
+    with engine.begin() as conn:
+        conn.execute(text(
+            "INSERT INTO analysis_evidence (id, run_id, answer_type, question_text, respondent_category, respondent_ref, "
+            "is_self, in_progress, value) VALUES (:id, :run, 'rating', 'A question', 'chair', 'R1', false, false, '{\"score\": 4}')"),
+            {"id": eid, "run": run_id})
+        conn.execute(text("INSERT INTO finding_evidence (finding_id, evidence_id) VALUES (:f, :e)"), {"f": finding_id, "e": eid})
+
+
+def test_approved_findings_without_evidence_go_back_to_draft_with_a_note(migration_db) -> None:
+    cfg, engine = migration_db
+    command.upgrade(cfg, THRESHOLDS)
+    run_id = _seed_run(engine)
+    own = _add_finding(engine, run_id, kind="observation", status="accepted", origin="consultant")
+    edited = _add_finding(engine, run_id, kind="concern", status="edited")
+    backed = _add_finding(engine, run_id, kind="strength", status="accepted")
+    _add_evidence(engine, run_id, backed)
+    rejected = _add_finding(engine, run_id, kind="concern", status="rejected")
+
+    command.upgrade(cfg, EVIDENCE)
+    for fid, was in ((own, "accepted"), (edited, "edited")):
+        row = _finding(engine, fid)
+        assert row["status"] == "draft" and "no evidence was linked" in row["note"] and f"(was {was})" in row["note"]
+        assert row["statement"] == "A finding."  # the text is kept
+    assert (_finding(engine, backed)["status"], _finding(engine, backed)["note"]) == ("accepted", None)
+    assert _finding(engine, rejected)["status"] == "rejected"
+
+    command.downgrade(cfg, THRESHOLDS)
+    assert [_finding(engine, f)["status"] for f in (own, edited, backed, rejected)] == ["accepted", "edited", "accepted", "rejected"]
+    assert "note" not in _finding(engine, own)
+    command.upgrade(cfg, "head")
+    assert _finding(engine, own)["status"] == "draft"
