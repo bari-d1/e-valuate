@@ -18,6 +18,17 @@ export const analysisApi = {
   addFinding: (evalId, runId, body) => request(`${run(evalId, runId)}/findings`, { method: "POST", body, headers: who() }),
   updateFinding: (evalId, runId, findingId, body) =>
     request(`${run(evalId, runId)}/findings/${encodeURIComponent(findingId)}`, { method: "PATCH", body, headers: who() }),
+  linkEvidence: (evalId, runId, findingId, evidenceIds) =>
+    request(`${run(evalId, runId)}/findings/${encodeURIComponent(findingId)}/evidence`, {
+      method: "POST",
+      body: { evidence_ids: evidenceIds },
+      headers: who(),
+    }),
+  unlinkEvidence: (evalId, runId, findingId, evidenceId) =>
+    request(`${run(evalId, runId)}/findings/${encodeURIComponent(findingId)}/evidence/${encodeURIComponent(evidenceId)}`, {
+      method: "DELETE",
+      headers: who(),
+    }),
   conclusions: (evalId, runId) => request(`${run(evalId, runId)}/conclusions`),
   setConclusion: (evalId, runId, body) => request(`${run(evalId, runId)}/conclusions`, { method: "PUT", body, headers: who() }),
   complete: (evalId, runId) => request(`${run(evalId, runId)}/complete`, { method: "POST", headers: who() }),

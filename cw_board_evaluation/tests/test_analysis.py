@@ -340,6 +340,7 @@ def test_ai_drafts_are_checked_and_prompts_carry_no_names_or_personality_notes(d
     quoted = [f for f in kept if f.statement.startswith("One colleague wrote")]
     assert any(t in f.statement for f in quoted for t in P002_COMMENTS.values())  # a verbatim quote passes
     assert all(f.status == "draft" for f in kept)
+    assert an.update_finding(db_session, run, kept[0], BY, status="accepted").status == "accepted"  # AI drafts cite evidence
     overall = [c for c in an.conclusions(db_session, run) if c.evaluation_subject_id is None]
     assert overall and overall[0].origin == "ai" and overall[0].status == "draft"
     # The built context itself
@@ -455,11 +456,69 @@ def test_findings_api_edit_keeps_the_original_add_and_evidence(api_client, db_se
                                                       "statement": "Discussed with the chair.", "support": "limited",
                                                       "evidence_ids": [ev_list["evidence"][0]["evidence_id"]]})
     assert added.status_code == 201 and added.json()["origin"] == "consultant" and added.json()["evidence_count"] == 1
+    assert added.json()["status"] == "draft"  # approved separately
     other = _subject(run, "Board Member 005")
     foreign = api_client.get(f"{base}/subjects/{other['subject_id']}/evidence").json()["evidence"][0]["evidence_id"]
     bad = api_client.post(f"{base}/findings", json={"subject_id": p2["subject_id"], "kind": "observation", "statement": "x",
                                                     "support": "limited", "evidence_ids": [foreign, "nope"]})
     assert bad.status_code == 422
+
+
+def test_a_finding_needs_evidence_before_it_can_be_approved(api_client, db_session, planted) -> None:
+    ev, _, _ = planted
+    run = _run(db_session, ev)
+    base = f"/api/v1/evaluations/{ev.id}/analysis/runs/{run.id}"
+    p2 = _subject(run, "Board Member 002")
+    evidence = api_client.get(f"{base}/subjects/{p2['subject_id']}/evidence").json()["evidence"]
+    first, second = evidence[0]["evidence_id"], evidence[1]["evidence_id"]
+
+    r = api_client.post(f"{base}/findings", json={"subject_id": p2["subject_id"], "kind": "observation",
+                                                  "statement": "Raised in the chair interview.", "support": "limited"})
+    assert r.status_code == 201 and r.json()["status"] == "draft" and r.json()["evidence_count"] == 0
+    fid = r.json()["finding_id"]
+    finding = f"{base}/findings/{fid}"
+    refused = api_client.patch(finding, json={"status": "accepted"})
+    assert refused.status_code == 409 and refused.json()["detail"] == "Link at least one piece of evidence before approving this finding."
+    assert api_client.patch(finding, json={"statement": "Raised twice in the chair interview."}).json()["status"] == "draft"
+
+    other = _run(db_session, ev)
+    foreign = db_session.execute(select(AnalysisEvidence.id).where(AnalysisEvidence.run_id == other.id)).scalars().first()
+    assert api_client.post(f"{finding}/evidence", json={"evidence_ids": [str(foreign)]}).status_code == 422
+    assert api_client.post(f"{finding}/evidence", json={"evidence_ids": ["nope"]}).status_code == 422
+
+    linked = api_client.post(f"{finding}/evidence", json={"evidence_ids": [first, second, first]})
+    assert linked.status_code == 200 and sorted(linked.json()["evidence_ids"]) == sorted([first, second])
+    approved = api_client.patch(finding, json={"status": "accepted"}, headers={"X-Consultant-Name": BY})
+    assert approved.status_code == 200 and approved.json()["status"] == "accepted"
+
+    one_left = api_client.delete(f"{finding}/evidence/{first}")
+    assert one_left.json()["status"] == "accepted" and one_left.json()["evidence_ids"] == [second]
+    none_left = api_client.delete(f"{finding}/evidence/{second}")
+    assert none_left.json()["status"] == "draft" and none_left.json()["evidence_count"] == 0
+    assert "last piece of evidence" in none_left.json()["note"]
+    assert api_client.delete(f"{finding}/evidence/{second}").status_code == 422  # not linked any more
+
+    # Computed findings always cite evidence and approve as before
+    computed = next(f for f in an.findings(db_session, run) if f.origin == "computed")
+    assert an.update_finding(db_session, run, computed, BY, status="accepted").status == "accepted"
+
+
+def test_completion_counts_only_approved_findings_backed_by_evidence(db_session, planted) -> None:
+    ev, _, _ = planted
+    run = _run(db_session, ev)
+    sec = _subject(run, "The company secretariat")
+    for f in _findings(db_session, run, sec):
+        an.update_finding(db_session, run, f, BY, status="rejected")
+    blocked = f"{sec['name']}: accept at least one finding backed by evidence, or record that there's nothing to report."
+    assert blocked in an.completion_blockers(db_session, run)
+    f = an.add_finding(db_session, run, BY, subject_id=sec["subject_id"], kind="observation",
+                       statement="From the interview.", support="limited")
+    f.status = "accepted"  # as consultants' findings were saved before evidence was required
+    db_session.flush()
+    assert blocked in an.completion_blockers(db_session, run)
+    gap = next(x for x in _findings(db_session, run, sec) if x.kind == "practice_gap")
+    an.update_finding(db_session, run, gap, BY, status="accepted")
+    assert blocked not in an.completion_blockers(db_session, run)
 
 
 def test_api_runs_in_the_background(api_client, db_session, planted, monkeypatch) -> None:

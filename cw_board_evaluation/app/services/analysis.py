@@ -70,6 +70,9 @@ class AnalysisError(ValueError):
     """An analysis action that isn't allowed now. The message is safe to show the consultant."""
 
 
+ACCEPTED = ("accepted", "edited")  # approved by the consultant
+
+
 def _now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -670,7 +673,7 @@ def finding_dict(db: Session, f: Finding) -> Dict[str, Any]:
                      .where(FindingClause.finding_id == f.id)).scalars().all()
     return {"finding_id": str(f.id), "subject_id": str(f.evaluation_subject_id) if f.evaluation_subject_id else None,
             "theme_code": f.theme_code, "kind": f.kind, "statement": f.statement, "support": f.support,
-            "origin": f.origin, "status": f.status, "original_text": f.original_text,
+            "origin": f.origin, "status": f.status, "original_text": f.original_text, "note": f.note,
             "edited_by": f.edited_by, "edited_at": _iso(f.edited_at), "evidence_ids": ev_ids,
             "evidence_count": len(ev_ids), "clauses": [clause_dict(c) for c in cls]}
 
@@ -703,9 +706,30 @@ def _require_done(run: AnalysisRun) -> None:
         raise AnalysisError("The analysis is marked complete. Start a new run to change findings.")
 
 
+NEEDS_EVIDENCE = "Link at least one piece of evidence before approving this finding."
+
+
+def _run_evidence(db: Session, run: AnalysisRun, evidence_ids: List[str]) -> List[AnalysisEvidence]:
+    """The run's evidence rows with these ids; ValueError if any isn't from this run."""
+    try:
+        ids = {uuid.UUID(str(x)) for x in evidence_ids}
+    except ValueError as e:
+        raise ValueError("Some of the evidence isn't from this analysis.") from e
+    rows = db.execute(select(AnalysisEvidence).where(AnalysisEvidence.run_id == run.id,
+                                                     AnalysisEvidence.id.in_(ids))).scalars().all()
+    if len(rows) != len(ids):
+        raise ValueError("Some of the evidence isn't from this analysis.")
+    return list(rows)
+
+
+def has_evidence(db: Session, f: Finding) -> bool:
+    return db.execute(select(FindingEvidence.evidence_id).where(FindingEvidence.finding_id == f.id).limit(1)).first() is not None
+
+
 def add_finding(db: Session, run: AnalysisRun, by: str, *, subject_id, kind: str, statement: str, support: str,
                 theme_code: Optional[str] = None, evidence_ids: Optional[List[str]] = None,
                 clause_ids: Optional[List[str]] = None) -> Finding:
+    """A consultant's finding, saved as a draft: it's approved separately, once evidence backs it (spec AT04)."""
     _require_done(run)
     if kind not in FINDING_KINDS:
         raise ValueError("Choose a kind of finding.")
@@ -715,18 +739,9 @@ def add_finding(db: Session, run: AnalysisRun, by: str, *, subject_id, kind: str
         raise ValueError("Write the finding.")
     if subject_id is not None and str(subject_id) not in run.results["subjects"]:
         raise ValueError("That subject isn't part of this analysis.")
-    rows = []
-    if evidence_ids:
-        try:
-            evidence_ids = [uuid.UUID(str(x)) for x in evidence_ids]
-        except ValueError as e:
-            raise ValueError("Some of the evidence isn't from this analysis.") from e
-        rows = db.execute(select(AnalysisEvidence).where(AnalysisEvidence.run_id == run.id,
-                                                         AnalysisEvidence.id.in_(evidence_ids))).scalars().all()
-        if len(rows) != len(set(evidence_ids)):
-            raise ValueError("Some of the evidence isn't from this analysis.")
+    rows = _run_evidence(db, run, evidence_ids) if evidence_ids else []
     f = Finding(run_id=run.id, evaluation_subject_id=subject_id, theme_code=theme_code, kind=kind,
-                statement=statement.strip(), support=support, origin="consultant", status="accepted",
+                statement=statement.strip(), support=support, origin="consultant", status="draft",
                 edited_by=by, edited_at=_now())
     db.add(f)
     db.flush()
@@ -740,24 +755,73 @@ def add_finding(db: Session, run: AnalysisRun, by: str, *, subject_id, kind: str
 
 def update_finding(db: Session, run: AnalysisRun, f: Finding, by: str, *, status: Optional[str] = None,
                    statement: Optional[str] = None, support: Optional[str] = None, kind: Optional[str] = None) -> Finding:
-    """Accept, reject, or edit (which keeps the original draft text)."""
+    """
+    Accept, reject, or edit (which keeps the original draft text). Editing a computed or AI draft approves
+    it ("edited"); editing a consultant's own finding keeps its status. Nothing is approved without evidence.
+    """
     _require_done(run)
+    new_status, new_statement = f.status, None
     if statement is not None:
         if not statement.strip():
             raise ValueError("A finding can't be empty.")
         if statement.strip() != f.statement:
-            f.statement = statement.strip()
-            f.status = "edited" if f.origin != "consultant" else "accepted"
-    if support is not None:
-        if support not in ("strong", "moderate", "limited", "conflicting"):
-            raise ValueError("Choose a support level.")
-        f.support = support
-    if kind is not None:
-        f.kind = kind
+            new_statement = statement.strip()
+            if f.origin != "consultant":
+                new_status = "edited"
+    if support is not None and support not in ("strong", "moderate", "limited", "conflicting"):
+        raise ValueError("Choose a support level.")
+    if kind is not None and kind not in FINDING_KINDS:
+        raise ValueError("Choose a kind of finding.")
     if status is not None:
         if status not in ("accepted", "rejected", "draft"):
             raise ValueError("Status must be accepted, rejected or draft.")
-        f.status = status
+        new_status = status
+    if new_status in ACCEPTED and not has_evidence(db, f):
+        raise AnalysisError(NEEDS_EVIDENCE)
+    if new_statement is not None:
+        f.statement = new_statement
+    if support is not None:
+        f.support = support
+    if kind is not None:
+        f.kind = kind
+    if new_status != f.status:
+        f.status = new_status
+        if new_status in ACCEPTED:
+            f.note = None  # whatever sent it back to draft has been dealt with
+    f.edited_by, f.edited_at = by, _now()
+    db.flush()
+    return f
+
+
+def link_evidence(db: Session, run: AnalysisRun, f: Finding, by: str, evidence_ids: List[str]) -> Finding:
+    """Link more of the run's evidence to a finding (already linked rows are left as they are)."""
+    _require_done(run)
+    if not evidence_ids:
+        raise ValueError("Choose the evidence to link.")
+    linked = set(db.execute(select(FindingEvidence.evidence_id).where(FindingEvidence.finding_id == f.id)).scalars())
+    for e in _run_evidence(db, run, evidence_ids):
+        if e.id not in linked:
+            db.add(FindingEvidence(finding_id=f.id, evidence_id=e.id))
+    f.edited_by, f.edited_at = by, _now()
+    db.flush()
+    return f
+
+
+def unlink_evidence(db: Session, run: AnalysisRun, f: Finding, by: str, evidence_id: str) -> Finding:
+    """Unlink one piece of evidence. An approved finding left with none goes back to draft."""
+    _require_done(run)
+    try:
+        eid = uuid.UUID(str(evidence_id))
+    except ValueError as e:
+        raise ValueError("That evidence isn't linked to this finding.") from e
+    link = db.get(FindingEvidence, (f.id, eid))
+    if link is None:
+        raise ValueError("That evidence isn't linked to this finding.")
+    db.delete(link)
+    db.flush()
+    if f.status in ACCEPTED and not has_evidence(db, f):
+        f.status = "draft"
+        f.note = "Moved back to draft: its last piece of evidence was unlinked. Link evidence to approve it again."
     f.edited_by, f.edited_at = by, _now()
     db.flush()
     return f
@@ -796,22 +860,22 @@ def set_conclusion(db: Session, run: AnalysisRun, by: str, *, subject_id, text: 
     return c
 
 
-ACCEPTED = ("accepted", "edited")
-
-
 def completion_blockers(db: Session, run: AnalysisRun) -> List[str]:
     """What still stops the analysis being marked complete."""
     out = []
     if run.status != "done":
         return ["The analysis hasn't finished."]
     fs = findings(db, run)
+    evidenced = set(db.execute(select(FindingEvidence.finding_id).join(Finding, Finding.id == FindingEvidence.finding_id)
+                               .where(Finding.run_id == run.id)).scalars())
     cs = {str(c.evaluation_subject_id) if c.evaluation_subject_id else None: c for c in conclusions(db, run)}
     for sid in run.results["order"]:
         name = run.results["subjects"][sid]["name"]
-        has = any(str(f.evaluation_subject_id) == sid and f.status in ACCEPTED for f in fs)
+        # Only approved findings that evidence backs count
+        has = any(str(f.evaluation_subject_id) == sid and f.status in ACCEPTED and f.id in evidenced for f in fs)
         note = cs.get(sid)
         if not has and not (note and note.no_findings and note.status in ACCEPTED):
-            out.append(f"{name}: accept at least one finding, or record that there's nothing to report.")
+            out.append(f"{name}: accept at least one finding backed by evidence, or record that there's nothing to report.")
     overall = cs.get(None)
     if overall is None or overall.status not in ACCEPTED or not overall.text:
         out.append("Write and accept the overall conclusion.")

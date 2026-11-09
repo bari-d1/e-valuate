@@ -9,8 +9,10 @@ the other consultant routes; X-Consultant-Name names who decided what.
 - GET   /evaluations/{id}/analysis/runs/{run_id}                status, settings and results for every subject
 - GET   /evaluations/{id}/analysis/runs/{run_id}/subjects/{sid}/evidence   the anonymised answers behind a subject
 - GET   /evaluations/{id}/analysis/runs/{run_id}/findings       (optional ?subject_id=)
-- POST  /evaluations/{id}/analysis/runs/{run_id}/findings       add a finding by hand
-- PATCH /evaluations/{id}/analysis/runs/{run_id}/findings/{fid} accept, reject or edit
+- POST  /evaluations/{id}/analysis/runs/{run_id}/findings       add a finding by hand (a draft)
+- PATCH /evaluations/{id}/analysis/runs/{run_id}/findings/{fid} accept, reject or edit (accepting needs evidence)
+- POST  /evaluations/{id}/analysis/runs/{run_id}/findings/{fid}/evidence          link the run's evidence
+- DELETE /evaluations/{id}/analysis/runs/{run_id}/findings/{fid}/evidence/{eid}   unlink one piece
 - GET   /evaluations/{id}/analysis/runs/{run_id}/conclusions
 - PUT   /evaluations/{id}/analysis/runs/{run_id}/conclusions    one subject's (or the overall) conclusion
 - GET   /evaluations/{id}/analysis/runs/{run_id}/completion     what still blocks "mark complete"
@@ -100,6 +102,10 @@ class FindingPatch(BaseModel):
     kind: Optional[str] = None
 
 
+class EvidenceLinkIn(BaseModel):
+    evidence_ids: List[str] = Field(min_length=1)
+
+
 class ConclusionIn(BaseModel):
     subject_id: Optional[str] = None  # None: the overall conclusion
     text: Optional[str] = Field(default=None, max_length=8000)
@@ -177,19 +183,42 @@ def add_finding(evaluation_id: str, run_id: str, payload: FindingIn, db: Session
     return an.finding_dict(db, f)
 
 
+def _finding(db: Session, run: AnalysisRun, finding_id: str) -> Finding:
+    try:
+        f = db.get(Finding, finding_id)
+    except Exception:  # not a UUID
+        f = None
+    if f is None or f.run_id != run.id:
+        raise HTTPException(status_code=404, detail="Finding not found.")
+    return f
+
+
 @router.patch("/evaluations/{evaluation_id}/analysis/runs/{run_id}/findings/{finding_id}")
 def update_finding(evaluation_id: str, run_id: str, finding_id: str, payload: FindingPatch,
                    db: Session = Depends(get_db), by: str = Depends(consultant_name)) -> Dict[str, Any]:
     ev = _evaluation(db, evaluation_id)
     run = _run(db, ev, run_id)
-    try:
-        f = db.get(Finding, finding_id)
-    except Exception:
-        f = None
-    if f is None or f.run_id != run.id:
-        raise HTTPException(status_code=404, detail="Finding not found.")
+    f = _finding(db, run, finding_id)
     f = _act(db, an.update_finding, db, run, f, by, status=payload.status, statement=payload.statement,
              support=payload.support, kind=payload.kind)
+    return an.finding_dict(db, f)
+
+
+@router.post("/evaluations/{evaluation_id}/analysis/runs/{run_id}/findings/{finding_id}/evidence")
+def link_evidence(evaluation_id: str, run_id: str, finding_id: str, payload: EvidenceLinkIn,
+                  db: Session = Depends(get_db), by: str = Depends(consultant_name)) -> Dict[str, Any]:
+    ev = _evaluation(db, evaluation_id)
+    run = _run(db, ev, run_id)
+    f = _act(db, an.link_evidence, db, run, _finding(db, run, finding_id), by, payload.evidence_ids)
+    return an.finding_dict(db, f)
+
+
+@router.delete("/evaluations/{evaluation_id}/analysis/runs/{run_id}/findings/{finding_id}/evidence/{evidence_id}")
+def unlink_evidence(evaluation_id: str, run_id: str, finding_id: str, evidence_id: str,
+                    db: Session = Depends(get_db), by: str = Depends(consultant_name)) -> Dict[str, Any]:
+    ev = _evaluation(db, evaluation_id)
+    run = _run(db, ev, run_id)
+    f = _act(db, an.unlink_evidence, db, run, _finding(db, run, finding_id), by, evidence_id)
     return an.finding_dict(db, f)
 
 

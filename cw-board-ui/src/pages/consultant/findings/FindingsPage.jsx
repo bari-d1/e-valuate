@@ -371,7 +371,7 @@ function SubjectView({ ui, ctx }) {
         </Section>
       ) : null}
 
-      <Section title="Findings" hint="Drafts from the numbers (and from AI, when switched on). Accept, edit or reject each one; nothing goes in the report until it's accepted.">
+      <Section title="Findings" hint="Drafts from the numbers (and from AI, when switched on), and your own. Accept, edit or reject each one; a finding can only be accepted with evidence linked, and nothing goes in the report until it's accepted.">
         {error ? <Notice tone="error">{error}</Notice> : null}
         {findings ? (
           <FindingsList ui={ui} evalId={evalId} runId={runId} runSettings={current?.settings} findings={findings} evidence={evidence} onLoadEvidence={loadEvidence} onChanged={changed} readOnly={readOnly} />

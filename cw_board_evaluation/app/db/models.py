@@ -1810,7 +1810,10 @@ class AnalysisEvidence(Base):
 
 
 class Finding(Base):
-    """A finding on a run, about one subject (or the whole evaluation): drafted by rules, AI or a consultant."""
+    """
+    A finding on a run, about one subject (or the whole evaluation): drafted by rules, AI or a consultant.
+    It can only be approved (accepted or edited) while at least one piece of the run's evidence backs it.
+    """
 
     __tablename__ = "findings"
 
@@ -1829,6 +1832,8 @@ class Finding(Base):
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")
     original_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # the draft as computed or AI wrote it
     rule: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)  # which computed rule drafted it
+    # Why the system changed the finding's status (e.g. moved back to draft: no evidence left)
+    note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     edited_by: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     edited_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
