@@ -6,7 +6,7 @@ import { inputCss, useAsync } from "../companies/helpers.js";
 import { Notice, Panel } from "../companies/shared.jsx";
 import { ScoreBars, SelfPeerChart } from "./Charts.jsx";
 import { AddFinding, ConclusionEditor, FindingsList } from "./FindingParts.jsx";
-import { KIND_LABELS, ROLE_LABELS, fmt, isAccepted, plural } from "./findingsHelpers.js";
+import { KIND_LABELS, ROLE_LABELS, THRESHOLD_LABELS, fmt, isAccepted, plural, scoreTone, thresholdsApproved } from "./findingsHelpers.js";
 
 /**
  * Findings: run the analysis of an assembled evaluation, read the results per subject (the board,
@@ -46,8 +46,11 @@ function RunControls({ ui, evalId, runs, aiAvailable, current, onStarted, onSele
   const [minRaters, setMinRaters] = useState(current?.settings?.min_raters ?? 3);
   const [unsubmitted, setUnsubmitted] = useState(false);
   const [ai, setAi] = useState(false);
+  // Blank means "use the default"; the run records what it actually used
+  const [thresholds, setThresholds] = useState({});
   const { busy, error, run } = useAsync();
   const running = runs.some((r) => r.status === "running");
+  const used = current?.settings?.thresholds;
   return (
     <Panel style={{ display: "grid", gap: space.md }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: space.md, flexWrap: "wrap", alignItems: "center" }}>
@@ -64,6 +67,12 @@ function RunControls({ ui, evalId, runs, aiAvailable, current, onStarted, onSele
                 {current.respondents ? ` · ${plural(current.respondents.included, "respondent")}` : ""}
                 {current.settings.ai_used ? " · AI drafts included" : ""}
               </div>
+              {used ? (
+                <div style={{ color: color.textMuted, marginTop: 2 }}>
+                  Draft-signal thresholds ({thresholdsApproved(current.settings) ? "approved" : "not approved by the client"}):{" "}
+                  strength {used.theme_strength_mean} (theme) / {used.item_strength_mean} (clause-linked item), concern {used.concern_mean}, self/peer gap {used.self_peer_gap}
+                </div>
+              ) : null}
               {current.error ? <div style={{ color: color.danger }}>{current.error}</div> : null}
             </>
           ) : (
@@ -105,7 +114,8 @@ function RunControls({ ui, evalId, runs, aiAvailable, current, onStarted, onSele
           disabled={busy || running}
           onClick={() =>
             run(async () => {
-              const r = await analysisApi.start(evalId, { min_raters: minRaters, include_unsubmitted: unsubmitted, ai });
+              const given = Object.fromEntries(Object.entries(thresholds).filter(([, v]) => v !== "").map(([k, v]) => [k, Number(v)]));
+              const r = await analysisApi.start(evalId, { min_raters: minRaters, include_unsubmitted: unsubmitted, ai, thresholds: given });
               await onStarted(r.run_id);
             })
           }
@@ -113,6 +123,20 @@ function RunControls({ ui, evalId, runs, aiAvailable, current, onStarted, onSele
           {running ? "Running…" : current ? "Re-run analysis" : "Run analysis"}
         </Button>
       </div>
+      <details style={{ fontSize: 13 }}>
+        <summary style={{ cursor: "pointer" }}>Draft-signal thresholds for the next run</summary>
+        <p style={{ margin: `${space.xs}px 0`, color: color.textMuted }}>
+          Strengths, concerns and self/peer gaps are drafted from these. They are the client's to set and approve; leave a box empty to use the default.
+        </p>
+        <div style={{ display: "flex", gap: space.md, flexWrap: "wrap" }}>
+          {Object.entries(THRESHOLD_LABELS).map(([k, label]) => (
+            <label key={k} style={{ display: "grid", gap: 4 }}>
+              {label}
+              <input type="number" step="0.1" min={k === "self_peer_gap" ? 0.1 : 1} max={k === "self_peer_gap" ? 4 : 5} value={thresholds[k] ?? ""} placeholder={used ? String(used[k]) : ""} onChange={(e) => setThresholds((t) => ({ ...t, [k]: e.target.value }))} style={inputCss({ width: 110 })} />
+            </label>
+          ))}
+        </div>
+      </details>
       {current && runs.length > 1 && current.status === "done" ? (
         <span style={{ fontSize: 13 }}>
           Re-running keeps earlier runs. <Link to="/consultant/findings/compare" style={{ color: color.primaryText }}>Compare runs</Link>
@@ -123,7 +147,7 @@ function RunControls({ ui, evalId, runs, aiAvailable, current, onStarted, onSele
   );
 }
 
-function SubjectCard({ ui, s, counts }) {
+function SubjectCard({ ui, s, counts, thresholds }) {
   const { Badge } = ui;
   const themes = Object.values(s.themes).filter((t) => !t.suppressed);
   const c = counts || { draft: 0, accepted: 0 };
@@ -149,7 +173,7 @@ function SubjectCard({ ui, s, counts }) {
             {themes.slice(0, 4).map((t) => (
               <li key={t.theme_code} style={{ display: "flex", justifyContent: "space-between", gap: space.sm }}>
                 <span>{t.label}</span>
-                <strong style={{ color: t.mean <= 2.5 ? color.danger : t.mean >= 4.2 ? "#047857" : color.text }}>{fmt(t.mean)}</strong>
+                <strong style={{ color: { low: color.danger, high: "#047857", neutral: color.text }[scoreTone(t.mean, thresholds)] }}>{fmt(t.mean)}</strong>
               </li>
             ))}
             {themes.length > 4 ? <li style={{ color: color.textMuted }}>and {themes.length - 4} more</li> : null}
@@ -191,7 +215,7 @@ function Overview({ ui, ctx }) {
           ) : null}
           <ul style={{ margin: 0, padding: 0, display: "grid", gap: space.md, gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
             {results.order.map((sid) => (
-              <SubjectCard key={sid} ui={ui} s={results.subjects[sid]} counts={detail.finding_counts?.[sid]} />
+              <SubjectCard key={sid} ui={ui} s={results.subjects[sid]} counts={detail.finding_counts?.[sid]} thresholds={current?.settings?.thresholds} />
             ))}
           </ul>
           {results.ai ? (
@@ -267,7 +291,7 @@ function SubjectView({ ui, ctx }) {
 
       {themes.length ? (
         <Section title="Scores by theme" hint="Average rating on a 1 to 5 scale from people other than the subject. Tap a bar for the spread of ratings.">
-          <ScoreBars rows={themes} />
+          <ScoreBars rows={themes} thresholds={current?.settings?.thresholds} />
           {Object.values(s.themes).some((t) => t.split) ? (
             <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: color.textMuted }}>
               {Object.values(s.themes).filter((t) => t.split).map((t) => (
@@ -282,7 +306,7 @@ function SubjectView({ ui, ctx }) {
       ) : null}
 
       {s.self_peer.length ? (
-        <Section title="Self versus colleagues" hint="The core statements: the subject's own rating against colleagues' average. A gap of 1 point or more is flagged.">
+        <Section title="Self versus colleagues" hint={`The core statements: the subject's own rating against colleagues' average. A gap of ${current?.settings?.thresholds?.self_peer_gap ?? "the run's threshold"} points or more is flagged (a draft signal${thresholdsApproved(current?.settings) ? "" : "; thresholds not approved"}).`}>
           <SelfPeerChart rows={s.self_peer} />
         </Section>
       ) : null}
@@ -350,7 +374,7 @@ function SubjectView({ ui, ctx }) {
       <Section title="Findings" hint="Drafts from the numbers (and from AI, when switched on). Accept, edit or reject each one; nothing goes in the report until it's accepted.">
         {error ? <Notice tone="error">{error}</Notice> : null}
         {findings ? (
-          <FindingsList ui={ui} evalId={evalId} runId={runId} findings={findings} evidence={evidence} onLoadEvidence={loadEvidence} onChanged={changed} readOnly={readOnly} />
+          <FindingsList ui={ui} evalId={evalId} runId={runId} runSettings={current?.settings} findings={findings} evidence={evidence} onLoadEvidence={loadEvidence} onChanged={changed} readOnly={readOnly} />
         ) : (
           <p style={{ color: color.textMuted }}>Loading…</p>
         )}

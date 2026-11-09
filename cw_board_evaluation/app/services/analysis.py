@@ -166,12 +166,14 @@ def _value(q: Question, r: Response) -> Optional[Dict[str, Any]]:
 # ----------------------------
 
 def start_run(db: Session, ev: Evaluation, by: str, *, min_raters: Optional[int] = None,
-              include_unsubmitted: bool = False, ai: bool = False) -> AnalysisRun:
+              include_unsubmitted: bool = False, ai: bool = False,
+              thresholds: Optional[Dict[str, Any]] = None) -> AnalysisRun:
     if not form.uses_assembled_sets(db, ev.id):
         raise AnalysisError("This evaluation uses the older questionnaire; see the Report page.")
     n = R.DEFAULT_MIN_RATERS if min_raters is None else int(min_raters)
     if not 2 <= n <= 10:
         raise AnalysisError("Minimum raters must be between 2 and 10.")
+    used = R.resolve_thresholds(thresholds)  # recorded on the run; the client hasn't approved them
     running = db.execute(select(AnalysisRun).where(AnalysisRun.evaluation_id == ev.id,
                                                    AnalysisRun.status == "running")).scalars().first()
     if running is not None and running.created_at < _now() - STALE_AFTER:
@@ -183,7 +185,8 @@ def start_run(db: Session, ev: Evaluation, by: str, *, min_raters: Optional[int]
         raise AnalysisError("An analysis is already running for this evaluation.")
     run = AnalysisRun(evaluation_id=ev.id, status="running", created_by=by or "consultant",
                       settings={"min_raters": n, "include_unsubmitted": bool(include_unsubmitted),
-                                "ai_requested": bool(ai), "ai_used": False}, inputs={}, results={})
+                                "ai_requested": bool(ai), "ai_used": False, "thresholds": used,
+                                "thresholds_status": R.THRESHOLDS_UNAPPROVED}, inputs={}, results={})
     db.add(run)
     db.flush()
     return run
@@ -399,6 +402,7 @@ def _confirmed_facts(db: Session, ev: Evaluation, s: EvaluationSubject) -> List[
 def compute_results(db: Session, ev: Evaluation, run: AnalysisRun, evidence: List[AnalysisEvidence],
                     ctx: Dict[str, Any]) -> Dict[str, Any]:
     n = ctx["min_raters"]
+    th = R.thresholds(run.settings)
     by_subject: Dict[Any, List[AnalysisEvidence]] = defaultdict(list)
     for e in evidence:
         by_subject[e.evaluation_subject_id].append(e)
@@ -458,7 +462,7 @@ def compute_results(db: Session, ev: Evaluation, run: AnalysisRun, evidence: Lis
                 out["self_peer"].append({
                     "statement": peer[0].question_text if peer else own[0].question_text, "code": f"CORE-{k:02d}",
                     "peer_mean": None if reason else pm, "peer_raters": _people(peer), "self": self_score,
-                    "gap": gap, "flagged": gap is not None and abs(gap) >= R.SELF_PEER_GAP, "suppressed": reason,
+                    "gap": gap, "flagged": gap is not None and abs(gap) >= th["self_peer_gap"], "suppressed": reason,
                 })
         # Yes/no and choice opinions
         choice_rows: Dict[str, List[AnalysisEvidence]] = defaultdict(list)
@@ -545,6 +549,7 @@ def _avg(x: Optional[float]) -> str:
 
 
 def draft_computed_findings(db: Session, run: AnalysisRun, evidence: List[AnalysisEvidence], ctx: Dict[str, Any]) -> None:
+    th = R.thresholds(run.settings)  # draft signals: the run's thresholds, not an approved standard
     by_subject: Dict[str, List[AnalysisEvidence]] = defaultdict(list)
     for e in evidence:
         by_subject[str(e.evaluation_subject_id)].append(e)
@@ -568,14 +573,14 @@ def draft_computed_findings(db: Session, run: AnalysisRun, evidence: List[Analys
                          f"Views on {label} for {name} are divided ({facts}, ranging from "
                          f"{min(e.value['score'] for e in trows)} to {max(e.value['score'] for e in trows)}).{extra}",
                          "conflicting", "theme_divided", trows, theme=code)
-            elif t["mean"] >= R.THEME_STRENGTH_MEAN and t["consensus"] == "strong agreement":
+            elif t["mean"] >= th["theme_strength_mean"] and t["consensus"] == "strong agreement":
                 theme_kind = "strength"
                 _finding(db, run, sid, "strength", f"{name} is rated well on {label} ({facts}, with strong agreement).",
                          R.support_for(t["raters"], t["consensus"]), "theme_strength", trows, theme=code)
-            elif t["mean"] <= R.CONCERN_MEAN:
+            elif t["mean"] <= th["concern_mean"]:
                 theme_kind = "concern"
                 low = [it for it in t["items"] if not it["suppressed"] and it["mean"] is not None
-                       and it["mean"] <= R.CONCERN_MEAN]
+                       and it["mean"] <= th["concern_mean"]]
                 cited = [c for it in low for c in it["clauses"]]
                 detail = "; ".join(
                     f"\"{it['question']}\" {_avg(it['mean'])}" + (f" ({', '.join(c['label'] for c in it['clauses'])})"
@@ -590,11 +595,11 @@ def draft_computed_findings(db: Session, run: AnalysisRun, evidence: List[Analys
                 irows = [e for e in trows if (e.bank_item_code or e.question_text) == it["code"]]
                 ifacts = f"average {_avg(it['mean'])} from {it['raters']} rater{'' if it['raters'] == 1 else 's'}"
                 refs = ", ".join(c["label"] for c in it["clauses"])
-                if it["mean"] <= R.CONCERN_MEAN and theme_kind != "concern":
+                if it["mean"] <= th["concern_mean"] and theme_kind != "concern":
                     _finding(db, run, sid, "concern", f"\"{it['question']}\" scores low for {name} ({ifacts}); see {refs}.",
                              R.support_for(it["raters"], it["consensus"]), "item_concern", irows, theme=code,
                              item=it["code"], clauses=it["clauses"])
-                elif (it["mean"] >= R.ITEM_STRENGTH_MEAN and it["consensus"] == "strong agreement"
+                elif (it["mean"] >= th["item_strength_mean"] and it["consensus"] == "strong agreement"
                       and theme_kind != "strength"):
                     _finding(db, run, sid, "strength", f"\"{it['question']}\" scores high for {name} ({ifacts}); see {refs}.",
                              R.support_for(it["raters"], it["consensus"]), "item_strength", irows, theme=code,

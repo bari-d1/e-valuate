@@ -45,6 +45,7 @@ Each run adds a new "E2E Test Plc" evaluation to the app's database. The report 
 | 2026-10-28 | `feature/tracking-reminders` | 433 passed (unit and integration), 0 failed, 0 skipped |
 | 2026-10-28 | `feature/analysis` | 451 passed (unit and integration), 0 failed, 0 skipped |
 | 2026-11-06 | `fix/practice-gap` | 453 passed (unit and integration), 0 failed, 0 skipped |
+| 2026-11-06 | `fix/configurable-thresholds` | 464 passed (unit and integration), 0 failed, 0 skipped |
 
 ## Known failures
 

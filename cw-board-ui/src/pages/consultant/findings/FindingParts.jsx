@@ -3,7 +3,7 @@ import { analysisApi } from "../../../api/analysisApi.js";
 import { color, radius, space } from "../../../theme.js";
 import { inputCss, useAsync } from "../companies/helpers.js";
 import { LinkButton, Notice, Panel } from "../companies/shared.jsx";
-import { KIND_LABELS, KIND_ORDER, KIND_TONES, ORIGIN_LABELS, STATUS_LABELS, SUPPORT_LABELS, isAccepted } from "./findingsHelpers.js";
+import { KIND_LABELS, KIND_ORDER, KIND_TONES, ORIGIN_LABELS, STATUS_LABELS, SUPPORT_LABELS, isAccepted, isDraftSignal } from "./findingsHelpers.js";
 
 /** Findings with their evidence, the consultant's decisions on them, and conclusions. */
 
@@ -28,7 +28,7 @@ function EvidenceList({ ids, evidence }) {
   );
 }
 
-export function FindingCard({ ui, evalId, runId, finding, evidence, onLoadEvidence, onChanged, readOnly }) {
+export function FindingCard({ ui, evalId, runId, runSettings, finding, evidence, onLoadEvidence, onChanged, readOnly }) {
   const { Badge, Button } = ui;
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(finding.statement);
@@ -51,6 +51,11 @@ export function FindingCard({ ui, evalId, runId, finding, evidence, onLoadEviden
           {finding.edited_by && finding.status !== "draft" ? ` by ${finding.edited_by}` : ""}
         </span>
       </div>
+      {isDraftSignal(finding, runSettings) ? (
+        <div style={{ marginTop: space.xs, fontSize: 12, color: "#92400E", background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: radius.sm, padding: "4px 8px" }}>
+          <strong>Draft signal, thresholds not approved.</strong> Drafted from this run's thresholds, which the client hasn't approved. A high or low average is not a measure of effectiveness.
+        </div>
+      ) : null}
       {editing ? (
         <div style={{ display: "grid", gap: space.sm, marginTop: space.sm }}>
           <label style={{ display: "grid", gap: 4, fontSize: 13 }}>
