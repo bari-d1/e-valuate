@@ -27,9 +27,9 @@ With the app running (`../dev.sh`), from `cw_board_evaluation/`:
 ```
 
 It creates an evaluation, adds questions, invites two people, generates tasks, submits one
-director's form through the portal, generates the report and downloads the Word file.
-Each run adds a new "E2E Test Plc" evaluation to the app's database. The report step needs
-`OPENAI_API_KEY`.
+director's form through the portal, and checks the report is refused because the evaluation
+has no completed analysis (reports are built only from approved findings).
+Each run adds a new "E2E Test Plc" evaluation to the app's database.
 
 ## Recorded baseline
 
@@ -47,6 +47,7 @@ Each run adds a new "E2E Test Plc" evaluation to the app's database. The report 
 | 2026-11-06 | `fix/practice-gap` | 453 passed (unit and integration), 0 failed, 0 skipped |
 | 2026-11-06 | `fix/configurable-thresholds` | 464 passed (unit and integration), 0 failed, 0 skipped |
 | 2026-11-06 | `fix/evidence-required` | 467 passed (unit and integration), 0 failed, 0 skipped |
+| 2026-11-06 | `fix/report-from-findings` | 472 passed (unit and integration), 0 failed, 0 skipped |
 
 ## Known failures
 
@@ -56,4 +57,5 @@ with the reason before merging.
 ## Not covered
 
 - The React frontend (`cw-board-ui`) has no automated tests.
-- Report generation calls OpenAI and is not exercised by the pytest suite (only by `e2e_smoke.py`).
+- `e2e_smoke.py` uses the older questionnaire, so it only checks the report is refused without a completed
+  analysis. Reports and the Word file are covered by `tests/test_reporting.py` (no OpenAI calls).

@@ -976,6 +976,8 @@ export default function AppLegacy() {
     const summaryJson = result?.data?.summary_json;
     if (!summaryJson) return null;
 
+    // Reports built from approved findings (schema_version 2); earlier reports keep their sections
+    if ((summaryJson.schema_version || 1) >= 2) return { report: summaryJson };
     const exec = summaryJson?.sections?.executive_summary;
     const recs = summaryJson?.sections?.recommendations?.recommendations || [];
     const analytics = summaryJson?.analytics;
@@ -1473,7 +1475,7 @@ function renderNextActionBar(opts = {}) {
   ) {
     // Mark ready if we got a report id or any summary content
     const reportId = d?.report_id || d?.id || d?.latest?.report_id;
-    const hasExec = !!d?.exec || !!latestSummary?.exec;
+    const hasExec = !!d?.exec || !!latestSummary?.exec || !!latestSummary?.report;
 
     if (reportId || hasExec) {
       setWfReportReady(true);
@@ -1717,7 +1719,7 @@ async function listParticipants(opts = { silent: false }) {
         {
           method: "POST",
           headers: getConsultantHeaders({ "Content-Type": "application/json", Accept: "application/json" }),
-          body: JSON.stringify({ include_trends: true, include_compliance: true }),
+          body: JSON.stringify({}),
         }
       );
 
@@ -2168,6 +2170,7 @@ function getWorkflowProgress() {
       // Report
       const fallbackHasReport =
         !!latestSummary?.exec ||
+        !!latestSummary?.report ||
         result?.action === "generate_then_get_latest" ||
         result?.action === "get_latest_report" ||
         result?.action === "generate_report";

@@ -3,17 +3,14 @@ app.services.docx_exporter
 -------------------------
 Generate a board-ready DOCX report from a saved report JSON payload.
 
-Expected input shape (saved report payload):
-{
-  "report_id": "...",
-  "evaluation_id": "...",
-  "status": "draft",
-  "summary_json": {
-     "analytics": {...},
-     "context": {...},
-     "sections": {...}
-  }
-}
+Reports built from approved findings (summary_json["schema_version"] >= 2,
+app.services.reporting): the overall conclusion, then one section per subject
+with its conclusion and findings, each finding with its clauses and evidence
+references (question, respondent category and pseudonym, evidence id), and a
+traceability appendix. No respondent is named.
+
+Reports saved before that ({"analytics", "context", "sections"}) still export
+in their original layout.
 """
 
 from __future__ import annotations
@@ -40,7 +37,7 @@ PRIORITY_LABELS = {
 
 def export_report_to_docx(report_payload: Dict[str, Any]) -> Path:
     """
-    Create a DOCX file from a report payload.
+    Create a DOCX file from a report payload (either layout).
 
     Parameters
     ----------
@@ -56,6 +53,8 @@ def export_report_to_docx(report_payload: Dict[str, Any]) -> Path:
     evaluation_id = report_payload.get("evaluation_id", "unknown")
     status = report_payload.get("status", "draft")
     summary = report_payload.get("summary_json") or {}
+    if (summary.get("schema_version") or 1) >= 2:
+        return _export_findings_report(report_payload)
 
     analytics = summary.get("analytics") or {}
     context = summary.get("context") or {}
@@ -145,6 +144,126 @@ def export_report_to_docx(report_payload: Dict[str, Any]) -> Path:
     out_path = OUTPUT_DOCX_DIR / f"report__{evaluation_id}__{report_id}__{ts}.docx"
     doc.save(str(out_path))
     return out_path
+
+
+# ----------------- reports built from approved findings -----------------
+
+def _export_findings_report(report_payload: Dict[str, Any]) -> Path:
+    report_id = report_payload.get("report_id", "unknown")
+    evaluation_id = report_payload.get("evaluation_id", "unknown")
+    summary = report_payload.get("summary_json") or {}
+    ev = summary.get("evaluation") or {}
+    trace = summary.get("traceability") or {}
+    settings = trace.get("analysis_settings") or {}
+
+    doc = Document()
+    _set_default_styles(doc)
+
+    title = doc.add_paragraph("Board Evaluation Report")
+    title.runs[0].bold = True
+    title.runs[0].font.size = Pt(20)
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    sub = doc.add_paragraph(" · ".join(str(x) for x in (ev.get("organisation"), ev.get("name")) if x))
+    sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    meta = doc.add_paragraph()
+    meta.add_run("Evaluation ID: ").bold = True
+    meta.add_run(str(evaluation_id))
+    meta.add_run("\nReport ID: ").bold = True
+    meta.add_run(str(report_id))
+    meta.add_run("\nStatus: ").bold = True
+    meta.add_run(str(report_payload.get("status", "draft")))
+    meta.add_run("\nGenerated: ").bold = True
+    meta.add_run(_when(trace.get("generated_at")))
+
+    doc.add_heading("About this report", level=2)
+    _para(doc, (
+        "This report contains only findings and conclusions the consultant approved in the analysis completed on "
+        f"{_when(trace.get('run_completed_at'))}, each with the answers it rests on. Respondents are never named: "
+        "answers are attributed by category and a pseudonym (R1, R2, ...) used only within this analysis. "
+        "Individual directors are referred to by role. Answers to factual questions are self-reported and have "
+        "not been verified against documents."))
+    if settings.get("thresholds_status", "unapproved") != "approved":
+        _para(doc, ("Strengths, concerns and self-perception gaps marked \"draft signal\" were drafted from scoring "
+                    "thresholds the client has not approved. An average score is not a measure of effectiveness."))
+
+    doc.add_page_break()
+    overall = summary.get("overall") or {}
+    doc.add_heading("Overall conclusion", level=1)
+    _para(doc, (overall.get("conclusion") or {}).get("text") or "No overall conclusion was approved.")
+    if overall.get("findings"):
+        doc.add_heading("Findings about the evaluation as a whole", level=2)
+        for f in overall["findings"]:
+            _finding(doc, f)
+
+    for s in summary.get("subjects") or []:
+        doc.add_heading(_capitalise(s.get("name") or ""), level=1)
+        c = s.get("conclusion") or {}
+        if c.get("text"):
+            _para(doc, c["text"])
+        if not s.get("findings") and not c.get("text"):
+            _para(doc, "Nothing to report." if c.get("no_findings") else "No approved findings.")
+        for f in s.get("findings") or []:
+            _finding(doc, f)
+
+    doc.add_page_break()
+    doc.add_heading("Appendix: traceability", level=1)
+    table = doc.add_table(rows=0, cols=2)
+    table.style = "Table Grid"
+    th = settings.get("thresholds") or {}
+    for k, v in (
+        ("Analysis run", trace.get("run_id")),
+        ("Analysis completed", f"{_when(trace.get('run_completed_at'))} by {trace.get('run_completed_by') or '—'}"),
+        ("Minimum people per result", settings.get("min_raters")),
+        ("Forms included", "including unsubmitted forms" if settings.get("include_unsubmitted") else "submitted forms only"),
+        ("Draft-signal thresholds", ", ".join(f"{k2.replace('_', ' ')} {v2}" for k2, v2 in th.items()) or "—"),
+        ("Thresholds status", settings.get("thresholds_status", "unapproved")),
+        ("Report generated", _when(trace.get("generated_at"))),
+    ):
+        r = table.add_row().cells
+        r[0].text, r[1].text = k, "" if v is None else str(v)
+    doc.add_heading("Findings used", level=2)
+    for fid in trace.get("finding_ids") or []:
+        doc.add_paragraph(fid, style="List Bullet")
+
+    ts = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    out_path = OUTPUT_DOCX_DIR / f"report__{evaluation_id}__{report_id}__{ts}.docx"
+    doc.save(str(out_path))
+    return out_path
+
+
+def _finding(doc: Document, f: Dict[str, Any]) -> None:
+    """One finding: what kind and how well supported, the statement, clauses, then the evidence it rests on."""
+    head = doc.add_paragraph()
+    head.add_run(f"{f.get('kind_label') or f.get('kind')} · {f.get('support_label') or f.get('support')}").bold = True
+    if f.get("theme_label"):
+        head.add_run(f" · {f['theme_label']}")
+    if f.get("draft_signal"):
+        head.add_run(" · draft signal, thresholds not approved").italic = True
+    _para(doc, f.get("statement"))
+    clauses = f.get("clauses") or []
+    if clauses:
+        p = doc.add_paragraph()
+        p.add_run("Governance references: ").italic = True
+        p.add_run("; ".join(c["label"] + (f": {c['heading']}" if c.get("heading") else "") for c in clauses))
+    evidence = f.get("evidence") or []
+    p = doc.add_paragraph()
+    p.add_run(f"Evidence ({len(evidence)} answer{'' if len(evidence) == 1 else 's'}):").italic = True
+    for e in evidence:
+        doc.add_paragraph(
+            f"\u201c{e.get('question')}\u201d \u2014 {e.get('respondent_category')} {e.get('respondent')} "
+            f"(evidence {str(e.get('evidence_id'))[:8]})", style="List Bullet")
+
+
+def _when(iso: Any) -> str:
+    try:
+        return datetime.fromisoformat(str(iso)).strftime("%d %B %Y %H:%M UTC")
+    except (TypeError, ValueError):
+        return "—"
+
+
+def _capitalise(s: str) -> str:
+    return s[:1].upper() + s[1:]
 
 
 # ----------------- formatting helpers -----------------

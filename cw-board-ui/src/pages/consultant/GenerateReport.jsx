@@ -4,7 +4,102 @@ import React from "react";
  * Generate Report page (router-based)
  * - No setTask
  * - Uses go("/route") navigation helper passed from AppLegacy
+ * - The report is built from the latest completed analysis: approved findings and conclusions only,
+ *   each finding with the evidence it rests on. Earlier reports (executive summary + recommendations)
+ *   still display in their own layout.
  */
+
+const when = (iso) =>
+  iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+const cap = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+
+function ReportFinding({ f, ui }) {
+  const { Badge } = ui;
+  return (
+    <li style={{ listStyle: "none", padding: 12, borderRadius: 12, border: "1px solid #E5E7EB", background: "#FFFFFF" }}>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+        <Badge tone={f.kind === "strength" ? "green" : f.kind === "concern" ? "red" : f.kind === "practice_gap" ? "amber" : "gray"}>{f.kind_label}</Badge>
+        <Badge tone={f.support === "conflicting" ? "amber" : "gray"}>{f.support_label}</Badge>
+        {f.theme_label ? <span style={{ fontSize: 12, color: "#64748B" }}>{f.theme_label}</span> : null}
+        {f.draft_signal ? <Badge tone="amber">Draft signal, thresholds not approved</Badge> : null}
+      </div>
+      <div style={{ marginTop: 8, color: "#0F172A" }}>{f.statement}</div>
+      {f.clauses.length ? (
+        <div style={{ marginTop: 6, fontSize: 12, color: "#64748B" }}>
+          {f.clauses.map((c) => `${c.label}${c.heading ? `: ${c.heading}` : ""}`).join(" · ")}
+        </div>
+      ) : null}
+      <details style={{ marginTop: 6, fontSize: 13 }}>
+        <summary style={{ cursor: "pointer", color: "#1D4ED8" }}>Evidence ({f.evidence.length})</summary>
+        <ul style={{ margin: "6px 0 0", paddingLeft: 18, display: "grid", gap: 4 }}>
+          {f.evidence.map((e) => (
+            <li key={e.evidence_id}>
+              “{e.question}” <span style={{ color: "#64748B" }}>· {e.respondent_category} {e.respondent} · evidence {e.evidence_id.slice(0, 8)}</span>
+            </li>
+          ))}
+        </ul>
+      </details>
+    </li>
+  );
+}
+
+function FindingsReport({ report, reportId, createdAt, ui }) {
+  const { Badge, miniTitleStyle } = ui;
+  const trace = report.traceability || {};
+  const settings = trace.analysis_settings || {};
+  const overall = report.overall || {};
+  return (
+    <div style={{ marginTop: 16, padding: 14, borderRadius: 14, border: "1px solid #E5E7EB", background: "#F8FAFC", display: "grid", gap: 14 }}>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+        <Badge tone="green">Latest Report</Badge>
+        <Badge tone="gray">Report ID: {reportId}</Badge>
+        <Badge tone="gray">Created: {createdAt}</Badge>
+        <Badge tone="gray">Analysis completed {when(trace.run_completed_at)}{trace.run_completed_by ? ` by ${trace.run_completed_by}` : ""}</Badge>
+      </div>
+      <div style={{ fontSize: 13, color: "#64748B" }}>
+        Only findings and conclusions approved in the analysis, each with the answers it rests on. Respondents are never named; individual directors appear by role.
+        {settings.thresholds_status !== "approved" ? " Findings marked “draft signal” were drafted from scoring thresholds the client hasn't approved." : ""}
+      </div>
+
+      <div>
+        <h3 style={{ margin: "0 0 6px", color: "#0F172A" }}>Overall conclusion</h3>
+        <div style={{ color: "#0F172A", whiteSpace: "pre-wrap" }}>{overall.conclusion?.text || "No overall conclusion was approved."}</div>
+        {overall.findings?.length ? (
+          <ul style={{ margin: "10px 0 0", padding: 0, display: "grid", gap: 8 }}>
+            {overall.findings.map((f) => <ReportFinding key={f.finding_id} f={f} ui={ui} />)}
+          </ul>
+        ) : null}
+      </div>
+
+      {(report.subjects || []).map((s) => (
+        <div key={s.subject_id}>
+          <h3 style={{ margin: "0 0 6px", color: "#0F172A" }}>{cap(s.name)}</h3>
+          {s.conclusion?.text ? <div style={{ color: "#0F172A", marginBottom: 8, whiteSpace: "pre-wrap" }}>{s.conclusion.text}</div> : null}
+          {s.findings.length ? (
+            <ul style={{ margin: 0, padding: 0, display: "grid", gap: 8 }}>
+              {s.findings.map((f) => <ReportFinding key={f.finding_id} f={f} ui={ui} />)}
+            </ul>
+          ) : s.conclusion?.text ? null : (
+            <div style={{ fontSize: 13, color: "#64748B" }}>{s.conclusion?.no_findings ? "Nothing to report." : "No approved findings."}</div>
+          )}
+        </div>
+      ))}
+
+      <details style={{ fontSize: 13 }}>
+        <summary style={{ cursor: "pointer", ...miniTitleStyle() }}>Traceability</summary>
+        <div style={{ display: "grid", gap: 4, marginTop: 6, color: "#334155" }}>
+          <div>Analysis run: {trace.run_id}</div>
+          <div>Findings used: {(trace.finding_ids || []).length} · conclusions used: {(trace.conclusion_ids || []).length}</div>
+          <div>
+            Minimum people per result {settings.min_raters} · {settings.include_unsubmitted ? "includes unsubmitted forms" : "submitted forms only"} · thresholds{" "}
+            {Object.entries(settings.thresholds || {}).map(([k, v]) => `${k.replace(/_/g, " ")} ${v}`).join(", ")} ({settings.thresholds_status || "unapproved"})
+          </div>
+          <div>Generated {when(trace.generated_at)}</div>
+        </div>
+      </details>
+    </div>
+  );
+}
 export default function GenerateReportPage({
   ui,
 
@@ -60,7 +155,7 @@ export default function GenerateReportPage({
     ["generateAndLoadLatestReport", generateAndLoadLatestReport],
   ];
   const missingFns = requiredFns
-    .filter(([_, fn]) => typeof fn !== "function")
+    .filter(([, fn]) => typeof fn !== "function")
     .map(([name]) => name);
 
   if (missingFns.length) {
@@ -78,7 +173,7 @@ export default function GenerateReportPage({
   const reasonEval = lockReason("evaluation"); // requires eval
   const reasonSeed = lockReason("seed"); // participants + questions
   const reasonListQs = lockReason("list_questions");
-  const hasLatest = !!latestSummary?.exec;
+  const hasLatest = !!latestSummary?.exec || !!latestSummary?.report;
 
   const reportId = result?.data?.report_id;
 
@@ -100,7 +195,7 @@ export default function GenerateReportPage({
   return (
     <Card
       title="Generate Report"
-      subtitle="One click: generate a new report, then fetch the latest report for the evaluation."
+      subtitle="Builds the report from the latest completed analysis: approved findings and conclusions only, each traced to its evidence."
     >
       {focus}
 
@@ -223,7 +318,9 @@ export default function GenerateReportPage({
       </div>
 
       {/* ✅ Report body */}
-      {latestSummary?.exec ? (
+      {latestSummary?.report ? (
+        <FindingsReport report={latestSummary.report} reportId={reportId} createdAt={result?.data?.created_at} ui={ui} />
+      ) : latestSummary?.exec ? (
         <div style={{ marginTop: 16 }}>
           <div
             style={{
