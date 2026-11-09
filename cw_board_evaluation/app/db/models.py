@@ -1734,7 +1734,7 @@ class ParticipantEvent(Base):
 # Analysis (assembled evaluations)
 # ----------------------------
 
-FINDING_KINDS = ("strength", "concern", "observation", "compliance_gap", "self_perception_gap")
+FINDING_KINDS = ("strength", "concern", "observation", "practice_gap", "self_perception_gap")
 SUPPORT_LEVELS = ("strong", "moderate", "limited", "conflicting")
 DRAFT_ORIGINS = ("computed", "ai", "consultant")
 REVIEW_STATUSES = ("draft", "accepted", "edited", "rejected")

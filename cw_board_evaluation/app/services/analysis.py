@@ -10,10 +10,10 @@ A run:
    (submitted forms only, unless include_unsubmitted), about subjects in the
    evaluation's scope, with the respondent's category and a per-run pseudonym;
 2. computes results per subject (themes, items, rater-group splits, self versus
-   peer, yes/no and choice counts, facts and compliance checks, comments,
+   peer, yes/no and choice counts, facts and expected-answer checks, comments,
    completion), suppressing small groups, and stores them on the run;
 3. drafts computed findings, each linked to the evidence rows behind it (and
-   to clauses for compliance and clause-linked items);
+   to clauses for practice gaps and clause-linked items);
 4. optionally asks AI for more drafts (app.services.analysis_ai).
 After that the run's evidence and results never change: a re-run is a new run.
 """
@@ -39,6 +39,7 @@ from app.db.models import (
     EvaluationContextSnapshot,
     EvaluationScopeSubjectType,
     EvaluationSubject,
+    FINDING_KINDS,
     Finding,
     FindingClause,
     FindingEvidence,
@@ -477,7 +478,7 @@ def compute_results(db: Session, ev: Evaluation, run: AnalysisRun, evidence: Lis
                 "percentages": None if reason else {k: round(100 * v / people) for k, v in counts.items()},
                 "suppressed": reason,
             })
-        # Facts and compliance checks (never averaged)
+        # Facts and expected-answer checks (never averaged)
         facts: Dict[str, List[AnalysisEvidence]] = defaultdict(list)
         for e in rows:
             if _is_fact(e):
@@ -618,10 +619,12 @@ def draft_computed_findings(db: Session, run: AnalysisRun, evidence: List[Analys
             who = "; ".join(sorted({a["category"] for a in fact["answers"]}))
             given = ", ".join(sorted({a["value"] for a in fact["answers"]}))
             refs = ", ".join(c["label"] for c in fact["clauses"])
-            _finding(db, run, sid, "compliance_gap",
-                     f"Answered \"{given}\" to \"{fact['question']}\" ({who}); good practice expects "
-                     f"\"{check['expected']}\" under {refs}.",
-                     R.FACT_SUPPORT if check["agree"] else "conflicting", "compliance_shortfall", frows,
+            # Self-reported practice, not a regulatory conclusion: it needs checking against documents
+            _finding(db, run, sid, "practice_gap",
+                     f"Self-reported answer \"{given}\" to \"{fact['question']}\" ({who}) differs from the "
+                     f"expected answer \"{check['expected']}\" ({refs}). Not verified: check it against the "
+                     f"company's documents.",
+                     R.FACT_SUPPORT if check["agree"] else "conflicting", "practice_differs", frows,
                      theme=frows[0].theme_code if frows else None, item=fact["code"], clauses=fact["clauses"])
 
 
@@ -699,7 +702,7 @@ def add_finding(db: Session, run: AnalysisRun, by: str, *, subject_id, kind: str
                 theme_code: Optional[str] = None, evidence_ids: Optional[List[str]] = None,
                 clause_ids: Optional[List[str]] = None) -> Finding:
     _require_done(run)
-    if kind not in ("strength", "concern", "observation", "compliance_gap", "self_perception_gap"):
+    if kind not in FINDING_KINDS:
         raise ValueError("Choose a kind of finding.")
     if support not in ("strong", "moderate", "limited", "conflicting"):
         raise ValueError("Choose a support level.")
@@ -850,12 +853,11 @@ def compare(db: Session, old: AnalysisRun, new: AnalysisRun) -> Dict[str, Any]:
     old_p = {p["participant_id"] for p in old.inputs.get("participants", [])}
     new_p = {p["participant_id"] for p in new.inputs.get("participants", [])}
     count = lambda run, k: sum(1 for f in findings(db, run) if f.origin == "computed" and f.kind == k)  # noqa: E731
-    kinds = ("strength", "concern", "observation", "compliance_gap", "self_perception_gap")
     return {
         "old_run": run_dict(old), "new_run": run_dict(new),
         "respondents": {"before": len(old_p), "after": len(new_p), "added": len(new_p - old_p),
                         "removed": len(old_p - new_p)},
         "evidence_rows": {"before": old.inputs.get("evidence_rows"), "after": new.inputs.get("evidence_rows")},
-        "computed_findings": {k: {"before": count(old, k), "after": count(new, k)} for k in kinds},
+        "computed_findings": {k: {"before": count(old, k), "after": count(new, k)} for k in FINDING_KINDS},
         "changes": changes,
     }

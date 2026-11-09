@@ -6,7 +6,7 @@ edits or rejects every one). Off unless AI_ANALYSIS_ENABLED is true: response
 data is the most sensitive data in the system.
 
 What the model sees, per subject (build_context): that subject's results,
-facts and compliance checks, the evidence it may cite (respondent category and
+facts and expected-answer checks, the evidence it may cite (respondent category and
 a per-run pseudonym, never names; comments only where the group is big enough;
 nothing from suppressed results), the related clause texts, the organisation's
 confirmed context, the subject's confirmed profile without generation-only notes,
@@ -21,7 +21,8 @@ Every draft is checked in code (validate). A finding is dropped when it:
     respondents, moderate >= 3, conflicting >= 2 (app.domain.analysis_rules);
   - says views agree (any support but "conflicting") when the ratings it cites are
     divided (app.domain.analysis_rules.consensus): disagreement is never averaged away;
-  - is a compliance_gap that doesn't rest on a factual answer.
+  - is a practice_gap that doesn't rest on a factual answer, or that calls a
+    self-reported answer a compliance failure or breach.
 Clause ids the subject doesn't relate to are removed. Each AI call has a time limit
 (AI_ANALYSIS_TIMEOUT seconds, default 120); a subject whose reply doesn't come is
 recorded as dropped and the run carries on. Dropped drafts and the
@@ -101,7 +102,7 @@ def default_llm_call(system: str, user: str) -> str:
 
 
 class DraftFinding(BaseModel):
-    kind: Literal["strength", "concern", "observation", "compliance_gap", "self_perception_gap"]
+    kind: Literal["strength", "concern", "observation", "practice_gap", "self_perception_gap"]
     statement: str = Field(min_length=1, max_length=800)
     support: Literal["strong", "moderate", "limited", "conflicting"]
     evidence_ids: List[str] = Field(default_factory=list)
@@ -257,6 +258,7 @@ def build_context(db: Session, run: AnalysisRun, subject_id: str) -> Tuple[Dict[
 # ----------------------------
 
 QUOTE = re.compile(r"[\"“”]([^\"“”]{3,})[\"“”]")
+COMPLIANCE_WORDS = re.compile(r"\b(non-?compliant|non-?compliance|compliance|compliant|breach\w*)\b", re.IGNORECASE)
 
 
 def _norm(s: str) -> str:
@@ -287,8 +289,10 @@ def validate(draft: DraftFinding, check: Dict[str, Any]) -> Tuple[Optional[Draft
     if len(per) >= 2 and draft.support != "conflicting" \
             and R.consensus([sum(v) / len(v) for v in per.values()]) == "divided":
         return None, "The cited ratings are divided, so the support must be conflicting."
-    if draft.kind == "compliance_gap" and not any(an._is_fact(r) for r in rows):
-        return None, "A compliance gap must rest on a factual answer, not opinions."
+    if draft.kind == "practice_gap" and not any(an._is_fact(r) for r in rows):
+        return None, "A practice gap must rest on a factual answer, not opinions."
+    if draft.kind == "practice_gap" and COMPLIANCE_WORDS.search(draft.statement):
+        return None, "A practice gap is self-reported and unverified; it can't state a compliance conclusion."
     draft.clause_ids = [c for c in draft.clause_ids if c in check["clause_ids"]]
     return draft, None
 

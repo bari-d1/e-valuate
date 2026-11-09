@@ -30,8 +30,10 @@ Computed findings
   concern              theme average <= 2.5; or a clause-linked item averaging <= 2.5
   observation          a theme where views are divided (support "conflicting")
   self_perception_gap  |self - peer average| >= 1.0 on a core peer statement
-  compliance_gap       a factual yes/no item with an expected answer and a governance
-                       clause, answered the other way. Never from opinion ratings.
+  practice_gap         a factual yes/no item with an expected answer and a governance
+                       clause, answered the other way. Self-reported practice that needs
+                       verifying against documents, never a conclusion about compliance.
+                       Never from opinion ratings.
 
 Support levels (distinct people behind the evidence)
   strong       >= 5 people, and they agree (not divided)
